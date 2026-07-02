@@ -15,7 +15,8 @@ Initial legal context: Texas homeschool records, with a data model that can supp
 - Git installed
 - GitHub CLI installed
 - Node.js LTS installed
-- Private GitHub repository connected
+- Public GitHub repository connected
+- GitHub Pages target website enabled
 
 ## Project Context
 

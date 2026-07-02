@@ -8,7 +8,7 @@ GitHub Pages is enabled because this repository is public. The website should co
 
 Expected project site URL:
 
-`https://chasechase1776-netizen.github.io/bennett-homeschool/`
+`https://chasechase1776.github.io/`
 
 Current status: live.
 
@@ -38,7 +38,7 @@ For now, `site/` contains only a static placeholder page. When the real app is b
 
 After deployment finishes:
 
-1. Open `https://chasechase1776-netizen.github.io/bennett-homeschool/`.
+1. Open `https://chasechase1776.github.io/`.
 2. Confirm the page says `Bennett Homeschool`.
 3. Confirm the page says this is a target website placeholder.
 4. Confirm it says private records are not published.
