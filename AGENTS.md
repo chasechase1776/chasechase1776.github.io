@@ -23,6 +23,20 @@ Preferred stack when implementation begins:
 
 After the GitHub remote is connected, commit and push completed changes at each logical stopping point. Keep commits focused and descriptive.
 
+## User Experience for the Builder
+
+Assume the person reviewing the work has no coding experience and will validate changes by checking the running website.
+
+Every implementation handoff should include:
+
+- The local URL to open.
+- A short list of what changed in plain language.
+- A short browser checklist for verifying the change.
+- Any known limitations or unfinished pieces.
+- A note confirming tests/build checks that were run.
+
+Prefer visible, clickable UI over hidden configuration. Avoid asking the user to inspect code, JSON, databases, logs, or terminal output unless there is no practical alternative.
+
 ## Constraints
 
 - Preserve legal/compliance context in project documentation.
