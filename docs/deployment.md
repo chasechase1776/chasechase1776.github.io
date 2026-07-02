@@ -2,13 +2,17 @@
 
 ## Current Target
 
-The current target website is GitHub Pages.
+The intended target website is GitHub Pages.
 
-GitHub Pages is being used only for a safe placeholder and future static previews. It should not publish real homeschool records or private evidence.
+GitHub Pages is set up in the repository files, but it is not currently enabled because the current GitHub plan does not support GitHub Pages for this private repository.
+
+GitHub Pages should be used only for a safe placeholder and future static previews. It should not publish real homeschool records or private evidence.
 
 Expected project site URL:
 
 `https://chasechase1776-netizen.github.io/bennett-homeschool/`
+
+Current status: not live.
 
 ## Privacy Warning
 
@@ -42,3 +46,12 @@ After deployment finishes:
 4. Confirm it says private records are not published.
 
 GitHub Pages can take several minutes to publish after a push.
+
+## Activation Options
+
+To make the target website live, choose one of these:
+
+1. Upgrade GitHub to a plan that supports Pages for private repositories.
+2. Make this repository public, which is not recommended for this project.
+3. Create a separate public GitHub Pages repository that contains only safe public preview files.
+4. Use a different private-friendly host for the real app later.
