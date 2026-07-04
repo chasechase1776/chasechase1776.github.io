@@ -1,0 +1,1213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Narration-First Homeschool UI Mockup</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #182226;
+        --muted: #607079;
+        --line: #d5dde1;
+        --soft-line: #e9eef1;
+        --panel: #ffffff;
+        --surface: #f5f7f3;
+        --accent: #236a72;
+        --accent-strong: #174b52;
+        --accent-soft: #e4f0ef;
+        --gold: #8a5a12;
+        --gold-soft: #fff3d8;
+        --green: #2f6f4f;
+        --green-soft: #e6f2ea;
+        --blue: #315f8c;
+        --blue-soft: #e8eff8;
+        --red: #8b3a2b;
+        --red-soft: #f8e8e4;
+        --shadow: 0 12px 30px rgba(24, 34, 38, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--ink);
+        background: var(--surface);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .mockup-shell {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow: auto;
+        border-right: 1px solid var(--line);
+        background: #fbfcfb;
+        padding: 18px;
+      }
+
+      .brand {
+        border-bottom: 1px solid var(--soft-line);
+        padding-bottom: 16px;
+        margin-bottom: 14px;
+      }
+
+      .eyebrow {
+        margin: 0 0 5px;
+        color: var(--accent-strong);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 0;
+        font-size: 1.9rem;
+        line-height: 1.12;
+      }
+
+      h2 {
+        margin-bottom: 0;
+        font-size: 1.13rem;
+        line-height: 1.2;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 1rem;
+      }
+
+      .brand-title {
+        margin: 0;
+        color: var(--ink);
+        font-size: 1.05rem;
+      }
+
+      .tree-title {
+        margin: 14px 0 8px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .tree,
+      .tree ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tree li {
+        margin: 2px 0;
+      }
+
+      .tree a,
+      .tree button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 34px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--ink);
+        padding: 7px 8px;
+        text-align: left;
+        text-decoration: none;
+      }
+
+      .tree a:hover,
+      .tree button:hover,
+      .tree .is-active {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-weight: 700;
+      }
+
+      .tree ul {
+        border-left: 1px solid var(--soft-line);
+        margin-left: 11px;
+        padding-left: 9px;
+      }
+
+      .content {
+        min-width: 0;
+        padding: 22px;
+      }
+
+      .context-box {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        border: 1px solid #b8cdd1;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: var(--shadow);
+        padding: 16px;
+      }
+
+      .context-fields {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+      }
+
+      label span,
+      .field-label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid #c8d2d7;
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        padding: 10px 11px;
+      }
+
+      textarea {
+        min-height: 188px;
+        resize: vertical;
+        line-height: 1.45;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus,
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid rgba(35, 106, 114, 0.24);
+        outline-offset: 2px;
+      }
+
+      .context-status {
+        display: grid;
+        align-content: center;
+        gap: 6px;
+        min-width: 180px;
+        border-left: 1px solid var(--soft-line);
+        padding-left: 18px;
+      }
+
+      .context-status strong {
+        color: var(--accent);
+      }
+
+      .page-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 24px 0 16px;
+      }
+
+      .page-head p {
+        max-width: 700px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .mode-switch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .mode-switch a,
+      .quiet-button,
+      .primary-button,
+      .chip-button,
+      .utility-button {
+        min-height: 38px;
+        border-radius: 6px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .mode-switch a,
+      .quiet-button,
+      .utility-button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--accent-strong);
+        padding: 9px 12px;
+      }
+
+      .mode-switch a:hover,
+      .quiet-button:hover,
+      .utility-button:hover {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+
+      .primary-button {
+        border: 0;
+        background: var(--accent);
+        color: #fff;
+        padding: 10px 15px;
+      }
+
+      .primary-button:hover {
+        background: var(--accent-strong);
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .panel,
+      .record-card,
+      .activity-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .panel {
+        padding: 16px;
+      }
+
+      .panel + .panel,
+      .record-card + .record-card {
+        margin-top: 14px;
+      }
+
+      .panel-head,
+      .card-head,
+      .metric-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .activity-type-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 9px;
+        margin-top: 14px;
+      }
+
+      .chip-button {
+        min-height: 58px;
+        border: 1px solid #c8d3d8;
+        background: #fff;
+        color: var(--ink);
+        padding: 9px;
+      }
+
+      .chip-button:hover,
+      .chip-button.is-selected {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .narration-tools,
+      .artifact-actions,
+      .review-actions,
+      .snapshot-actions,
+      .mini-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .narration-tools {
+        margin-top: 10px;
+      }
+
+      .artifact-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 9px;
+        margin-top: 14px;
+      }
+
+      .artifact-option {
+        display: grid;
+        align-content: center;
+        min-height: 78px;
+        border: 1px dashed #a9bdc3;
+        border-radius: 8px;
+        background: #f9fbfb;
+        color: var(--accent-strong);
+        padding: 10px;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      .artifact-option:hover {
+        background: var(--accent-soft);
+      }
+
+      .ai-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 14px;
+        border-top: 1px solid var(--soft-line);
+        padding-top: 14px;
+      }
+
+      .ai-action p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .summary-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .metric {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 12px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink);
+        font-size: 1.15rem;
+      }
+
+      .activity-card {
+        padding: 14px;
+        margin-top: 12px;
+      }
+
+      .card-head {
+        align-items: start;
+      }
+
+      .card-head p,
+      .record-card p,
+      .panel-note {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .panel-note {
+        margin: 10px 0 0;
+      }
+
+      .tag-row,
+      .allocation-bars,
+      .skill-list,
+      .coverage-list,
+      .records-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        border: 1px solid #c9d5db;
+        border-radius: 999px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        padding: 5px 9px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .tag.warn {
+        border-color: #e0c27d;
+        background: var(--gold-soft);
+        color: var(--gold);
+      }
+
+      .tag.good {
+        border-color: #bad7c4;
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .tag.review {
+        border-color: #e0b5aa;
+        background: var(--red-soft);
+        color: var(--red);
+      }
+
+      .allocation-bars {
+        margin-top: 12px;
+      }
+
+      .bar-line {
+        display: grid;
+        grid-template-columns: 145px minmax(0, 1fr) 56px;
+        gap: 9px;
+        align-items: center;
+        font-size: 0.88rem;
+      }
+
+      .bar-track {
+        height: 9px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--soft-line);
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+      }
+
+      .right-stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      .tally-total {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 12px 0;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        padding: 12px;
+      }
+
+      .tally-total strong {
+        color: var(--accent-strong);
+        font-size: 1.35rem;
+      }
+
+      .coverage-item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        border-bottom: 1px solid var(--soft-line);
+        padding: 8px 0;
+      }
+
+      .coverage-item:last-child {
+        border-bottom: 0;
+      }
+
+      .coverage-status {
+        border-radius: 999px;
+        padding: 4px 8px;
+        color: var(--green);
+        background: var(--green-soft);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .coverage-status.light {
+        color: var(--gold);
+        background: var(--gold-soft);
+      }
+
+      .skills-matrix {
+        display: grid;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      details.skill-group {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        overflow: hidden;
+      }
+
+      details.skill-group summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 42px;
+        padding: 0 12px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      details.skill-group[open] summary {
+        border-bottom: 1px solid var(--soft-line);
+      }
+
+      .skill-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .skill-pill {
+        border: 1px solid #d6e0e4;
+        border-radius: 6px;
+        background: #fff;
+        padding: 8px;
+        font-size: 0.84rem;
+      }
+
+      .record-card {
+        padding: 14px;
+      }
+
+      .records-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 12px;
+      }
+
+      .record-link {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 12px;
+      }
+
+      .record-link strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .markdown-preview {
+        margin-top: 12px;
+        border: 1px solid #cad6dc;
+        border-radius: 8px;
+        background: #172126;
+        color: #eef5f4;
+        padding: 14px;
+        overflow: auto;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.86rem;
+        line-height: 1.45;
+        white-space: pre;
+      }
+
+      .footer-note {
+        margin: 22px 0 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 1100px) {
+        .mockup-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .content {
+          padding: 14px;
+        }
+
+        .context-box,
+        .context-fields,
+        .page-head,
+        .summary-strip,
+        .activity-type-grid,
+        .artifact-grid,
+        .records-grid,
+        .skill-list {
+          grid-template-columns: 1fr;
+        }
+
+        .page-head,
+        .ai-action,
+        .panel-head,
+        .card-head {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .context-status {
+          border-left: 0;
+          border-top: 1px solid var(--soft-line);
+          padding: 12px 0 0;
+        }
+
+        .bar-line {
+          grid-template-columns: 1fr;
+        }
+
+        .primary-button,
+        .quiet-button,
+        .utility-button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mockup-shell">
+      <aside class="sidebar" aria-label="School navigation">
+        <div class="brand">
+          <p class="eyebrow">Mockup only</p>
+          <p class="brand-title">Narration-first records</p>
+        </div>
+
+        <p class="tree-title">School Years</p>
+        <nav>
+          <ul class="tree">
+            <li>
+              <button class="is-active" type="button">2026-2027 <span>active</span></button>
+              <ul>
+                <li><a href="#annual-plan">Annual Plan</a></li>
+                <li><a href="#annual-plan">Records</a></li>
+                <li>
+                  <button type="button">Unit Studies</button>
+                  <ul>
+                    <li><a class="is-active" href="#unit-study">Construction</a></li>
+                    <li><a href="#unit-study">Off the Land</a></li>
+                    <li><a href="#unit-study">Human Body</a></li>
+                    <li><a href="#unit-study">Early American History</a></li>
+                  </ul>
+                </li>
+                <li><a href="#weekly-tally">Weekly Reviews</a></li>
+                <li><a href="#review-summary">9-Week Reviews</a></li>
+                <li><a href="#proof">Portfolio</a></li>
+                <li><a href="#legal-coverage">Legal Archive</a></li>
+                <li><a href="#markdown">Reports</a></li>
+              </ul>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section class="context-box" aria-labelledby="context-title">
+          <div>
+            <p class="eyebrow">Persistent school context</p>
+            <h2 id="context-title">Active record context</h2>
+            <div class="context-fields">
+              <label>
+                <span>Student name</span>
+                <input value="Bennett">
+              </label>
+              <label>
+                <span>School year</span>
+                <select>
+                  <option>2026-2027</option>
+                  <option>2025-2026</option>
+                </select>
+              </label>
+              <label>
+                <span>Unit study</span>
+                <input value="Construction">
+              </label>
+            </div>
+          </div>
+          <div class="context-status">
+            <span class="field-label">Saved with each activity</span>
+            <strong>Future logs use this context until changed.</strong>
+          </div>
+        </section>
+
+        <header class="page-head">
+          <div>
+            <p class="eyebrow">Main page</p>
+            <h1>Log learning from narration</h1>
+            <p>
+              The parent sets context, picks one primary activity type, narrates what happened,
+              attaches proof, then reviews AI-extracted records before saving.
+            </p>
+          </div>
+          <div class="mode-switch" aria-label="Mockup screens">
+            <a href="#review-summary">Review</a>
+            <a href="#weekly-tally">Weekly</a>
+            <a href="#annual-plan">Year Records</a>
+            <a href="#markdown">Markdown</a>
+          </div>
+        </header>
+
+        <div class="main-grid">
+          <div>
+            <section class="panel" aria-labelledby="activity-type-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Step 1</p>
+                  <h2 id="activity-type-title">Choose one activity type</h2>
+                </div>
+                <span class="tag good">Primary type drives AI hints</span>
+              </div>
+              <div class="activity-type-grid" id="activity-types">
+                <button class="chip-button is-selected" type="button">Language Arts</button>
+                <button class="chip-button" type="button">Math</button>
+                <button class="chip-button" type="button">Finance</button>
+                <button class="chip-button" type="button">Unit Study</button>
+                <button class="chip-button" type="button">Science Journal</button>
+                <button class="chip-button" type="button">Writing Project</button>
+                <button class="chip-button" type="button">Project Cycle</button>
+                <button class="chip-button" type="button">Presentation Cycle</button>
+                <button class="chip-button" type="button">Hands-On Activity</button>
+                <button class="chip-button" type="button">Physical Activity</button>
+                <button class="chip-button" type="button">Field Trip</button>
+                <button class="chip-button" type="button">Group Event</button>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="narration-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Step 2</p>
+                  <h2 id="narration-title">Tell me what happened.</h2>
+                </div>
+                <div class="narration-tools">
+                  <button class="quiet-button" type="button">Dictate</button>
+                  <button class="quiet-button" type="button">Paste full day</button>
+                </div>
+              </div>
+              <label>
+                <span>Narration</span>
+                <textarea>Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud for 15 minutes, practiced spelling words, edited capitalization, and labeled parts of a mouse skeleton. Then he helped measure boards for the Construction unit and explained why the brace made the frame stronger.</textarea>
+              </label>
+              <p class="panel-note">
+                AI may split a full-day narration into multiple activity cards, but exact time must be explicit or reviewed by the parent.
+              </p>
+            </section>
+
+            <section class="panel" id="proof" aria-labelledby="proof-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Step 3</p>
+                  <h2 id="proof-title">Proof of learning</h2>
+                </div>
+                <span class="tag">Inherits context and tags on save</span>
+              </div>
+              <div class="artifact-grid">
+                <button class="artifact-option" type="button">Upload photo</button>
+                <button class="artifact-option" type="button">Upload file</button>
+                <button class="artifact-option" type="button">Select existing artifact</button>
+                <button class="artifact-option" type="button">Record audio</button>
+                <button class="artifact-option" type="button">Skip for now</button>
+              </div>
+              <div class="tag-row">
+                <span class="tag">Photo</span>
+                <span class="tag">Writing sample</span>
+                <span class="tag">Project photo</span>
+                <span class="tag">Book narration</span>
+                <span class="tag">Parent observation</span>
+              </div>
+              <div class="ai-action">
+                <p>Mockup action: parse the active context, activity type, narration, and proof into editable records.</p>
+                <button class="primary-button" type="button">Parse with AI</button>
+              </div>
+            </section>
+
+            <section class="panel" id="review-summary" aria-labelledby="review-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">AI review summary</p>
+                  <h2 id="review-title">Parent approval before save</h2>
+                </div>
+                <div class="review-actions">
+                  <button class="quiet-button" type="button">Approve all reviewed</button>
+                  <button class="primary-button" type="button">Save approved records</button>
+                </div>
+              </div>
+              <div class="summary-strip">
+                <div class="metric">
+                  <span>Activities found</span>
+                  <strong>3</strong>
+                </div>
+                <div class="metric">
+                  <span>Explicit minutes</span>
+                  <strong>45</strong>
+                </div>
+                <div class="metric">
+                  <span>Missing time</span>
+                  <strong>1</strong>
+                </div>
+                <div class="metric">
+                  <span>Proof attached</span>
+                  <strong>2 items</strong>
+                </div>
+              </div>
+
+              <article class="activity-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Story Weaver read-aloud and editing</h3>
+                    <p>Language Arts - Construction - 15 min - explicit time</p>
+                  </div>
+                  <span class="tag good">Approved</span>
+                </div>
+                <div class="tag-row">
+                  <span class="tag">Reading</span>
+                  <span class="tag">Spelling</span>
+                  <span class="tag">Grammar</span>
+                  <span class="tag">Writing</span>
+                  <span class="tag good">Bona Fide Instruction</span>
+                  <span class="tag good">Visual Curriculum</span>
+                </div>
+                <div class="allocation-bars">
+                  <div class="bar-line">
+                    <span>Language Arts</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: 80%"></div></div>
+                    <strong>12 min</strong>
+                  </div>
+                  <div class="bar-line">
+                    <span>Science</span>
+                    <div class="bar-track"><div class="bar-fill" style="width: 20%"></div></div>
+                    <strong>3 min</strong>
+                  </div>
+                </div>
+                <div class="review-actions">
+                  <button class="utility-button" type="button">Edit</button>
+                  <button class="utility-button" type="button">Split</button>
+                  <button class="utility-button" type="button">Reassign evidence</button>
+                </div>
+              </article>
+
+              <article class="activity-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Construction brace explanation</h3>
+                    <p>Hands-On Activity - Construction - needs time review</p>
+                  </div>
+                  <span class="tag review">Needs time</span>
+                </div>
+                <div class="tag-row">
+                  <span class="tag">Mathematical Communication</span>
+                  <span class="tag">Uses Tools and Models</span>
+                  <span class="tag">Problem-Solving and Application</span>
+                  <span class="tag good">Mathematics</span>
+                  <span class="tag good">Visual Curriculum</span>
+                </div>
+                <div class="mini-tabs" aria-label="Time review quick buttons">
+                  <button class="utility-button" type="button">2 min</button>
+                  <button class="utility-button" type="button">5 min</button>
+                  <button class="utility-button" type="button">8 min</button>
+                  <button class="utility-button" type="button">10 min</button>
+                  <button class="utility-button" type="button">15 min</button>
+                  <button class="utility-button" type="button">20 min</button>
+                  <button class="utility-button" type="button">30 min</button>
+                  <button class="utility-button" type="button">Custom</button>
+                  <button class="utility-button" type="button">Leave untimed</button>
+                </div>
+                <div class="review-actions">
+                  <button class="utility-button" type="button">Merge</button>
+                  <button class="utility-button" type="button">Delete</button>
+                  <button class="utility-button" type="button">Change allocation</button>
+                  <button class="primary-button" type="button">Approve card</button>
+                </div>
+              </article>
+            </section>
+          </div>
+
+          <aside class="right-stack" aria-label="Dashboards">
+            <section class="panel" id="weekly-tally" aria-labelledby="weekly-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Current week</p>
+                  <h2 id="weekly-title">Weekly subject time tally</h2>
+                </div>
+                <span class="tag">Week of 2026-09-14</span>
+              </div>
+              <div class="tally-total">
+                <span>Total actual learning time</span>
+                <strong>7 hr 20 min</strong>
+              </div>
+              <div class="allocation-bars">
+                <div class="bar-line">
+                  <span>Language Arts</span>
+                  <div class="bar-track"><div class="bar-fill" style="width: 58%"></div></div>
+                  <strong>1h 45</strong>
+                </div>
+                <div class="bar-line">
+                  <span>Math</span>
+                  <div class="bar-track"><div class="bar-fill" style="width: 20%"></div></div>
+                  <strong>35m</strong>
+                </div>
+                <div class="bar-line">
+                  <span>Science</span>
+                  <div class="bar-track"><div class="bar-fill" style="width: 38%"></div></div>
+                  <strong>1h 10</strong>
+                </div>
+                <div class="bar-line">
+                  <span>Unit Study</span>
+                  <div class="bar-track"><div class="bar-fill" style="width: 78%"></div></div>
+                  <strong>2h 20</strong>
+                </div>
+                <div class="bar-line">
+                  <span>Finance</span>
+                  <div class="bar-track"><div class="bar-fill" style="width: 0%"></div></div>
+                  <strong>0m</strong>
+                </div>
+              </div>
+              <p class="panel-note">The visible weekly dashboard resets every Monday at 00:01 AM. Historical weekly totals remain retrievable.</p>
+            </section>
+
+            <section class="panel" id="legal-coverage" aria-labelledby="legal-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Texas</p>
+                  <h2 id="legal-title">Legal coverage panel</h2>
+                </div>
+              </div>
+              <div class="coverage-list">
+                <div class="coverage-item"><span>Reading</span><strong class="coverage-status">covered</strong></div>
+                <div class="coverage-item"><span>Spelling</span><strong class="coverage-status light">light</strong></div>
+                <div class="coverage-item"><span>Grammar</span><strong class="coverage-status">covered</strong></div>
+                <div class="coverage-item"><span>Mathematics</span><strong class="coverage-status">covered</strong></div>
+                <div class="coverage-item"><span>Good Citizenship</span><strong class="coverage-status light">light</strong></div>
+                <div class="coverage-item"><span>Visual Curriculum</span><strong class="coverage-status">covered</strong></div>
+                <div class="coverage-item"><span>Bona Fide Instruction</span><strong class="coverage-status">covered</strong></div>
+              </div>
+            </section>
+
+            <section class="panel" id="skills" aria-labelledby="skills-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">AI matching source</p>
+                  <h2 id="skills-title">Subject skills panel</h2>
+                </div>
+                <span class="tag">Editable taxonomy</span>
+              </div>
+              <div class="skills-matrix">
+                <details class="skill-group" open>
+                  <summary>Language Arts <span>9 skills</span></summary>
+                  <div class="skill-list">
+                    <div class="skill-pill">Reading</div>
+                    <div class="skill-pill">Grammar</div>
+                    <div class="skill-pill">Literature</div>
+                    <div class="skill-pill">Memory Work</div>
+                    <div class="skill-pill">Phonics</div>
+                    <div class="skill-pill">Spelling</div>
+                    <div class="skill-pill">Writing</div>
+                    <div class="skill-pill">Editing</div>
+                    <div class="skill-pill">Fluency</div>
+                  </div>
+                </details>
+                <details class="skill-group">
+                  <summary>Math <span>9 skills</span></summary>
+                  <div class="skill-list">
+                    <div class="skill-pill">Number Sense and Place Value</div>
+                    <div class="skill-pill">Operations and Fluency</div>
+                    <div class="skill-pill">Fractions and Part-Whole Reasoning</div>
+                    <div class="skill-pill">Measurement and Money</div>
+                    <div class="skill-pill">Geometry and Spatial Reasoning</div>
+                    <div class="skill-pill">Data and Graphing</div>
+                    <div class="skill-pill">Patterns and Algebraic Thinking</div>
+                    <div class="skill-pill">Mathematical Communication</div>
+                    <div class="skill-pill">Problem-Solving and Application</div>
+                  </div>
+                </details>
+                <details class="skill-group">
+                  <summary>Finance <span>14 skills</span></summary>
+                  <div class="skill-list">
+                    <div class="skill-pill">Money Recognition and Counting</div>
+                    <div class="skill-pill">Earning and Value Creation</div>
+                    <div class="skill-pill">Saving and Goal Setting</div>
+                    <div class="skill-pill">Spending and Decision-Making</div>
+                    <div class="skill-pill">Needs, Wants and Priorities</div>
+                    <div class="skill-pill">Budgeting</div>
+                    <div class="skill-pill">Giving and Stewardship</div>
+                    <div class="skill-pill">Tradeoffs and Opportunity Cost</div>
+                    <div class="skill-pill">Comparison Shopping</div>
+                    <div class="skill-pill">Record Keeping</div>
+                    <div class="skill-pill">Entrepreneurship</div>
+                    <div class="skill-pill">Banking Basics</div>
+                    <div class="skill-pill">Risk and Responsibility</div>
+                    <div class="skill-pill">Advertising and Awareness</div>
+                  </div>
+                </details>
+                <details class="skill-group">
+                  <summary>Science <span>8 skills</span></summary>
+                  <div class="skill-list">
+                    <div class="skill-pill">Conducts Investigations with Responsible Practices</div>
+                    <div class="skill-pill">Asks Questions and Seeks Answers</div>
+                    <div class="skill-pill">Critical Thinking for Problem Solving</div>
+                    <div class="skill-pill">Uses Tools and Models to Investigate the World</div>
+                    <div class="skill-pill">Matter &amp; Energy</div>
+                    <div class="skill-pill">Force, Motion &amp; Energy</div>
+                    <div class="skill-pill">Earth &amp; Space</div>
+                    <div class="skill-pill">Organisms &amp; Environments</div>
+                  </div>
+                </details>
+                <details class="skill-group">
+                  <summary>Social Studies <span>12 skills</span></summary>
+                  <div class="skill-list">
+                    <div class="skill-pill">US History</div>
+                    <div class="skill-pill">World History</div>
+                    <div class="skill-pill">Geography</div>
+                    <div class="skill-pill">Economics</div>
+                    <div class="skill-pill">Government</div>
+                    <div class="skill-pill">Citizenship</div>
+                    <div class="skill-pill">Culture</div>
+                    <div class="skill-pill">Life Skills</div>
+                    <div class="skill-pill">Communication</div>
+                    <div class="skill-pill">Business</div>
+                    <div class="skill-pill">Philosophy</div>
+                    <div class="skill-pill">Emotional Intelligence</div>
+                  </div>
+                </details>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <section class="panel" id="annual-plan" aria-labelledby="annual-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">School-year records</p>
+              <h2 id="annual-title">Annual plan and long-term records</h2>
+            </div>
+            <button class="quiet-button" type="button">Add school-year file</button>
+          </div>
+          <div class="records-grid">
+            <div class="record-link"><strong>Annual plan</strong><span>Goals, unit studies, resources, and subject plans.</span></div>
+            <div class="record-link"><strong>Curriculum overview</strong><span>Core resources and visual curriculum evidence.</span></div>
+            <div class="record-link"><strong>Scope and sequence</strong><span>Expected skills and projects by term.</span></div>
+            <div class="record-link"><strong>Legal notes</strong><span>State context, assurance letters, and compliance notes.</span></div>
+            <div class="record-link"><strong>Attendance/time summary</strong><span>Derived from activity records and weekly totals.</span></div>
+            <div class="record-link"><strong>Portfolio exports</strong><span>Selected proof of learning and parent summaries.</span></div>
+          </div>
+        </section>
+
+        <section class="panel" id="unit-study" aria-labelledby="unit-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Unit study retrieval</p>
+              <h2 id="unit-title">Construction unit study</h2>
+            </div>
+            <div class="mini-tabs">
+              <button class="utility-button" type="button">Activities</button>
+              <button class="utility-button" type="button">Artifacts</button>
+              <button class="utility-button" type="button">Skills covered</button>
+              <button class="utility-button" type="button">Subject time</button>
+              <button class="utility-button" type="button">Export options</button>
+            </div>
+          </div>
+          <p class="panel-note">
+            A unit page should retrieve activities, artifacts, time records, skills, legal tags, notes, reports, weekly summaries, and a unit summary from saved activity records.
+          </p>
+        </section>
+
+        <section class="panel" id="markdown" aria-labelledby="markdown-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Snapshot/export concept</p>
+              <h2 id="markdown-title">Markdown records generated from database records</h2>
+            </div>
+            <div class="snapshot-actions">
+              <button class="quiet-button" type="button">Regenerate snapshots</button>
+              <button class="quiet-button" type="button">Open records folder</button>
+            </div>
+          </div>
+          <p class="panel-note">
+            Database remains the source of truth. Markdown is an export and sync layer for readable archives, backups, and Obsidian-style browsing.
+          </p>
+          <pre class="markdown-preview">/records
+/2026-2027
+  annual-plan.md
+  weekly-summary-index.md
+  legal-summary.md
+  portfolio-index.md
+  /units
+    /construction
+      unit-summary.md
+      activities.md
+      artifacts.md
+      skills-covered.md
+  /weeks
+    2026-W36.md
+    2026-W37.md
+  /artifacts
+    artifact-index.md</pre>
+        </section>
+
+        <p class="footer-note">
+          Static mockup only: no backend logic, AI calls, real uploads, database writes, or app implementation are connected on this page.
+        </p>
+      </main>
+    </div>
+
+    <script>
+      document.querySelectorAll(".chip-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".chip-button").forEach((item) => item.classList.remove("is-selected"));
+          button.classList.add("is-selected");
+        });
+      });
+    </script>
+  </body>
+</html>
