@@ -3,37 +3,628 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bennett Homeschool</title>
+    <title>Bennett Homeschool Daily Log</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <main class="page">
-      <section class="panel" aria-labelledby="page-title">
-        <p class="eyebrow">Target website placeholder</p>
-        <h1 id="page-title">Bennett Homeschool</h1>
-        <p class="summary">
-          This GitHub Pages site is set up as the future public preview target for the project.
-          The full homeschool tracking app has not been built yet.
-        </p>
-        <div class="status-grid" aria-label="Setup status">
-          <div>
-            <span class="label">Repository</span>
-            <strong>Connected</strong>
-          </div>
-          <div>
-            <span class="label">Deployment</span>
-            <strong>GitHub Pages</strong>
-          </div>
-          <div>
-            <span class="label">Private records</span>
-            <strong>Not published</strong>
-          </div>
+    <main class="app-shell">
+      <header class="topbar" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Daily activity log</p>
+          <h1 id="page-title">Add learning activity</h1>
         </div>
-        <p class="note">
-          No child records, evidence files, databases, photos, videos, scans, or legal archive exports
-          should be published here.
-        </p>
+        <div class="pace">
+          <span>Quick log</span>
+          <strong>3 fields</strong>
+        </div>
+      </header>
+
+      <form class="activity-form" id="activity-form">
+        <section class="form-band primary-entry" aria-labelledby="required-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Required</p>
+              <h2 id="required-title">Activity record</h2>
+            </div>
+            <button class="ghost-button" type="button" id="use-template">Use last template</button>
+          </div>
+
+          <div class="template-row" aria-label="Activity templates">
+            <button class="template-button" type="button" data-template="reading">Read-aloud + narration</button>
+            <button class="template-button" type="button" data-template="project">Hands-on project</button>
+            <button class="template-button" type="button" data-template="math">Math lesson</button>
+          </div>
+
+          <div class="field-grid compact">
+            <label>
+              <span>Title</span>
+              <input id="title" name="title" required autocomplete="off" placeholder="Silk Road map project">
+            </label>
+            <label>
+              <span>Date</span>
+              <input id="date" name="date" type="date" required>
+            </label>
+            <label>
+              <span>Actual minutes</span>
+              <input id="actual-minutes" name="actualMinutes" type="number" min="1" step="1" required placeholder="45">
+            </label>
+          </div>
+        </section>
+
+        <section class="form-band context-band" aria-labelledby="context-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Defaults</p>
+              <h2 id="context-title">Student, year, and activity type</h2>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label>
+              <span>Student</span>
+              <select id="student" name="student">
+                <option>Bennett</option>
+                <option>Sample sibling</option>
+              </select>
+            </label>
+            <label>
+              <span>School year</span>
+              <select id="school-year" name="schoolYear">
+                <option>2026-2027</option>
+                <option>2025-2026</option>
+              </select>
+            </label>
+            <label>
+              <span>Activity type</span>
+              <select id="activity-type" name="activityType">
+                <option>Reading</option>
+                <option>Read-aloud</option>
+                <option>Narration</option>
+                <option>Math lesson</option>
+                <option>Experiment</option>
+                <option>Map work</option>
+                <option>Build/project</option>
+                <option>Discussion</option>
+                <option>Field trip</option>
+                <option>Practical life</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <details class="disclosure">
+          <summary>
+            <span>Unit</span>
+            <strong id="unit-summary">Last used</strong>
+          </summary>
+          <div class="disclosure-body">
+            <label>
+              <span>Unit or theme</span>
+              <select id="unit" name="unit">
+                <option>Silk Road and Ancient Trade</option>
+                <option>Backyard Nature Study</option>
+                <option>Fractions in Real Life</option>
+                <option>No unit</option>
+              </select>
+            </label>
+          </div>
+        </details>
+
+        <details class="disclosure">
+          <summary>
+            <span>Subject time allocation</span>
+            <strong id="allocation-summary">0 of 0 minutes</strong>
+          </summary>
+          <div class="disclosure-body">
+            <div class="preset-row" aria-label="Time allocation presets">
+              <button class="preset-button" type="button" data-preset="reading">Reading + narration</button>
+              <button class="preset-button" type="button" data-preset="project">Science project</button>
+              <button class="preset-button" type="button" data-preset="unit">Unit discussion</button>
+              <button class="preset-button" type="button" data-preset="math">Math focus</button>
+            </div>
+            <div class="allocation-list" id="allocation-list"></div>
+            <p class="allocation-message" id="allocation-message" role="status" tabindex="-1">
+              Add actual minutes to balance subject time.
+            </p>
+          </div>
+        </details>
+
+        <details class="disclosure">
+          <summary>
+            <span>Legal tags</span>
+            <strong id="legal-summary">Suggested</strong>
+          </summary>
+          <div class="disclosure-body">
+            <div class="tag-grid" id="legal-tags" aria-label="Legal tags"></div>
+          </div>
+        </details>
+
+        <details class="disclosure">
+          <summary>
+            <span>Evidence</span>
+            <strong id="evidence-summary">Optional</strong>
+          </summary>
+          <div class="disclosure-body evidence-grid">
+            <label class="camera-drop">
+              <span>Camera or upload</span>
+              <input id="evidence-file" name="evidence" type="file" accept="image/*,video/*,audio/*,.pdf" capture="environment">
+            </label>
+            <label>
+              <span>Evidence title</span>
+              <input id="evidence-title" name="evidenceTitle" placeholder="Project photo">
+            </label>
+            <div>
+              <span class="field-label">Inherited tags</span>
+              <div class="chip-row" id="inherited-tags"></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="disclosure">
+          <summary>
+            <span>Standards and skills</span>
+            <strong>Optional</strong>
+          </summary>
+          <div class="disclosure-body">
+            <div class="field-grid">
+              <label>
+                <span>Skill</span>
+                <input id="skill" name="skill" placeholder="Narrates main events in sequence">
+              </label>
+              <label>
+                <span>Status</span>
+                <select id="skill-status" name="skillStatus">
+                  <option>Practiced</option>
+                  <option>Introduced</option>
+                  <option>Proficient</option>
+                  <option>Mastered</option>
+                  <option>Needs Review</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <details class="disclosure">
+          <summary>
+            <span>Notes</span>
+            <strong>Optional</strong>
+          </summary>
+          <div class="disclosure-body notes-grid">
+            <label>
+              <span>Parent note</span>
+              <textarea id="parent-note" name="parentNote" rows="4"></textarea>
+            </label>
+            <label>
+              <span>Student response</span>
+              <textarea id="student-response" name="studentResponse" rows="4"></textarea>
+            </label>
+          </div>
+        </details>
+
+        <footer class="savebar">
+          <p id="save-status">Ready to save a valid activity.</p>
+          <button class="save-button" type="submit">Save activity</button>
+        </footer>
+      </form>
+
+      <section class="today-list" aria-labelledby="today-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Today</p>
+            <h2 id="today-title">Saved demo records</h2>
+          </div>
+          <button class="ghost-button" type="button" id="clear-demo">Clear demo</button>
+        </div>
+        <div id="saved-list" class="saved-list">
+          <p class="empty-state">No demo records saved in this browser.</p>
+        </div>
       </section>
     </main>
+
+    <script>
+      const storageKeys = {
+        student: "bennett:lastStudent",
+        year: "bennett:lastSchoolYear",
+        unit: "bennett:lastUnit",
+        template: "bennett:lastTemplate",
+        records: "bennett:demoRecords"
+      };
+
+      const subjects = [
+        "Reading",
+        "Writing/Narration",
+        "Mathematics",
+        "Science",
+        "History",
+        "Geography",
+        "Good Citizenship",
+        "Art/Project",
+        "Practical life"
+      ];
+
+      const legalTags = [
+        "Reading",
+        "Spelling",
+        "Grammar",
+        "Mathematics",
+        "Good Citizenship",
+        "Visual Curriculum",
+        "Bona Fide Instruction"
+      ];
+
+      const presets = {
+        reading: [
+          ["Reading", 55],
+          ["Writing/Narration", 30],
+          ["Good Citizenship", 15]
+        ],
+        project: [
+          ["Science", 65],
+          ["Mathematics", 15],
+          ["Writing/Narration", 20]
+        ],
+        unit: [
+          ["Reading", 35],
+          ["History", 35],
+          ["Good Citizenship", 30]
+        ],
+        math: [
+          ["Mathematics", 80],
+          ["Writing/Narration", 20]
+        ]
+      };
+
+      const templates = {
+        reading: {
+          title: "Read-aloud + narration",
+          minutes: 30,
+          type: "Read-aloud",
+          preset: "reading"
+        },
+        project: {
+          title: "Hands-on unit project",
+          minutes: 60,
+          type: "Build/project",
+          preset: "project"
+        },
+        math: {
+          title: "Math lesson",
+          minutes: 35,
+          type: "Math lesson",
+          preset: "math"
+        }
+      };
+
+      const legalRules = {
+        Reading: ["Reading", "Bona Fide Instruction"],
+        "Writing/Narration": ["Grammar", "Spelling", "Bona Fide Instruction"],
+        Mathematics: ["Mathematics", "Bona Fide Instruction"],
+        Science: ["Visual Curriculum", "Bona Fide Instruction"],
+        History: ["Reading", "Good Citizenship", "Bona Fide Instruction"],
+        Geography: ["Visual Curriculum", "Bona Fide Instruction"],
+        "Good Citizenship": ["Good Citizenship", "Bona Fide Instruction"],
+        "Art/Project": ["Visual Curriculum", "Bona Fide Instruction"],
+        "Practical life": ["Good Citizenship", "Bona Fide Instruction"]
+      };
+
+      const titleInput = document.querySelector("#title");
+      const dateInput = document.querySelector("#date");
+      const minutesInput = document.querySelector("#actual-minutes");
+      const studentInput = document.querySelector("#student");
+      const schoolYearInput = document.querySelector("#school-year");
+      const activityTypeInput = document.querySelector("#activity-type");
+      const unitInput = document.querySelector("#unit");
+      const unitSummary = document.querySelector("#unit-summary");
+      const allocationList = document.querySelector("#allocation-list");
+      const allocationSummary = document.querySelector("#allocation-summary");
+      const allocationMessage = document.querySelector("#allocation-message");
+      const legalTagList = document.querySelector("#legal-tags");
+      const legalSummary = document.querySelector("#legal-summary");
+      const inheritedTags = document.querySelector("#inherited-tags");
+      const evidenceFile = document.querySelector("#evidence-file");
+      const evidenceSummary = document.querySelector("#evidence-summary");
+      const saveStatus = document.querySelector("#save-status");
+      const savedList = document.querySelector("#saved-list");
+      const form = document.querySelector("#activity-form");
+      let legalTouched = false;
+
+      function todayIso() {
+        const now = new Date();
+        const offset = now.getTimezoneOffset();
+        return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+      }
+
+      function loadDefaults() {
+        dateInput.value = todayIso();
+        studentInput.value = localStorage.getItem(storageKeys.student) || studentInput.value;
+        schoolYearInput.value = localStorage.getItem(storageKeys.year) || schoolYearInput.value;
+        unitInput.value = localStorage.getItem(storageKeys.unit) || unitInput.value;
+        updateUnitSummary();
+      }
+
+      function rememberDefaults() {
+        localStorage.setItem(storageKeys.student, studentInput.value);
+        localStorage.setItem(storageKeys.year, schoolYearInput.value);
+        localStorage.setItem(storageKeys.unit, unitInput.value);
+      }
+
+      function updateUnitSummary() {
+        unitSummary.textContent = unitInput.value === "No unit" ? "None" : unitInput.value;
+      }
+
+      function makeSelect(value) {
+        const select = document.createElement("select");
+        subjects.forEach((subject) => {
+          const option = document.createElement("option");
+          option.textContent = subject;
+          option.selected = subject === value;
+          select.append(option);
+        });
+        select.addEventListener("change", updateAll);
+        return select;
+      }
+
+      function makeMinutes(value) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.step = "1";
+        input.value = value;
+        input.addEventListener("input", updateAll);
+        return input;
+      }
+
+      function renderAllocationRows(rows) {
+        allocationList.replaceChildren();
+        rows.forEach(([subject, minutes]) => {
+          const row = document.createElement("div");
+          row.className = "allocation-row";
+          row.append(makeSelect(subject), makeMinutes(minutes));
+          allocationList.append(row);
+        });
+        updateAll();
+      }
+
+      function scaledRows(presetName) {
+        const actual = Number(minutesInput.value) || 0;
+        const preset = presets[presetName] || presets.reading;
+        if (!actual) return preset.map(([subject]) => [subject, 0]);
+
+        let running = 0;
+        return preset.map(([subject, weight], index) => {
+          const isLast = index === preset.length - 1;
+          const minutes = isLast ? actual - running : Math.round((actual * weight) / 100);
+          running += minutes;
+          return [subject, Math.max(0, minutes)];
+        });
+      }
+
+      function applyPreset(name) {
+        legalTouched = false;
+        renderAllocationRows(scaledRows(name));
+      }
+
+      function applyTemplate(name) {
+        const template = templates[name];
+        if (!template) return;
+        titleInput.value = template.title;
+        minutesInput.value = template.minutes;
+        activityTypeInput.value = template.type;
+        localStorage.setItem(storageKeys.template, name);
+        legalTouched = false;
+        applyPreset(template.preset);
+      }
+
+      function selectedAllocations() {
+        return [...allocationList.querySelectorAll(".allocation-row")].map((row) => {
+          const [subject, minutes] = row.querySelectorAll("select, input");
+          return [subject.value, Number(minutes.value) || 0];
+        });
+      }
+
+      function suggestedLegalTags() {
+        const suggested = new Set(["Bona Fide Instruction"]);
+        selectedAllocations().forEach(([subject, minutes]) => {
+          if (minutes > 0) {
+            (legalRules[subject] || []).forEach((tag) => suggested.add(tag));
+          }
+        });
+
+        const type = activityTypeInput.value;
+        if (type.includes("Math")) suggested.add("Mathematics");
+        if (type.includes("Read")) suggested.add("Reading");
+        if (type.includes("Map") || type.includes("Build") || type.includes("Experiment")) {
+          suggested.add("Visual Curriculum");
+        }
+        return suggested;
+      }
+
+      function renderLegalTags() {
+        const suggested = suggestedLegalTags();
+        const previous = new Map(
+          [...legalTagList.querySelectorAll("input")].map((input) => [input.value, input.checked])
+        );
+        legalTagList.replaceChildren();
+        legalTags.forEach((tag) => {
+          const label = document.createElement("label");
+          label.className = "tag-check";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.value = tag;
+          input.checked = legalTouched && previous.has(tag) ? previous.get(tag) : suggested.has(tag);
+          input.addEventListener("change", () => {
+            legalTouched = true;
+            updateTagSummaries();
+          });
+          label.append(input, document.createTextNode(tag));
+          legalTagList.append(label);
+        });
+        updateTagSummaries();
+      }
+
+      function selectedLegalTags() {
+        return [...legalTagList.querySelectorAll("input:checked")].map((input) => input.value);
+      }
+
+      function updateTagSummaries() {
+        const selectedSubjects = selectedAllocations()
+          .filter(([, minutes]) => minutes > 0)
+          .map(([subject]) => subject);
+        const selectedLegal = selectedLegalTags();
+        legalSummary.textContent = selectedLegal.length ? `${selectedLegal.length} selected` : "None";
+
+        const tags = [...new Set([...selectedSubjects, ...selectedLegal])];
+        inheritedTags.replaceChildren();
+        if (!tags.length) {
+          const chip = document.createElement("span");
+          chip.className = "chip muted-chip";
+          chip.textContent = "No tags yet";
+          inheritedTags.append(chip);
+          return;
+        }
+        tags.forEach((tag) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = tag;
+          inheritedTags.append(chip);
+        });
+      }
+
+      function updateAllocationStatus() {
+        const actual = Number(minutesInput.value) || 0;
+        const allocated = selectedAllocations().reduce((sum, [, minutes]) => sum + minutes, 0);
+        allocationSummary.textContent = `${allocated} of ${actual} minutes`;
+        allocationMessage.classList.toggle("is-valid", actual > 0 && allocated > 0 && allocated === actual);
+        allocationMessage.classList.toggle("is-warning", actual > 0 && allocated > 0 && allocated !== actual);
+
+        if (!actual) {
+          allocationMessage.textContent = "Subject allocation is optional for quick logs.";
+        } else if (allocated === 0) {
+          allocationMessage.textContent = "No subject minutes allocated.";
+        } else if (allocated === actual) {
+          allocationMessage.textContent = "Subject allocation matches actual minutes.";
+        } else if (allocated > actual) {
+          allocationMessage.textContent = `${allocated - actual} minutes over actual time. Reduce subject minutes to avoid double-counting.`;
+        } else {
+          allocationMessage.textContent = `${actual - allocated} minutes unallocated. Add minutes so reports balance.`;
+        }
+      }
+
+      function updateEvidenceSummary() {
+        evidenceSummary.textContent = evidenceFile.files.length ? "Attached" : "Optional";
+      }
+
+      function updateAll() {
+        updateAllocationStatus();
+        renderLegalTags();
+      }
+
+      function records() {
+        return JSON.parse(localStorage.getItem(storageKeys.records) || "[]");
+      }
+
+      function saveRecords(items) {
+        localStorage.setItem(storageKeys.records, JSON.stringify(items));
+      }
+
+      function renderSavedList() {
+        const items = records();
+        savedList.replaceChildren();
+        if (!items.length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-state";
+          empty.textContent = "No demo records saved in this browser.";
+          savedList.append(empty);
+          return;
+        }
+
+        items.slice(-4).reverse().forEach((item) => {
+          const article = document.createElement("article");
+          article.className = "saved-item";
+          const title = document.createElement("h3");
+          title.textContent = item.title;
+          const details = document.createElement("p");
+          details.textContent = `${item.date} - ${item.minutes} minutes - ${item.student} - ${item.unit}`;
+          const tags = document.createElement("div");
+          tags.className = "chip-row";
+          item.legalTags.slice(0, 4).forEach((tag) => {
+            const chip = document.createElement("span");
+            chip.className = "chip";
+            chip.textContent = tag;
+            tags.append(chip);
+          });
+          article.append(title, details, tags);
+          savedList.append(article);
+        });
+      }
+
+      studentInput.addEventListener("change", rememberDefaults);
+      schoolYearInput.addEventListener("change", rememberDefaults);
+      unitInput.addEventListener("change", () => {
+        rememberDefaults();
+        updateUnitSummary();
+      });
+      minutesInput.addEventListener("input", updateAllocationStatus);
+      activityTypeInput.addEventListener("change", () => {
+        legalTouched = false;
+        renderLegalTags();
+      });
+      evidenceFile.addEventListener("change", updateEvidenceSummary);
+
+      document.querySelectorAll(".preset-button").forEach((button) => {
+        button.addEventListener("click", () => applyPreset(button.dataset.preset));
+      });
+
+      document.querySelectorAll(".template-button").forEach((button) => {
+        button.addEventListener("click", () => applyTemplate(button.dataset.template));
+      });
+
+      document.querySelector("#use-template").addEventListener("click", () => {
+        applyTemplate(localStorage.getItem(storageKeys.template) || "reading");
+      });
+
+      document.querySelector("#clear-demo").addEventListener("click", () => {
+        saveRecords([]);
+        renderSavedList();
+        saveStatus.textContent = "Demo records cleared.";
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const actual = Number(minutesInput.value) || 0;
+        const allocated = selectedAllocations().reduce((sum, [, minutes]) => sum + minutes, 0);
+        if (allocated > 0 && allocated !== actual) {
+          saveStatus.textContent = "Balance subject minutes before saving.";
+          allocationMessage.focus();
+          return;
+        }
+
+        rememberDefaults();
+        saveRecords([
+          ...records(),
+          {
+            title: titleInput.value,
+            date: dateInput.value,
+            minutes: actual,
+            student: studentInput.value,
+            unit: unitInput.value,
+            type: activityTypeInput.value,
+            allocations: selectedAllocations(),
+            legalTags: selectedLegalTags()
+          }
+        ]);
+        renderSavedList();
+        saveStatus.textContent = "Activity saved in this browser demo.";
+      });
+
+      loadDefaults();
+      renderAllocationRows([
+        ["Reading", 0],
+        ["Writing/Narration", 0],
+        ["Good Citizenship", 0]
+      ]);
+      renderSavedList();
+    </script>
   </body>
 </html>
