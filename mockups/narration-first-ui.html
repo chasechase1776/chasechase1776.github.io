@@ -301,6 +301,14 @@
         background: var(--accent-strong);
       }
 
+      .primary-button:disabled,
+      .quiet-button:disabled {
+        cursor: not-allowed;
+        border-color: #d9e0e3;
+        background: #eef2f3;
+        color: #7a878e;
+      }
+
       .main-grid {
         display: grid;
         grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
@@ -481,6 +489,13 @@
         background: var(--accent-soft);
       }
 
+      .artifact-option.is-selected {
+        border-style: solid;
+        border-color: var(--blue);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
       .ai-action {
         display: flex;
         align-items: center;
@@ -494,6 +509,62 @@
       .ai-action p {
         margin: 0;
         color: var(--muted);
+      }
+
+      .entry-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid #b8cdd1;
+        border-radius: 8px;
+        background: #fbfcfc;
+        margin-top: 14px;
+        padding: 14px;
+      }
+
+      .entry-actions p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .entry-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .parse-status {
+        margin-top: 10px;
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--muted);
+        padding: 10px 12px;
+        line-height: 1.45;
+      }
+
+      .parse-status.is-loading {
+        border-color: #b8cdd1;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-weight: 700;
+      }
+
+      .parse-status.is-success {
+        border-color: #bad7c4;
+        background: var(--green-soft);
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .parse-status.is-draft {
+        border-color: #e8c97d;
+        background: var(--gold-soft);
+        color: var(--gold);
+        font-weight: 700;
       }
 
       .summary-strip {
@@ -769,6 +840,7 @@
         .context-box,
         .context-fields,
         .activity-controls,
+        .entry-actions,
         .page-head,
         .summary-strip,
         .activity-type-grid,
@@ -780,6 +852,7 @@
 
         .page-head,
         .ai-action,
+        .entry-actions,
         .panel-head,
         .card-head {
           align-items: stretch;
@@ -800,6 +873,10 @@
         .quiet-button,
         .utility-button {
           width: 100%;
+        }
+
+        .entry-buttons {
+          justify-content: stretch;
         }
       }
     </style>
@@ -848,18 +925,18 @@
             <div class="context-fields">
               <label>
                 <span>Student name</span>
-                <input value="Bennett">
+                <input id="student-name" value="Bennett">
               </label>
               <label>
                 <span>School year</span>
-                <select>
+                <select id="school-year">
                   <option>2026-2027</option>
                   <option>2025-2026</option>
                 </select>
               </label>
               <label>
                 <span>Unit study</span>
-                <input value="Construction">
+                <input id="unit-study" value="Construction">
               </label>
             </div>
           </div>
@@ -940,7 +1017,7 @@
               </div>
               <label>
                 <span>Narration</span>
-                <textarea>Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud for 15 minutes, practiced spelling words, edited capitalization, and labeled parts of a mouse skeleton. Then he helped measure boards for the Construction unit and explained why the brace made the frame stronger.</textarea>
+                <textarea id="narration-text">Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud for 15 minutes, practiced spelling words, edited capitalization, and labeled parts of a mouse skeleton. Then he helped measure boards for the Construction unit and explained why the brace made the frame stronger.</textarea>
               </label>
               <p class="panel-note">
                 AI may split a full-day narration into multiple activity cards, but exact time must be explicit or reviewed by the parent.
@@ -956,11 +1033,11 @@
                 <span class="tag">Inherits context and tags on save</span>
               </div>
               <div class="artifact-grid">
-                <button class="artifact-option" type="button">Upload photo</button>
-                <button class="artifact-option" type="button">Upload file</button>
-                <button class="artifact-option" type="button">Select existing artifact</button>
-                <button class="artifact-option" type="button">Record audio</button>
-                <button class="artifact-option" type="button">Skip for now</button>
+                <button class="artifact-option" type="button" data-artifact-id="photo-184">Upload photo</button>
+                <button class="artifact-option" type="button" data-artifact-id="file-220">Upload file</button>
+                <button class="artifact-option" type="button" data-artifact-id="artifact-117">Select existing artifact</button>
+                <button class="artifact-option" type="button" data-artifact-id="audio-031">Record audio</button>
+                <button class="artifact-option" type="button" data-skip-artifact="true">Skip for now</button>
               </div>
               <div class="tag-row">
                 <span class="tag">Photo</span>
@@ -969,9 +1046,19 @@
                 <span class="tag">Book narration</span>
                 <span class="tag">Parent observation</span>
               </div>
-              <div class="ai-action">
-                <p>Mockup action: parse the active context, activity type, narration, and proof into editable records.</p>
-                <button class="primary-button" type="button">Parse with AI</button>
+            </section>
+
+            <section class="entry-actions" aria-labelledby="entry-actions-title">
+              <div>
+                <p class="eyebrow">Entry actions</p>
+                <h2 id="entry-actions-title">Parse or save the current log</h2>
+                <p id="parse-requirements">Parse is available when student, school year, unit study, date, activity type, and narration are present. Artifacts are optional.</p>
+                <div class="parse-status" id="parse-status" role="status">Ready to parse the current entry.</div>
+              </div>
+              <div class="entry-buttons">
+                <button class="quiet-button" type="button" id="save-draft-button">Save as Draft</button>
+                <button class="quiet-button" type="button" id="clear-entry-button">Clear</button>
+                <button class="primary-button" type="button" id="parse-ai-button" disabled>Parse with AI</button>
               </div>
             </section>
 
@@ -983,9 +1070,13 @@
                 </div>
                 <div class="review-actions">
                   <button class="quiet-button" type="button">Approve all reviewed</button>
-                  <button class="primary-button" type="button">Save approved records</button>
+                  <button class="primary-button" type="button">Save Approved Activities</button>
                 </div>
               </div>
+              <p class="panel-note" id="review-generated-note">
+                Waiting for AI parse. Draft cards below show the intended review layout; no permanent activity records are saved from parsing alone.
+              </p>
+              <div class="parse-status" id="payload-preview">Parser payload preview will appear here after clicking Parse with AI.</div>
               <div class="summary-strip">
                 <div class="metric">
                   <span>Activities found</span>
@@ -1353,6 +1444,16 @@
       const dateInput = document.querySelector("#activity-date");
       const dateStateSummary = document.querySelector("#date-state-summary");
       const activityStateNote = document.querySelector("#activity-state-note");
+      const studentNameInput = document.querySelector("#student-name");
+      const schoolYearInput = document.querySelector("#school-year");
+      const unitStudyInput = document.querySelector("#unit-study");
+      const narrationInput = document.querySelector("#narration-text");
+      const parseButton = document.querySelector("#parse-ai-button");
+      const saveDraftButton = document.querySelector("#save-draft-button");
+      const clearEntryButton = document.querySelector("#clear-entry-button");
+      const parseStatus = document.querySelector("#parse-status");
+      const reviewGeneratedNote = document.querySelector("#review-generated-note");
+      const payloadPreview = document.querySelector("#payload-preview");
       let selectedActivityType = "Language Arts";
 
       function todayIso() {
@@ -1415,10 +1516,134 @@
         activityStateNote.textContent =
           `${completedCount} completed and ${reviewCount} needing review for ${selectedDate}. ` +
           "States come from saved approved or draft activity records; changing dates does not alter historical records.";
+        updateParseButtonState();
+      }
+
+      function attachedArtifactIds() {
+        return [...document.querySelectorAll(".artifact-option.is-selected")]
+          .map((button) => button.dataset.artifactId)
+          .filter(Boolean);
+      }
+
+      function parsePayload() {
+        return {
+          student: studentNameInput.value.trim(),
+          school_year: schoolYearInput.value.trim(),
+          unit_study: unitStudyInput.value.trim(),
+          selected_date: dateInput.value,
+          selected_activity_type: selectedActivityType,
+          narration_text: narrationInput.value.trim(),
+          attached_artifact_ids: attachedArtifactIds()
+        };
+      }
+
+      function hasRequiredParseFields() {
+        const payload = parsePayload();
+        return Boolean(
+          payload.student &&
+          payload.school_year &&
+          payload.unit_study &&
+          payload.selected_date &&
+          payload.selected_activity_type &&
+          payload.narration_text
+        );
+      }
+
+      function updateParseButtonState() {
+        const ready = hasRequiredParseFields();
+        parseButton.disabled = !ready;
+        parseButton.textContent = ready ? "Parse with AI" : "Complete required fields";
+      }
+
+      function setParseStatus(message, stateClass) {
+        parseStatus.classList.remove("is-loading", "is-success", "is-draft");
+        if (stateClass) parseStatus.classList.add(stateClass);
+        parseStatus.textContent = message;
+      }
+
+      function showPayloadPreview(payload, heading) {
+        payloadPreview.textContent =
+          `${heading}\n` +
+          JSON.stringify(payload, null, 2);
+      }
+
+      function simulateAiParse() {
+        if (!hasRequiredParseFields()) return;
+
+        const payload = parsePayload();
+        parseButton.disabled = true;
+        parseButton.textContent = "Parsing...";
+        setParseStatus("Parsing/loading: sending the current context, narration, and optional artifact IDs to the AI parse endpoint.", "is-loading");
+        showPayloadPreview(payload, "Outgoing AI parse payload:");
+
+        window.setTimeout(() => {
+          const extractedDrafts = [
+            {
+              title: "Story Weaver read-aloud and editing",
+              activity_type: payload.selected_activity_type,
+              time_confidence: "explicit",
+              parent_approved: false,
+              review_status: "needs_review"
+            },
+            {
+              title: "Construction brace explanation",
+              activity_type: "Hands-On Activity",
+              time_confidence: "needs_review",
+              parent_approved: false,
+              review_status: "needs_review"
+            }
+          ];
+
+          setParseStatus("AI parse complete. Review editable draft cards before approving or saving permanent activity records.", "is-success");
+          reviewGeneratedNote.textContent =
+            `AI returned ${extractedDrafts.length} draft activity records for ${payload.student} on ${payload.selected_date}. ` +
+            "These remain drafts until the parent clicks Approve & Save or Save Approved Activities.";
+          showPayloadPreview({ payload_sent: payload, extracted_activity_drafts: extractedDrafts }, "AI parser response:");
+          parseButton.textContent = "Parse with AI";
+          updateParseButtonState();
+          document.querySelector("#review-summary").scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 700);
+      }
+
+      function saveAsDraft() {
+        const payload = parsePayload();
+        const draft = {
+          ...payload,
+          draft_saved_at: new Date().toISOString(),
+          parent_approved: false,
+          review_status: "draft"
+        };
+        localStorage.setItem("narrationFirstMockupDraft", JSON.stringify(draft));
+        setParseStatus("Draft saved locally in this browser mockup. No AI approval or permanent activity record was created.", "is-draft");
+        showPayloadPreview(draft, "Saved draft payload:");
+      }
+
+      function clearCurrentEntry() {
+        narrationInput.value = "";
+        document.querySelectorAll(".artifact-option").forEach((button) => button.classList.remove("is-selected"));
+        setParseStatus("Narration and selected artifacts cleared. Student, school year, unit study, date, and selected activity type were preserved.", "");
+        payloadPreview.textContent = "Parser payload preview will appear here after clicking Parse with AI.";
+        reviewGeneratedNote.textContent =
+          "Waiting for AI parse. Draft cards below show the intended review layout; no permanent activity records are saved from parsing alone.";
+        updateParseButtonState();
       }
 
       dateInput.value = todayIso();
       dateInput.addEventListener("change", updateActivityTypeButtons);
+      [studentNameInput, schoolYearInput, unitStudyInput, narrationInput].forEach((field) => {
+        field.addEventListener("input", updateParseButtonState);
+        field.addEventListener("change", updateParseButtonState);
+      });
+
+      document.querySelectorAll(".artifact-option").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.skipArtifact) {
+            document.querySelectorAll(".artifact-option").forEach((item) => item.classList.remove("is-selected"));
+          } else {
+            button.classList.toggle("is-selected");
+          }
+        });
+      });
 
       document.querySelectorAll(".chip-button").forEach((button) => {
         button.addEventListener("click", () => {
@@ -1427,7 +1652,12 @@
         });
       });
 
+      parseButton.addEventListener("click", simulateAiParse);
+      saveDraftButton.addEventListener("click", saveAsDraft);
+      clearEntryButton.addEventListener("click", clearCurrentEntry);
+
       updateActivityTypeButtons();
+      updateParseButtonState();
     </script>
   </body>
 </html>
