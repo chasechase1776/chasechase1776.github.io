@@ -817,6 +817,112 @@
         font-size: 1.05rem;
       }
 
+      .review-alert-card {
+        border: 1px solid #f0c36a;
+        border-radius: 8px;
+        background: #fff8e5;
+        padding: 12px;
+        margin-top: 12px;
+      }
+
+      .review-alert-card.is-complete {
+        border-color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .review-alert-card.is-overdue {
+        border-color: #d86161;
+        background: #fff0f0;
+      }
+
+      .review-alert-card.is-none {
+        border-color: var(--soft-line);
+        background: #fbfcfc;
+      }
+
+      .alert-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .alert-head h3 {
+        margin: 3px 0 4px;
+      }
+
+      .alert-status {
+        border-radius: 999px;
+        background: var(--gold);
+        color: #3f2f03;
+        font-size: 0.76rem;
+        font-weight: 800;
+        padding: 5px 9px;
+        text-transform: uppercase;
+      }
+
+      .alert-status.is-complete {
+        background: var(--green);
+        color: #fff;
+      }
+
+      .alert-status.is-overdue {
+        background: #c73f3f;
+        color: #fff;
+      }
+
+      .alert-status.is-none {
+        background: #e7ecef;
+        color: var(--muted);
+      }
+
+      .alert-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .alert-grid > div {
+        border: 1px solid rgba(63, 74, 78, 0.12);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.72);
+        padding: 8px;
+        font-size: 0.82rem;
+      }
+
+      .alert-banner {
+        border: 1px solid #f0c36a;
+        border-radius: 8px;
+        background: #fff8e5;
+        padding: 10px 12px;
+        margin: 12px 0;
+        font-size: 0.9rem;
+      }
+
+      .alert-sidebar-badge {
+        border-radius: 999px;
+        background: var(--gold);
+        color: #3f2f03;
+        font-size: 0.68rem;
+        font-weight: 800;
+        padding: 3px 7px;
+      }
+
+      .notification-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .notification-grid label {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 9px;
+      }
+
       .coverage-summary-grid,
       .portfolio-grid {
         display: grid;
@@ -986,6 +1092,8 @@
         .records-grid,
         .review-form-grid,
         .review-metrics,
+        .alert-grid,
+        .notification-grid,
         .coverage-summary-grid,
         .portfolio-grid,
         .skill-rating-row,
@@ -1053,7 +1161,7 @@
                 </li>
                 <li><a href="#weekly-review">Weekly Reviews</a></li>
                 <li>
-                  <button type="button">Quarter Reviews</button>
+                  <button type="button">Quarter Reviews <span class="alert-sidebar-badge" data-quarter-alert-label>Urgent</span></button>
                   <ul>
                     <li><a href="#quarter-review">Quarter 1</a></li>
                     <li><a href="#quarter-review">Quarter 2</a></li>
@@ -1132,9 +1240,34 @@
           </div>
         </header>
 
+        <div class="review-alert-card" id="main-quarter-alert" aria-label="Main dashboard quarter review alert">
+          <div class="alert-head">
+            <div>
+              <p class="eyebrow">Quarter review alert</p>
+              <h3 data-quarter-alert-title>Quarter 1 review due soon</h3>
+              <p data-quarter-alert-summary>Quarter 1 is due in 3 days. No records are changed when a review becomes overdue.</p>
+            </div>
+            <span class="alert-status" data-quarter-alert-label>Urgent</span>
+          </div>
+          <div class="alert-grid">
+            <div><strong>Weekly reviews</strong><br><span data-weekly-reviews-progress>8 / 9 completed</span></div>
+            <div><strong>Needs review</strong><br><span data-activities-needing-review>4 activities</span></div>
+            <div><strong>Missing time</strong><br><span data-activities-missing-time>3 activities</span></div>
+            <div><strong>Artifacts</strong><br><span data-artifacts-needing-classification>5 need classification</span></div>
+            <div><strong>Portfolio candidates</strong><br><span data-portfolio-candidates>12 candidates</span></div>
+            <div><strong>Legal gaps</strong><br><span data-legal-coverage-gaps>Good Citizenship, Finance</span></div>
+          </div>
+          <div class="review-actions">
+            <a class="primary-button" href="#quarter-review">Open Quarter Review</a>
+          </div>
+        </div>
+
         <div class="main-grid">
           <div>
             <section class="panel" aria-labelledby="activity-type-title">
+              <div class="alert-banner" data-quarter-alert-summary>
+                Quarter 1 review is due soon. Daily records stay unchanged; the review is only flagged until finalized or amended.
+              </div>
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Step 1</p>
@@ -1337,6 +1470,22 @@
           </div>
 
           <aside class="right-stack" aria-label="Dashboards">
+            <section class="panel" id="quarter-dashboard-alert" aria-labelledby="quarter-dashboard-alert-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Dashboard alert</p>
+                  <h2 id="quarter-dashboard-alert-title">Quarter review due status</h2>
+                </div>
+                <span class="alert-status" data-quarter-alert-label>Urgent</span>
+              </div>
+              <p class="panel-note" data-quarter-alert-summary>
+                Quarter 1 is due in 3 days. Alerts flag review work only and never delete or alter records.
+              </p>
+              <div class="review-actions">
+                <a class="quiet-button" href="#quarter-review">Open Quarter Review</a>
+              </div>
+            </section>
+
             <section class="panel" id="weekly-tally" aria-labelledby="weekly-title">
               <div class="panel-head">
                 <div>
@@ -1503,6 +1652,9 @@
           <p class="panel-note">
             Generated from approved daily logs for the selected Monday-Sunday week. The parent can edit everything before saving or finalizing.
           </p>
+          <div class="alert-banner" data-quarter-alert-summary>
+            Quarter 1 review is due soon. Use weekly summaries and skill ratings to prepare the quarter checkpoint.
+          </div>
 
           <div class="review-form-grid">
             <label>
@@ -1787,15 +1939,24 @@
             </label>
             <label>
               <span>End date</span>
-              <input id="quarter-end" type="date" value="2026-08-30">
+              <input id="quarter-end" type="date" value="2026-07-08">
             </label>
             <label>
-              <span>Status</span>
+              <span>Review due date</span>
+              <input id="quarter-review-due" type="date" value="2026-07-08">
+            </label>
+            <label>
+              <span>Review status</span>
               <select id="quarter-status">
+                <option selected>not_started</option>
                 <option>draft</option>
                 <option>finalized</option>
                 <option>amended</option>
               </select>
+            </label>
+            <label>
+              <span>Alert status</span>
+              <input id="quarter-alert-status" value="urgent" readonly>
             </label>
             <label>
               <span>Summer work assigned to</span>
@@ -1810,6 +1971,37 @@
           <div class="parse-status" id="quarter-review-status" role="status">
             Waiting to generate a draft quarter review from daily logs and Weekly Reviews.
           </div>
+
+          <div class="review-alert-card" id="quarter-tab-alert" aria-label="Quarter review tab alert">
+            <div class="alert-head">
+              <div>
+                <p class="eyebrow">Review due alert</p>
+                <h3 data-quarter-alert-title>Quarter 1 review due soon</h3>
+                <p data-quarter-alert-summary>Quarter 1 is due in 3 days. Finalizing changes this alert to complete.</p>
+              </div>
+              <span class="alert-status" data-quarter-alert-label>Urgent</span>
+            </div>
+            <div class="alert-grid">
+              <div><strong>Weekly reviews</strong><br><span data-weekly-reviews-progress>8 / 9 completed</span></div>
+              <div><strong>Needs review</strong><br><span data-activities-needing-review>4 activities</span></div>
+              <div><strong>Missing time</strong><br><span data-activities-missing-time>3 activities</span></div>
+              <div><strong>Artifacts</strong><br><span data-artifacts-needing-classification>5 need classification</span></div>
+              <div><strong>Portfolio candidates</strong><br><span data-portfolio-candidates>12 candidates</span></div>
+              <div><strong>Legal gaps</strong><br><span data-legal-coverage-gaps>Good Citizenship, Finance</span></div>
+            </div>
+          </div>
+
+          <details class="skill-group" open>
+            <summary>Notification settings <span>in-app alerts only for MVP</span></summary>
+            <div class="notification-grid">
+              <label><input type="checkbox" checked> 14-day reminder</label>
+              <label><input type="checkbox" checked> 7-day reminder</label>
+              <label><input type="checkbox" checked> 3-day reminder</label>
+              <label><input type="checkbox" checked> Due-day reminder</label>
+              <label><input type="checkbox" checked> Overdue reminder</label>
+            </div>
+            <p class="panel-note">Browser and email notifications are not connected in this static MVP mockup; alerts appear in-app only.</p>
+          </details>
 
           <div class="review-metrics" aria-label="Quarter review generated metrics">
             <div class="review-metric"><span>Total time</span><strong id="quarter-total-time">0 min</strong></div>
@@ -2134,14 +2326,76 @@
       const finalizeQuarterButton = document.querySelector("#finalize-quarter-button");
       const quarterReviewStatus = document.querySelector("#quarter-review-status");
       const quarterStatusInput = document.querySelector("#quarter-status");
+      const quarterEndInput = document.querySelector("#quarter-end");
+      const quarterReviewDueInput = document.querySelector("#quarter-review-due");
+      const quarterAlertStatusInput = document.querySelector("#quarter-alert-status");
       const quarterPortfolioCount = document.querySelector("#quarter-portfolio-count");
       const archiveYearButton = document.querySelector("#archive-year-button");
       let selectedActivityType = "Language Arts";
+      let previousQuarterEndDate = quarterEndInput.value;
 
       function todayIso() {
         const now = new Date();
         const offset = now.getTimezoneOffset();
         return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+      }
+
+      function parseLocalDate(value) {
+        const [year, month, day] = value.split("-").map(Number);
+        return new Date(year, month - 1, day);
+      }
+
+      function daysBetweenTodayAnd(dateValue) {
+        const today = parseLocalDate(todayIso());
+        const dueDate = parseLocalDate(dateValue);
+        return Math.round((dueDate - today) / 86400000);
+      }
+
+      function quarterAlertFor(reviewStatus, dueDateValue) {
+        if (reviewStatus === "finalized") return { status: "complete", label: "Complete", days: 0 };
+        const days = daysBetweenTodayAnd(dueDateValue);
+        if (days < 0) return { status: "overdue", label: "Overdue", days };
+        if (days === 0) return { status: "due_today", label: "Due today", days };
+        if (days <= 3) return { status: "urgent", label: "Urgent", days };
+        if (days <= 7) return { status: "due_soon", label: "Due soon", days };
+        if (days <= 14) return { status: "upcoming", label: "Upcoming", days };
+        return { status: "none", label: "None", days };
+      }
+
+      function updateQuarterAlert() {
+        const quarterLabel = document.querySelector("#quarter-label").value;
+        const alert = quarterAlertFor(quarterStatusInput.value, quarterReviewDueInput.value);
+        const dayText = alert.status === "complete"
+          ? "finalized"
+          : alert.days < 0
+            ? `${Math.abs(alert.days)} day${Math.abs(alert.days) === 1 ? "" : "s"} overdue`
+            : alert.days === 0
+              ? "due today"
+              : `due in ${alert.days} day${alert.days === 1 ? "" : "s"}`;
+        const summary = alert.status === "complete"
+          ? `${quarterLabel} review is finalized. Alerts are complete and historical records remain retrievable.`
+          : `${quarterLabel} review is ${dayText}. Alerts flag the review only; saved activity, weekly, artifact, and legal records are not changed.`;
+
+        quarterAlertStatusInput.value = alert.status;
+        document.querySelectorAll("[data-quarter-alert-label]").forEach((item) => {
+          item.textContent = alert.label;
+          item.classList.remove("is-complete", "is-overdue", "is-none");
+          if (alert.status === "complete") item.classList.add("is-complete");
+          if (alert.status === "overdue") item.classList.add("is-overdue");
+          if (alert.status === "none") item.classList.add("is-none");
+        });
+        document.querySelectorAll("[data-quarter-alert-title]").forEach((item) => {
+          item.textContent = `${quarterLabel} review ${dayText}`;
+        });
+        document.querySelectorAll("[data-quarter-alert-summary]").forEach((item) => {
+          item.textContent = summary;
+        });
+        document.querySelectorAll(".review-alert-card").forEach((card) => {
+          card.classList.remove("is-complete", "is-overdue", "is-none");
+          if (alert.status === "complete") card.classList.add("is-complete");
+          if (alert.status === "overdue") card.classList.add("is-overdue");
+          if (alert.status === "none") card.classList.add("is-none");
+        });
       }
 
       function statusForActivityType(date, activityType) {
@@ -2396,6 +2650,7 @@
         quarterReviewStatus.textContent =
           "Draft quarter review generated from daily records, Weekly Reviews, weekly skill ratings, subject allocations, legal tags, unit studies, artifacts, and portfolio selections.";
         quarterReviewStatus.classList.add("is-success");
+        updateQuarterAlert();
       }
 
       function saveQuarterDraft() {
@@ -2404,6 +2659,7 @@
           "Quarter review draft saved in the database model. Markdown and PDF exports wait for finalization.";
         quarterReviewStatus.classList.remove("is-success");
         quarterReviewStatus.classList.add("is-draft");
+        updateQuarterAlert();
       }
 
       function finalizeQuarterReview() {
@@ -2415,6 +2671,7 @@
         markdownSyncStatus.textContent =
           "Finalized Quarter Review: generated records/2026-2027/quarter-reviews/quarter-1.md and the matching PDF export from database records.";
         markdownSyncStatus.classList.add("is-success");
+        updateQuarterAlert();
       }
 
       function archiveSchoolYear() {
@@ -2459,6 +2716,16 @@
       saveQuarterDraftButton.addEventListener("click", saveQuarterDraft);
       finalizeQuarterButton.addEventListener("click", finalizeQuarterReview);
       archiveYearButton.addEventListener("click", archiveSchoolYear);
+      quarterEndInput.addEventListener("change", () => {
+        if (quarterReviewDueInput.value === previousQuarterEndDate) {
+          quarterReviewDueInput.value = quarterEndInput.value;
+        }
+        previousQuarterEndDate = quarterEndInput.value;
+        updateQuarterAlert();
+      });
+      [quarterReviewDueInput, quarterStatusInput, document.querySelector("#quarter-label")].forEach((field) => {
+        field.addEventListener("change", updateQuarterAlert);
+      });
 
       document.querySelectorAll(".rating-buttons").forEach((group) => {
         group.addEventListener("click", (event) => {
@@ -2479,6 +2746,7 @@
       updateParseButtonState();
       updatePortfolioCount();
       updateQuarterPortfolioCount();
+      updateQuarterAlert();
     </script>
   </body>
 </html>

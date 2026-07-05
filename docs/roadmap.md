@@ -57,6 +57,7 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 - [ ] Guided Weekly Reviews tab by school year and week
 - [ ] Quarter review
 - [ ] Guided Quarter Reviews tab with customizable date ranges
+- [ ] Quarter Review due alerts and in-app reminder settings
 - [ ] Optional Summer Extension / Summer Term support
 - [ ] Annual Review tab and school-year closeout/archive
 - [ ] Legal compliance dashboard

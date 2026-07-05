@@ -6,6 +6,8 @@ Weekly Reviews are guided parent reviews generated from approved daily activity 
 
 The database remains the source of truth. Weekly Review Markdown files are generated archive/export snapshots.
 
+Weekly Review pages may show Quarter Review due alerts as in-app reminders, but those alerts belong to the instructional period and should not alter weekly review records.
+
 ## Navigation
 
 Each school year should include a Weekly Reviews tab.

@@ -43,6 +43,60 @@ Each school year should include:
 
 Quarter Reviews should include Quarter 1 through Quarter 4 and optional Summer Extension.
 
+## Review Due Alerts
+
+Each instructional period should include:
+
+- `start_date`.
+- `end_date`.
+- `review_due_date`.
+- `review_status`: `not_started`, `draft`, `finalized`, or `amended`.
+- `alert_status`: `none`, `upcoming`, `due_soon`, `urgent`, `due_today`, `overdue`, or `complete`.
+
+Default `review_due_date` should be the instructional period `end_date`, but the parent can edit it.
+
+Alert rules:
+
+- If `review_status = finalized`, `alert_status = complete`.
+- If today is more than 14 days before `review_due_date`, `alert_status = none`.
+- If today is 14 to 8 days before `review_due_date`, `alert_status = upcoming`.
+- If today is 7 to 4 days before `review_due_date`, `alert_status = due_soon`.
+- If today is 3 to 1 days before `review_due_date`, `alert_status = urgent`.
+- If today equals `review_due_date`, `alert_status = due_today`.
+- If today is after `review_due_date` and `review_status` is not finalized, `alert_status = overdue`.
+
+The app should not delete or change records when a review becomes overdue. It should only flag the review until the parent finalizes or amends it.
+
+Show review alerts in:
+
+- Main dashboard.
+- Left sidebar beside Quarter Reviews.
+- Quarter Reviews tab.
+- Weekly Review page.
+- Daily Log page as a small banner.
+
+Dashboard alert should include:
+
+- Quarter label.
+- Days until due or days overdue.
+- Weekly reviews completed / expected.
+- Activities needing review.
+- Activities missing time.
+- Artifacts needing classification.
+- Portfolio candidates.
+- Legal coverage gaps.
+- Button: Open Quarter Review.
+
+Optional notification settings:
+
+- 14-day reminder.
+- 7-day reminder.
+- 3-day reminder.
+- Due-day reminder.
+- Overdue reminder.
+
+If browser notifications or email notifications are not implemented in MVP, show in-app alerts only.
+
 ## Quarter Review Workflow
 
 1. Parent opens Quarter Reviews.

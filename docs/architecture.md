@@ -36,6 +36,7 @@ GitHub stores the codebase, planning documents, schema, migrations, and safe see
 - Writing samples
 - Weekly reviews
 - Quarter reviews
+- Quarter review due alerts
 - Annual archive and reports
 
 ## Data Model Shape
