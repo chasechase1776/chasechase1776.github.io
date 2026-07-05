@@ -15,14 +15,14 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 
 ## Phase 1: App Foundation
 
-- [ ] Scaffold Next.js / TypeScript application
+- [x] Scaffold Next.js / TypeScript application
 - [ ] Add formatting and linting
-- [ ] Add Prisma
-- [ ] Configure SQLite
-- [ ] Create initial schema
-- [ ] Add deployment environment configuration
-- [ ] Add AI-disabled/manual logging fallback
-- [ ] Add local storage directories
+- [x] Add Prisma
+- [x] Configure PostgreSQL for Vercel deployment
+- [x] Create initial schema
+- [x] Add deployment environment configuration
+- [x] Add AI-disabled/manual logging fallback
+- [x] Add local storage directories
 - [ ] Add seed data for Texas legal tags and base subjects
 
 ## Phase 2: Core Records

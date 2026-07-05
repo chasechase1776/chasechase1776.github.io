@@ -2,10 +2,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Local MVP uses SQLite. The model avoids SQLite-only field types so the schema
-// can be moved to PostgreSQL later by changing the provider and DATABASE_URL.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

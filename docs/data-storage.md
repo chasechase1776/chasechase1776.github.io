@@ -14,7 +14,7 @@ GitHub should store:
 GitHub should not store:
 
 - Real student records
-- SQLite database files
+- Database files or dumps
 - Uploaded evidence
 - Photos
 - Videos
@@ -26,9 +26,9 @@ GitHub should not store:
 
 ## MVP Storage
 
-Use local storage for the MVP:
+Use Prisma/PostgreSQL for saved app records and local filesystem storage for MVP uploads and exports:
 
-- SQLite database: `data/app.db`
+- App database: Prisma Postgres through `DATABASE_URL`
 - Evidence uploads: `storage/evidence/`
 - Generated reports: `storage/exports/`
 - Generated Markdown record snapshots: `records/`

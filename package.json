@@ -10,7 +10,8 @@
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "db:init": "prisma db execute --schema prisma/schema.prisma --file prisma/migrations/202607051006_initial/migration.sql",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {

@@ -7,7 +7,7 @@ This project should be built as a private, activity-first homeschool record syst
 - Next.js / React for the web app
 - TypeScript throughout
 - Prisma ORM
-- SQLite for the local MVP database
+- PostgreSQL for the deployed app database
 - Local filesystem storage for evidence uploads and generated exports
 - PDF generation for legal, portfolio, annual, and review exports
 - Generated Markdown snapshots for readable records and Obsidian-style browsing

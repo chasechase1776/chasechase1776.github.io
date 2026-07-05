@@ -18,7 +18,7 @@ Initial legal context: Texas homeschool records, with a data model that can supp
 - Public GitHub repository connected
 - GitHub Pages target website enabled
 - Next.js app scaffold started
-- Prisma schema and initial SQLite migration added
+- Prisma schema and initial PostgreSQL migration added
 - Backend routes added for activities, uploads, weekly review drafts, Markdown/PDF exports, and mock AI parsing
 
 ## Local App Setup
@@ -31,7 +31,7 @@ The real app runs separately from the public static placeholder in `site/`.
    pnpm install
    ```
 
-2. Copy `.env.example` to `.env` and keep real secrets out of Git.
+2. Copy `.env.example` to `.env` and keep real secrets out of Git. For the public Vercel app, set `DATABASE_URL` from the Prisma Postgres integration in Vercel.
 
 3. Generate the Prisma client:
 
@@ -39,10 +39,10 @@ The real app runs separately from the public static placeholder in `site/`.
    pnpm prisma:generate
    ```
 
-4. Initialize the local SQLite database:
+4. Apply database migrations:
 
    ```powershell
-   pnpm db:init
+   pnpm prisma:migrate:deploy
    ```
 
 5. Start the app:

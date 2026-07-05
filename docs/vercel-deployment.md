@@ -26,17 +26,23 @@ Do not commit real values to GitHub.
 
 ## Database Requirement
 
-SQLite is acceptable for local development only. A Vercel deployment needs a hosted PostgreSQL database before real records are stored there.
+The deployed app uses PostgreSQL through Prisma. The Vercel Prisma Postgres integration should provide the `DATABASE_URL` environment variable.
 
-Recommended next setup:
+Recommended setup:
 
 1. Create a Vercel project from this GitHub repository.
 2. Add a hosted Postgres database integration or external Postgres provider.
 3. Set `DATABASE_URL` to the production Postgres connection string.
-4. Switch the Prisma datasource provider from `sqlite` to `postgresql`.
-5. Generate and apply a production migration.
-6. Add `APP_PASSCODE` and `OPENAI_API_KEY` in Vercel environment variables.
-7. Deploy.
+4. Add `APP_PASSCODE` and `OPENAI_API_KEY` in Vercel environment variables.
+5. Deploy.
+
+The repository includes `vercel.json`, which runs:
+
+```text
+pnpm prisma:generate && pnpm prisma:migrate:deploy && pnpm exec next build
+```
+
+That means Vercel generates the Prisma client and applies checked-in database migrations during deployment.
 
 ## Current AI Behavior
 
@@ -47,8 +53,7 @@ The `/api/ai/parse` route:
 - Never sends the OpenAI API key to frontend code.
 - Returns draft activity records only; nothing is permanently saved until parent approval.
 
-## Current Deployment Blockers
+## Current Deployment Limitations
 
-- Production database is not set up yet.
 - Production file uploads need durable object storage before real artifacts are used.
 - The passcode is simple family protection, not full multi-user authentication.
