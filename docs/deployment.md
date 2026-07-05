@@ -12,6 +12,12 @@ Expected project site URL:
 
 Current status: live.
 
+## Pre-Launch Trial Period
+
+The homeschool record system should not officially go live until approximately May 2027. Until then, records entered in the app should be clearly labeled Trial / Enrichment / Practice and should not count toward official legal homeschool reports by default.
+
+See [Deployment Readiness and Trial Mode](deployment-readiness.md) for required trial-mode behavior, official start date handling, record inclusion status, and pre-launch checklist.
+
 ## Public Repo Warning
 
 This repository and its GitHub Pages site are public.
@@ -33,6 +39,8 @@ Do not publish:
 The workflow at `.github/workflows/pages.yml` publishes the contents of the `site/` folder.
 
 For now, `site/` contains only a static placeholder page. When the real app is built, deployment may need to move to a different host if the app requires server-side features, authentication, database access, or private file storage.
+
+Before deploying the real app, confirm build checks, database migrations, environment variables, AI-disabled manual logging, Markdown/export behavior, artifact upload strategy, and Trial Mode behavior.
 
 ## Nontechnical Verification
 

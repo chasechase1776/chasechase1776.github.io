@@ -1177,7 +1177,7 @@
         <nav>
           <ul class="tree">
             <li>
-              <button class="is-active" type="button">2026-2027 <span>active</span></button>
+              <button class="is-active" type="button">2026-2027 <span>Trial / Enrichment</span></button>
               <ul>
                 <li><a href="#annual-plan">Annual Plan</a></li>
                 <li><a href="#entry">Daily Records</a></li>
@@ -1208,7 +1208,7 @@
               </ul>
             </li>
             <li>
-              <button type="button">2027-2028</button>
+              <button type="button">2027-2028 <span>Planned / Active</span></button>
               <ul>
                 <li><a href="#entry">Daily Records</a></li>
                 <li><a href="#unit-study">Unit Studies</a></li>
@@ -1237,9 +1237,24 @@
               <label>
                 <span>School year</span>
                 <select id="school-year">
-                  <option>2026-2027</option>
+                  <option>2026-2027 Trial / Enrichment</option>
+                  <option>2027-2028 Planned / Active</option>
                   <option>2025-2026</option>
                 </select>
+              </label>
+              <label>
+                <span>School year status</span>
+                <select id="school-year-status">
+                  <option>planned</option>
+                  <option selected>trial</option>
+                  <option>active</option>
+                  <option>closed</option>
+                  <option>archived</option>
+                </select>
+              </label>
+              <label>
+                <span>Official homeschool start</span>
+                <input id="official-start-date" type="date" value="2027-05-01">
               </label>
               <label>
                 <span>Unit study</span>
@@ -1271,6 +1286,20 @@
           </div>
         </header>
 
+        <div class="review-alert-card" id="trial-mode-banner" aria-label="Trial mode notice">
+          <div class="alert-head">
+            <div>
+              <p class="eyebrow">Pre-launch status</p>
+              <h3 id="trial-mode-title">Trial Mode</h3>
+              <p id="trial-mode-message">Records entered before the official homeschool start date are saved as practice/enrichment records and are not included in official legal reports unless you choose to include them.</p>
+            </div>
+            <span class="alert-status" id="trial-mode-badge">Trial</span>
+          </div>
+          <div class="review-actions">
+            <button class="quiet-button" type="button" id="activate-school-year-button">Activate School Year</button>
+          </div>
+        </div>
+
         <div class="review-alert-card" id="main-quarter-alert" aria-label="Main dashboard quarter review alert">
           <div class="alert-head">
             <div>
@@ -1299,6 +1328,9 @@
               <div class="alert-banner" data-quarter-alert-summary>
                 Quarter 1 review is due soon. Daily records stay unchanged; the review is only flagged until finalized or amended.
               </div>
+              <div class="alert-banner" id="daily-trial-banner">
+                Trial Mode: this daily log defaults to record_status = trial because the selected date is before the official homeschool start date.
+              </div>
               <div class="panel-head">
                 <div>
                   <p class="eyebrow">Step 1</p>
@@ -1310,6 +1342,15 @@
                 <label>
                   <span>Selected date</span>
                   <input id="activity-date" type="date">
+                </label>
+                <label>
+                  <span>Record status</span>
+                  <select id="record-status">
+                    <option selected>trial</option>
+                    <option>enrichment</option>
+                    <option>official</option>
+                    <option>excluded</option>
+                  </select>
                 </label>
                 <div class="state-legend" aria-label="Activity button state legend">
                   <span class="legend-item"><span class="legend-dot"></span>Neutral</span>
@@ -1335,6 +1376,9 @@
               <p class="panel-note" id="activity-state-note">
                 Completion states are calculated from saved activity records for the selected date. Past records stay retrievable by changing the date.
               </p>
+              <div class="review-actions">
+                <button class="quiet-button" type="button" id="promote-record-button">Promote trial record to official</button>
+              </div>
             </section>
 
             <section class="panel" aria-labelledby="narration-title">
@@ -1386,6 +1430,7 @@
                 <p class="eyebrow">Entry actions</p>
                 <h2 id="entry-actions-title">Parse or save the current log</h2>
                 <p id="parse-requirements">Parse is available when student, school year, unit study, date, activity type, and narration are present. Artifacts are optional.</p>
+                <p class="panel-note" id="ai-parser-mode-note">AI parser mode: mock/disabled for deployment safety. Manual save remains available without an OpenAI API key.</p>
                 <div class="parse-status" id="parse-status" role="status">Ready to parse the current entry.</div>
               </div>
               <div class="entry-buttons">
@@ -1515,6 +1560,33 @@
               <div class="review-actions">
                 <a class="quiet-button" href="#quarter-review">Open Quarter Review</a>
               </div>
+            </section>
+
+            <section class="panel" id="record-filter-panel" aria-labelledby="record-filter-title">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">Reports</p>
+                  <h2 id="record-filter-title">Record inclusion filter</h2>
+                </div>
+              </div>
+              <label>
+                <span>Report records</span>
+                <select id="record-filter">
+                  <option selected>Official records</option>
+                  <option>Trial records</option>
+                  <option>Enrichment records</option>
+                  <option>Excluded records</option>
+                  <option>All records</option>
+                </select>
+              </label>
+              <label>
+                <span>Include trial records in reports?</span>
+                <select id="include-trial-records">
+                  <option selected>false</option>
+                  <option>true</option>
+                </select>
+              </label>
+              <p class="panel-note">Legal reports include official records by default. Portfolio reports may include trial/enrichment records when selected.</p>
             </section>
 
             <section class="panel" id="weekly-tally" aria-labelledby="weekly-title">
@@ -2533,6 +2605,15 @@
       const activityStateNote = document.querySelector("#activity-state-note");
       const studentNameInput = document.querySelector("#student-name");
       const schoolYearInput = document.querySelector("#school-year");
+      const schoolYearStatusInput = document.querySelector("#school-year-status");
+      const officialStartDateInput = document.querySelector("#official-start-date");
+      const recordStatusInput = document.querySelector("#record-status");
+      const trialModeTitle = document.querySelector("#trial-mode-title");
+      const trialModeMessage = document.querySelector("#trial-mode-message");
+      const trialModeBadge = document.querySelector("#trial-mode-badge");
+      const dailyTrialBanner = document.querySelector("#daily-trial-banner");
+      const promoteRecordButton = document.querySelector("#promote-record-button");
+      const activateSchoolYearButton = document.querySelector("#activate-school-year-button");
       const unitStudyInput = document.querySelector("#unit-study");
       const narrationInput = document.querySelector("#narration-text");
       const parseButton = document.querySelector("#parse-ai-button");
@@ -2576,6 +2657,40 @@
         const now = new Date();
         const offset = now.getTimezoneOffset();
         return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+      }
+
+      function defaultRecordStatusFor(dateValue) {
+        const date = parseLocalDate(dateValue);
+        const officialStart = parseLocalDate(officialStartDateInput.value);
+        if (date < officialStart) return "trial";
+        if (schoolYearStatusInput.value === "active") return "official";
+        return "trial";
+      }
+
+      function updateTrialMode() {
+        const today = parseLocalDate(todayIso());
+        const officialStart = parseLocalDate(officialStartDateInput.value);
+        const isBeforeLaunch = today < officialStart || schoolYearStatusInput.value !== "active";
+        const defaultStatus = defaultRecordStatusFor(dateInput.value || todayIso());
+
+        recordStatusInput.value = defaultStatus;
+        promoteRecordButton.disabled = defaultStatus === "official";
+
+        if (isBeforeLaunch) {
+          trialModeTitle.textContent = "Trial Mode";
+          trialModeMessage.textContent =
+            "Records entered before the official homeschool start date are saved as practice/enrichment records and are not included in official legal reports unless you choose to include them.";
+          trialModeBadge.textContent = "Trial";
+          dailyTrialBanner.textContent =
+            `Trial Mode: this daily log defaults to record_status = ${defaultStatus} because the selected date is before the official homeschool start date or the year is not active.`;
+        } else {
+          trialModeTitle.textContent = "Active Homeschool Year";
+          trialModeMessage.textContent =
+            "Approved records are included in official reports and archives.";
+          trialModeBadge.textContent = "Active";
+          dailyTrialBanner.textContent =
+            `Active Homeschool Year: this daily log defaults to record_status = ${defaultStatus}.`;
+        }
       }
 
       function parseLocalDate(value) {
@@ -2707,7 +2822,10 @@
           selected_date: dateInput.value,
           selected_activity_type: selectedActivityType,
           narration_text: narrationInput.value.trim(),
-          attached_artifact_ids: attachedArtifactIds()
+          attached_artifact_ids: attachedArtifactIds(),
+          record_status: recordStatusInput.value,
+          school_year_status: schoolYearStatusInput.value,
+          official_homeschool_start_date: officialStartDateInput.value
         };
       }
 
@@ -2800,6 +2918,20 @@
         reviewGeneratedNote.textContent =
           "Waiting for AI parse. Draft cards below show the intended review layout; no permanent activity records are saved from parsing alone.";
         updateParseButtonState();
+      }
+
+      function promoteTrialRecord() {
+        const confirmed = window.confirm("This record was created before the official homeschool start date. Promote it to official record?");
+        if (!confirmed) return;
+        recordStatusInput.value = "official";
+        dailyTrialBanner.textContent = "This trial/practice record was promoted to official by parent confirmation.";
+        setParseStatus("Record status changed to official in this mockup. In the real app, this would be saved with an audit trail.", "is-success");
+      }
+
+      function activateSchoolYear() {
+        schoolYearStatusInput.value = "active";
+        updateTrialMode();
+        setParseStatus("School year marked active in this mockup. New approved records on or after the official start date default to official.", "is-success");
       }
 
       function regenerateMarkdownSnapshots(reason) {
@@ -2951,7 +3083,13 @@
       }
 
       dateInput.value = todayIso();
-      dateInput.addEventListener("change", updateActivityTypeButtons);
+      dateInput.addEventListener("change", () => {
+        updateActivityTypeButtons();
+        updateTrialMode();
+      });
+      [schoolYearStatusInput, officialStartDateInput].forEach((field) => {
+        field.addEventListener("change", updateTrialMode);
+      });
       [studentNameInput, schoolYearInput, unitStudyInput, narrationInput].forEach((field) => {
         field.addEventListener("input", updateParseButtonState);
         field.addEventListener("change", updateParseButtonState);
@@ -2977,6 +3115,8 @@
       parseButton.addEventListener("click", simulateAiParse);
       saveDraftButton.addEventListener("click", saveAsDraft);
       clearEntryButton.addEventListener("click", clearCurrentEntry);
+      promoteRecordButton.addEventListener("click", promoteTrialRecord);
+      activateSchoolYearButton.addEventListener("click", activateSchoolYear);
       saveApprovedButton.addEventListener("click", () => regenerateMarkdownSnapshots("Approved activity save"));
       regenerateMarkdownButton.addEventListener("click", () => regenerateMarkdownSnapshots("Manual snapshot regeneration"));
       generateWeeklyButton.addEventListener("click", generateWeeklyReviewDraft);
@@ -3024,6 +3164,7 @@
       updatePortfolioCount();
       updateQuarterPortfolioCount();
       updateQuarterAlert();
+      updateTrialMode();
     </script>
   </body>
 </html>

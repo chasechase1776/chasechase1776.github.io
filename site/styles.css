@@ -121,6 +121,19 @@ label span {
   gap: 12px;
 }
 
+.trial-banner {
+  border: 1px solid #f0c36a;
+  border-radius: 8px;
+  background: var(--warn-soft);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.trial-banner p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
 .form-band,
 .today-list,
 .disclosure {

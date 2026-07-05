@@ -20,6 +20,8 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 - [ ] Add Prisma
 - [ ] Configure SQLite
 - [ ] Create initial schema
+- [ ] Add deployment environment configuration
+- [ ] Add AI-disabled/manual logging fallback
 - [ ] Add local storage directories
 - [ ] Add seed data for Texas legal tags and base subjects
 
@@ -27,6 +29,9 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 
 - [ ] Student profile
 - [ ] School year setup
+- [ ] School-year planned/trial/active/closed/archived status
+- [ ] Official homeschool start date
+- [ ] Record inclusion status: trial, enrichment, official, excluded
 - [ ] Annual Plan planning framework tab
 - [ ] Unit studies
 - [ ] Texas legal requirement profile

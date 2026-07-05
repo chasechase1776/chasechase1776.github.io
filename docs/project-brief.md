@@ -58,6 +58,33 @@ Example: a 60-minute Silk Road map project may have:
 
 The allocated subject minutes should add up to the actual minutes. Do not count the same 60-minute activity as 60 minutes in every subject.
 
+## Pre-Launch Trial Mode
+
+The official homeschool record system should not go live until approximately May 2027. Records entered before the official homeschool start date are extras, enrichment, practice logs, or system testing. They should not automatically be treated as the official homeschool legal archive.
+
+School year status options:
+
+- planned
+- trial
+- active
+- closed
+- archived
+
+Each activity, daily record, weekly review, quarter review, annual review, and artifact should have `record_status`:
+
+- trial
+- enrichment
+- official
+- excluded
+
+Default behavior:
+
+- If date is before `official_homeschool_start_date`, default `record_status = trial`.
+- If date is on or after `official_homeschool_start_date` and the school year status is active, default `record_status = official`.
+- Parent can manually change `record_status`.
+
+Legal reports should include official records by default. Portfolio reports may optionally include trial/enrichment records. Subject time reports should support Official only, Trial/enrichment only, and All records filters.
+
 ## Recommended Data Model
 
 ### students
@@ -76,7 +103,10 @@ The allocated subject minutes should add up to the actual minutes. Do not count 
 - grade_level
 - start_date
 - end_date
+- official_homeschool_start_date
 - state
+- status: planned, trial, active, closed, archived
+- include_trial_records_in_reports
 - annual_goals
 - annual_summary
 - archive_status
@@ -113,6 +143,7 @@ The allocated subject minutes should add up to the actual minutes. Do not count 
 - description
 - activity_type
 - actual_minutes
+- record_status: trial, enrichment, official, excluded
 - parent_notes
 - student_response
 - completed
@@ -380,6 +411,17 @@ Quarter Review alert rules:
 - If today is after review_due_date and review_status is not finalized, alert_status = overdue
 
 Alerts should not delete or change saved records. They only flag the review until the parent finalizes or amends it.
+
+### record status fields
+
+The following records should include `record_status: trial, enrichment, official, excluded`:
+
+- activities
+- daily_records
+- weekly_reviews
+- quarter_reviews
+- annual_reviews
+- evidence_artifacts
 
 ### weekly_reviews
 
@@ -751,6 +793,8 @@ The Annual Plan should define:
 
 The Annual Plan is a planning framework, not a compliance checklist. Daily logs document reality; the Annual Plan documents intent.
 
+The 2027-2028 Annual Plan may be created before the homeschool goes live. School year status should remain planned or trial until the parent marks the school year active.
+
 Annual Plan exports:
 
 - `records/{schoolYear}/annual-plan.md`
@@ -769,6 +813,25 @@ The parent should enter:
 - What legal categories did it satisfy?
 - What evidence was created?
 - What skills/standards were introduced, practiced, or mastered?
+- Record status: trial, enrichment, official, or excluded
+
+If today is before `official_homeschool_start_date`, show:
+
+```text
+Trial Mode: Records entered before the official homeschool start date are saved as practice/enrichment records and are not included in official legal reports unless you choose to include them.
+```
+
+If the school year is active, show:
+
+```text
+Active Homeschool Year: Approved records are included in official reports and archives.
+```
+
+Add a `Promote trial record to official` button with confirmation:
+
+```text
+This record was created before the official homeschool start date. Promote it to official record?
+```
 
 ### 2. Subject Time Allocation
 

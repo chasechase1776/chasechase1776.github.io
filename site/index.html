@@ -10,14 +10,22 @@
     <main class="app-shell">
       <header class="topbar" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">Daily activity log</p>
-          <h1 id="page-title">Add learning activity</h1>
+          <p class="eyebrow">Pre-launch trial</p>
+          <h1 id="page-title">Bennett Homeschool</h1>
         </div>
         <div class="pace">
-          <span>Quick log</span>
-          <strong>3 fields</strong>
+          <span>Official start</span>
+          <strong>May 2027</strong>
         </div>
       </header>
+
+      <section class="trial-banner" aria-labelledby="trial-title">
+        <div>
+          <p class="eyebrow">Trial Mode</p>
+          <h2 id="trial-title">Practice records only before official launch</h2>
+          <p>Records entered before the official homeschool start date are saved as practice/enrichment records and are not included in official legal reports unless explicitly promoted.</p>
+        </div>
+      </section>
 
       <form class="activity-form" id="activity-form">
         <section class="form-band primary-entry" aria-labelledby="required-title">
@@ -70,8 +78,18 @@
             <label>
               <span>School year</span>
               <select id="school-year" name="schoolYear">
-                <option>2026-2027</option>
+                <option>2026-2027 Trial / Enrichment</option>
+                <option>2027-2028 Planned / Active</option>
                 <option>2025-2026</option>
+              </select>
+            </label>
+            <label>
+              <span>Record status</span>
+              <select id="record-status" name="recordStatus">
+                <option selected>trial</option>
+                <option>enrichment</option>
+                <option>official</option>
+                <option>excluded</option>
               </select>
             </label>
             <label>
@@ -313,6 +331,7 @@
       const minutesInput = document.querySelector("#actual-minutes");
       const studentInput = document.querySelector("#student");
       const schoolYearInput = document.querySelector("#school-year");
+      const recordStatusInput = document.querySelector("#record-status");
       const activityTypeInput = document.querySelector("#activity-type");
       const unitInput = document.querySelector("#unit");
       const unitSummary = document.querySelector("#unit-summary");
@@ -338,9 +357,19 @@
       function loadDefaults() {
         dateInput.value = todayIso();
         studentInput.value = localStorage.getItem(storageKeys.student) || studentInput.value;
-        schoolYearInput.value = localStorage.getItem(storageKeys.year) || schoolYearInput.value;
-        unitInput.value = localStorage.getItem(storageKeys.unit) || unitInput.value;
+        setSelectFromStorage(schoolYearInput, localStorage.getItem(storageKeys.year));
+        setSelectFromStorage(unitInput, localStorage.getItem(storageKeys.unit));
         updateUnitSummary();
+      }
+
+      function setSelectFromStorage(select, storedValue) {
+        if (!storedValue) {
+          return;
+        }
+        const hasStoredValue = Array.from(select.options).some((option) => option.value === storedValue);
+        if (hasStoredValue) {
+          select.value = storedValue;
+        }
       }
 
       function rememberDefaults() {
@@ -548,6 +577,10 @@
           details.textContent = `${item.date} - ${item.minutes} minutes - ${item.student} - ${item.unit}`;
           const tags = document.createElement("div");
           tags.className = "chip-row";
+          const statusChip = document.createElement("span");
+          statusChip.className = "chip";
+          statusChip.textContent = item.recordStatus;
+          tags.append(statusChip);
           item.legalTags.slice(0, 4).forEach((tag) => {
             const chip = document.createElement("span");
             chip.className = "chip";
@@ -610,6 +643,7 @@
             student: studentInput.value,
             unit: unitInput.value,
             type: activityTypeInput.value,
+            recordStatus: recordStatusInput.value,
             allocations: selectedAllocations(),
             legalTags: selectedLegalTags()
           }
