@@ -42,6 +42,8 @@ For now, `site/` contains only a static placeholder page. When the real app is b
 
 Before deploying the real app, confirm build checks, database migrations, environment variables, AI-disabled manual logging, Markdown/export behavior, artifact upload strategy, and Trial Mode behavior.
 
+See [Vercel Deployment Plan](vercel-deployment.md) for the server-capable deployment path, required environment variables, and production database requirement.
+
 ## Nontechnical Verification
 
 After deployment finishes:

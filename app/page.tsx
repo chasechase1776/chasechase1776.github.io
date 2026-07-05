@@ -124,7 +124,7 @@ export default function Home() {
   }
 
   async function parseWithAi() {
-    setStatus("Parsing with server-side mock AI...");
+    setStatus("Parsing with the server-side AI parser...");
     const response = await fetch("/api/ai/parse", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -140,7 +140,7 @@ export default function Home() {
     });
     const data = await response.json();
     if (!response.ok) {
-      setStatus("AI parse failed.");
+      setStatus(data.error ?? "AI parse failed. Manual logging is still available.");
       return;
     }
     const draft = data.drafts?.[0];
