@@ -341,19 +341,106 @@
         margin-top: 14px;
       }
 
+      .activity-controls {
+        display: grid;
+        grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
+        gap: 12px;
+        align-items: end;
+        margin-top: 14px;
+      }
+
+      .state-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 30px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      .legend-dot {
+        width: 12px;
+        height: 12px;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        background: #fff;
+      }
+
+      .legend-dot.done {
+        border-color: #89bea0;
+        background: var(--green-soft);
+      }
+
+      .legend-dot.review {
+        border-color: #e2be6d;
+        background: var(--gold-soft);
+      }
+
+      .legend-dot.selected {
+        border-color: var(--blue);
+        background: var(--blue-soft);
+      }
+
       .chip-button {
+        display: grid;
+        align-content: space-between;
+        gap: 8px;
         min-height: 58px;
         border: 1px solid #c8d3d8;
         background: #fff;
         color: var(--ink);
         padding: 9px;
+        text-align: left;
       }
 
-      .chip-button:hover,
-      .chip-button.is-selected {
+      .chip-button:hover {
         border-color: var(--accent);
         background: var(--accent-soft);
         color: var(--accent-strong);
+      }
+
+      .chip-button.is-completed {
+        border-color: #9fcfb1;
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .chip-button.is-needs-review {
+        border-color: #e8c97d;
+        background: var(--gold-soft);
+        color: var(--gold);
+      }
+
+      .chip-button.is-selected {
+        border-color: var(--blue);
+        background: var(--blue-soft);
+        color: var(--blue);
+        box-shadow: inset 0 0 0 2px var(--blue);
+      }
+
+      .button-label {
+        display: block;
+      }
+
+      .button-status {
+        display: inline-flex;
+        align-items: center;
+        width: max-content;
+        max-width: 100%;
+        min-height: 22px;
+        border: 1px solid rgba(24, 34, 38, 0.12);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: inherit;
+        padding: 3px 7px;
+        font-size: 0.72rem;
       }
 
       .narration-tools,
@@ -681,6 +768,7 @@
 
         .context-box,
         .context-fields,
+        .activity-controls,
         .page-head,
         .summary-strip,
         .activity-type-grid,
@@ -806,22 +894,37 @@
                   <p class="eyebrow">Step 1</p>
                   <h2 id="activity-type-title">Choose one activity type</h2>
                 </div>
-                <span class="tag good">Primary type drives AI hints</span>
+                <span class="tag good" id="date-state-summary">Today completion states</span>
+              </div>
+              <div class="activity-controls">
+                <label>
+                  <span>Selected date</span>
+                  <input id="activity-date" type="date">
+                </label>
+                <div class="state-legend" aria-label="Activity button state legend">
+                  <span class="legend-item"><span class="legend-dot"></span>Neutral</span>
+                  <span class="legend-item"><span class="legend-dot done"></span>Completed</span>
+                  <span class="legend-item"><span class="legend-dot review"></span>Needs review</span>
+                  <span class="legend-item"><span class="legend-dot selected"></span>Selected</span>
+                </div>
               </div>
               <div class="activity-type-grid" id="activity-types">
-                <button class="chip-button is-selected" type="button">Language Arts</button>
-                <button class="chip-button" type="button">Math</button>
-                <button class="chip-button" type="button">Finance</button>
-                <button class="chip-button" type="button">Unit Study</button>
-                <button class="chip-button" type="button">Science Journal</button>
-                <button class="chip-button" type="button">Writing Project</button>
-                <button class="chip-button" type="button">Project Cycle</button>
-                <button class="chip-button" type="button">Presentation Cycle</button>
-                <button class="chip-button" type="button">Hands-On Activity</button>
-                <button class="chip-button" type="button">Physical Activity</button>
-                <button class="chip-button" type="button">Field Trip</button>
-                <button class="chip-button" type="button">Group Event</button>
+                <button class="chip-button is-selected" type="button" data-activity-type="Language Arts"><span class="button-label">Language Arts</span><span class="button-status">Selected</span></button>
+                <button class="chip-button" type="button" data-activity-type="Math"><span class="button-label">Math</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Finance"><span class="button-label">Finance</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Unit Study"><span class="button-label">Unit Study</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Science Journal"><span class="button-label">Science Journal</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Writing Project"><span class="button-label">Writing Project</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Project Cycle"><span class="button-label">Project Cycle</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Presentation Cycle"><span class="button-label">Presentation Cycle</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Hands-On Activity"><span class="button-label">Hands-On Activity</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Physical Activity"><span class="button-label">Physical Activity</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Field Trip"><span class="button-label">Field Trip</span><span class="button-status">Neutral</span></button>
+                <button class="chip-button" type="button" data-activity-type="Group Event"><span class="button-label">Group Event</span><span class="button-status">Neutral</span></button>
               </div>
+              <p class="panel-note" id="activity-state-note">
+                Completion states are calculated from saved activity records for the selected date. Past records stay retrievable by changing the date.
+              </p>
             </section>
 
             <section class="panel" aria-labelledby="narration-title">
@@ -1202,12 +1305,129 @@
     </div>
 
     <script>
+      const sampleActivityRecords = [
+        {
+          date: "2026-07-04",
+          activity_type: "Language Arts",
+          parent_approved: true,
+          review_status: "approved"
+        },
+        {
+          date: "2026-07-04",
+          activity_type: "Math",
+          parent_approved: false,
+          review_status: "needs_review"
+        },
+        {
+          date: "2026-07-04",
+          activity_type: "Unit Study",
+          parent_approved: true,
+          review_status: "approved"
+        },
+        {
+          date: "2026-07-04",
+          activity_type: "Hands-On Activity",
+          parent_approved: false,
+          review_status: "draft"
+        },
+        {
+          date: "2026-07-03",
+          activity_type: "Science Journal",
+          parent_approved: true,
+          review_status: "approved"
+        },
+        {
+          date: "2026-07-03",
+          activity_type: "Writing Project",
+          parent_approved: false,
+          review_status: "needs_review"
+        },
+        {
+          date: "2026-07-03",
+          activity_type: "Field Trip",
+          parent_approved: true,
+          review_status: "approved"
+        }
+      ];
+
+      const dateInput = document.querySelector("#activity-date");
+      const dateStateSummary = document.querySelector("#date-state-summary");
+      const activityStateNote = document.querySelector("#activity-state-note");
+      let selectedActivityType = "Language Arts";
+
+      function todayIso() {
+        const now = new Date();
+        const offset = now.getTimezoneOffset();
+        return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+      }
+
+      function statusForActivityType(date, activityType) {
+        const approvedCount = sampleActivityRecords.filter((record) => (
+          record.date === date &&
+          record.activity_type === activityType &&
+          record.parent_approved === true
+        )).length;
+
+        if (approvedCount > 0) {
+          return { label: "Completed", className: "is-completed", approvedCount, reviewCount: 0 };
+        }
+
+        const reviewCount = sampleActivityRecords.filter((record) => (
+          record.date === date &&
+          record.activity_type === activityType &&
+          (record.parent_approved === false || record.review_status === "needs_review")
+        )).length;
+
+        if (reviewCount > 0) {
+          return { label: "Needs review", className: "is-needs-review", approvedCount: 0, reviewCount };
+        }
+
+        return { label: "Neutral", className: "", approvedCount: 0, reviewCount: 0 };
+      }
+
+      function updateActivityTypeButtons() {
+        const selectedDate = dateInput.value;
+        let completedCount = 0;
+        let reviewCount = 0;
+
+        document.querySelectorAll(".chip-button").forEach((button) => {
+          const activityType = button.dataset.activityType;
+          const status = statusForActivityType(selectedDate, activityType);
+          const isSelected = activityType === selectedActivityType;
+          const statusLabel = button.querySelector(".button-status");
+
+          button.classList.remove("is-completed", "is-needs-review", "is-selected");
+          if (status.className) button.classList.add(status.className);
+          if (isSelected) button.classList.add("is-selected");
+
+          if (status.label === "Completed") completedCount += 1;
+          if (status.label === "Needs review") reviewCount += 1;
+
+          statusLabel.textContent = isSelected ? `Selected - ${status.label}` : status.label;
+          button.setAttribute(
+            "aria-label",
+            `${activityType}: ${isSelected ? "selected, " : ""}${status.label} for ${selectedDate}`
+          );
+        });
+
+        const isToday = selectedDate === todayIso();
+        dateStateSummary.textContent = isToday ? "Today completion states" : `Viewing ${selectedDate}`;
+        activityStateNote.textContent =
+          `${completedCount} completed and ${reviewCount} needing review for ${selectedDate}. ` +
+          "States come from saved approved or draft activity records; changing dates does not alter historical records.";
+      }
+
+      dateInput.value = todayIso();
+      dateInput.addEventListener("change", updateActivityTypeButtons);
+
       document.querySelectorAll(".chip-button").forEach((button) => {
         button.addEventListener("click", () => {
-          document.querySelectorAll(".chip-button").forEach((item) => item.classList.remove("is-selected"));
-          button.classList.add("is-selected");
+          selectedActivityType = button.dataset.activityType;
+          updateActivityTypeButtons();
         });
       });
+
+      updateActivityTypeButtons();
     </script>
   </body>
 </html>
