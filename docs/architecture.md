@@ -10,6 +10,7 @@ This project should be built as a private, activity-first homeschool record syst
 - SQLite for the local MVP database
 - Local filesystem storage for evidence uploads and generated exports
 - PDF generation for legal, portfolio, annual, and review exports
+- Generated Markdown snapshots for readable records and Obsidian-style browsing
 
 ## Core Domain Rule
 
@@ -71,6 +72,11 @@ Reports should be derived from stored activity data rather than maintained manua
 - Portfolio export
 - 9-week review report
 - Annual archive PDF
+- Markdown record snapshots
+
+Markdown snapshots are generated from database records. The database remains the source of truth; Markdown is not the primary data store and manual Markdown edits do not update the database in the MVP.
+
+See [Markdown Export and Sync Plan](markdown-sync.md) for the regeneration rules and folder structure.
 
 ## UX Direction
 

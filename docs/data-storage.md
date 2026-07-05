@@ -31,9 +31,12 @@ Use local storage for the MVP:
 - SQLite database: `data/app.db`
 - Evidence uploads: `storage/evidence/`
 - Generated reports: `storage/exports/`
+- Generated Markdown record snapshots: `records/`
 - Temporary files: `storage/tmp/`
 
 The existing `.gitignore` excludes local databases and runtime storage so records do not get committed accidentally.
+
+Markdown snapshots are generated from database records for readability, backup, long-term records, and Obsidian-style browsing. They are not the primary data store. Manual edits to generated Markdown should not update the database unless a future import/sync feature is intentionally added.
 
 ## Backup Direction
 

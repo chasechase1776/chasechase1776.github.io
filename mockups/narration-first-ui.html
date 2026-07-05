@@ -544,6 +544,7 @@
         color: var(--muted);
         padding: 10px 12px;
         line-height: 1.45;
+        white-space: pre-line;
       }
 
       .parse-status.is-loading {
@@ -782,6 +783,25 @@
         margin-top: 12px;
       }
 
+      .sync-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .sync-item {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 10px;
+      }
+
+      .sync-item strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
       .record-link {
         border: 1px solid var(--soft-line);
         border-radius: 8px;
@@ -846,6 +866,7 @@
         .activity-type-grid,
         .artifact-grid,
         .records-grid,
+        .sync-list,
         .skill-list {
           grid-template-columns: 1fr;
         }
@@ -1070,7 +1091,7 @@
                 </div>
                 <div class="review-actions">
                   <button class="quiet-button" type="button">Approve all reviewed</button>
-                  <button class="primary-button" type="button">Save Approved Activities</button>
+                  <button class="primary-button" type="button" id="save-approved-button">Save Approved Activities</button>
                 </div>
               </div>
               <p class="panel-note" id="review-generated-note">
@@ -1363,19 +1384,33 @@
               <h2 id="markdown-title">Markdown records generated from database records</h2>
             </div>
             <div class="snapshot-actions">
-              <button class="quiet-button" type="button">Regenerate snapshots</button>
+              <button class="quiet-button" type="button" id="regenerate-markdown-button">Regenerate snapshots</button>
               <button class="quiet-button" type="button">Open records folder</button>
             </div>
           </div>
           <p class="panel-note">
-            Database remains the source of truth. Markdown is an export and sync layer for readable archives, backups, and Obsidian-style browsing.
+            Database remains the source of truth. Markdown is a generated snapshot layer for readable archives, backups, long-term records, and Obsidian-style browsing.
+            Manual Markdown edits do not update the database unless a future import/sync feature is intentionally added.
           </p>
+          <div class="sync-list" aria-label="Markdown files regenerated after approved activity save or update">
+            <div class="sync-item"><strong>Daily record</strong><span>records/2026-2027/days/2026-09-08.md</span></div>
+            <div class="sync-item"><strong>Weekly summary</strong><span>records/2026-2027/weeks/2026-W37.md</span></div>
+            <div class="sync-item"><strong>Unit activities</strong><span>records/2026-2027/units/construction/activities.md</span></div>
+            <div class="sync-item"><strong>Unit skills</strong><span>records/2026-2027/units/construction/skills-covered.md</span></div>
+            <div class="sync-item"><strong>Legal summary</strong><span>records/2026-2027/legal-summary.md</span></div>
+            <div class="sync-item"><strong>Portfolio index</strong><span>Regenerate when artifacts are attached.</span></div>
+          </div>
+          <div class="parse-status" id="markdown-sync-status" role="status">
+            Waiting for an approved activity save or update. Drafts and unapproved AI-parsed activities do not regenerate permanent Markdown record files.
+          </div>
           <pre class="markdown-preview">/records
 /2026-2027
   annual-plan.md
-  weekly-summary-index.md
   legal-summary.md
   portfolio-index.md
+  /days
+    2026-09-08.md
+    2026-09-09.md
   /units
     /construction
       unit-summary.md
@@ -1385,8 +1420,7 @@
   /weeks
     2026-W36.md
     2026-W37.md
-  /artifacts
-    artifact-index.md</pre>
+    2026-W38.md</pre>
         </section>
 
         <p class="footer-note">
@@ -1454,6 +1488,9 @@
       const parseStatus = document.querySelector("#parse-status");
       const reviewGeneratedNote = document.querySelector("#review-generated-note");
       const payloadPreview = document.querySelector("#payload-preview");
+      const saveApprovedButton = document.querySelector("#save-approved-button");
+      const regenerateMarkdownButton = document.querySelector("#regenerate-markdown-button");
+      const markdownSyncStatus = document.querySelector("#markdown-sync-status");
       let selectedActivityType = "Language Arts";
 
       function todayIso() {
@@ -1628,6 +1665,21 @@
         updateParseButtonState();
       }
 
+      function regenerateMarkdownSnapshots(reason) {
+        const payload = parsePayload();
+        const artifactTargets = attachedArtifactIds().length ? "\n- portfolio-index.md" : "";
+        markdownSyncStatus.textContent =
+          `${reason}: regenerated Markdown snapshots from current database records for ${payload.selected_date}. ` +
+          "Affected files:\n" +
+          `- days/${payload.selected_date}.md\n` +
+          "- weeks/2026-W27.md\n" +
+          "- units/construction/activities.md\n" +
+          "- units/construction/skills-covered.md\n" +
+          "- legal-summary.md" +
+          artifactTargets;
+        markdownSyncStatus.classList.add("is-success");
+      }
+
       dateInput.value = todayIso();
       dateInput.addEventListener("change", updateActivityTypeButtons);
       [studentNameInput, schoolYearInput, unitStudyInput, narrationInput].forEach((field) => {
@@ -1655,6 +1707,8 @@
       parseButton.addEventListener("click", simulateAiParse);
       saveDraftButton.addEventListener("click", saveAsDraft);
       clearEntryButton.addEventListener("click", clearCurrentEntry);
+      saveApprovedButton.addEventListener("click", () => regenerateMarkdownSnapshots("Approved activity save"));
+      regenerateMarkdownButton.addEventListener("click", () => regenerateMarkdownSnapshots("Manual snapshot regeneration"));
 
       updateActivityTypeButtons();
       updateParseButtonState();

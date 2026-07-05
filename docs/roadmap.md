@@ -59,10 +59,12 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 - [ ] Subject time report
 - [ ] Portfolio export
 - [ ] Annual archive PDF
+- [ ] Markdown snapshot/export generation from database records
 
 ## Phase 6: Hardening
 
 - [ ] Local backup/export workflow
+- [ ] Regenerate affected Markdown snapshots after approved activity save/update
 - [ ] Archive/lock completed school years
 - [ ] Privacy/security review
 - [ ] Mobile usability pass
