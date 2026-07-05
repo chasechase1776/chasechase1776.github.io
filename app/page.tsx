@@ -195,6 +195,11 @@ export default function Home() {
     setStatus("PDF export downloaded.");
   }
 
+  async function logout() {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/passcode";
+  }
+
   return (
     <main className="app-shell">
       <section className="hero">
@@ -206,6 +211,9 @@ export default function Home() {
         <div className="status-card">
           <span>Current mode</span>
           <strong>{schoolYearStatus === "active" ? "Active" : "Trial"}</strong>
+          <button className="logout-button" type="button" onClick={logout}>
+            Logout
+          </button>
         </div>
       </section>
 
