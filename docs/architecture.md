@@ -78,6 +78,7 @@ Reports should be derived from stored activity data rather than maintained manua
 Markdown snapshots are generated from database records. The database remains the source of truth; Markdown is not the primary data store and manual Markdown edits do not update the database in the MVP.
 
 See [Markdown Export and Sync Plan](markdown-sync.md) for the regeneration rules and folder structure.
+See [Annual Plan](annual-plan.md) for the school-year planning framework, daily recurring expectations, weekly rhythm, unit formats, and annual records.
 See [Weekly Reviews Plan](weekly-reviews.md) for the guided weekly review workflow and skill rating model.
 See [Quarter Reviews and Year-Round School Year Plan](quarter-reviews.md) for instructional quarter checkpoints, summer extension, annual closeout, student reflection, and export requirements.
 

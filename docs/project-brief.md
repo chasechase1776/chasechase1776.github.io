@@ -571,6 +571,130 @@ Legal/subject coverage scale:
 - finalized_at
 - archived_at
 
+### annual_plans
+
+- id
+- student_id
+- school_year_id
+- grade_level
+- status: draft, active, finalized, archived
+- primary_theme
+- central_question
+- thinking_progression
+- writing_progression
+- presentation_progression
+- annual_project_cycle
+- journal_plan
+- spiral_curriculum_summary
+- literacy_spine_summary
+- math_spine_summary
+- finance_spine_summary
+- science_journal_summary
+- weekly_writing_prompt_summary
+- weekly_project_cycle_summary
+- weekly_presentation_cycle_summary
+- final_friday_summary
+- unit_study_framework_summary
+- annual_capstone_summary
+- created_at
+- updated_at
+- finalized_at
+
+### annual_plan_spines
+
+- id
+- annual_plan_id
+- spine_title
+- frequency
+- resources
+- skills_covered
+- summary
+- notes
+
+Default spine records should include:
+
+- Literacy Spine
+- Math Spine
+- Finance Spine
+- Daily Science Journal / Nature Observation
+- Daily Independent Reading
+- Daily Physical Activity / Education
+
+### annual_plan_weekly_rhythm
+
+- id
+- annual_plan_id
+- day_label
+- sequence_number
+- purpose
+- typical_activities
+- related_activity_types
+- evidence_suggestions
+- notes
+
+Default rhythm days:
+
+- Question Monday
+- Exploration Tuesday
+- Context Wednesday
+- Meaning Thursday
+- Creating Friday
+
+### annual_plan_unit_formats
+
+- id
+- name
+- description
+- default_weekly_pattern
+- notes
+
+Default unit format types:
+
+- harbor_sprout_template
+- open_and_go_published_unit
+- minimal_structure_parent_designed
+
+### annual_plan_units
+
+- id
+- annual_plan_id
+- sequence_number
+- semester_or_term
+- unit_title
+- expected_duration_weeks
+- guiding_question
+- primary_competency
+- resources
+- field_trip
+- final_friday_capstone
+- status
+- unit_format_type
+- weekly_rhythm_override
+- published_sequence_followed
+- parent_designed
+- format_notes
+- notes
+
+### annual_plan_journals
+
+- id
+- annual_plan_id
+- journal_title
+- frequency
+- purpose
+- artifact_expectation
+- notes
+
+### annual_plan_records
+
+- id
+- annual_plan_id
+- record_title
+- record_type
+- file_url
+- notes
+- created_at
+
 ### legal_records
 
 - id
@@ -603,6 +727,36 @@ Legal record types:
 - notes
 
 ## Required App Features
+
+### 0. Annual Plan
+
+The Annual Plan tab should function as the big-picture school-year planning and archive page. It should not be a daily logging page.
+
+The Annual Plan should define:
+
+- School year's theme
+- Central question
+- Thinking, writing, and presentation progressions
+- Annual project cycle
+- Year-long journals
+- Spiral curriculum summary
+- Daily recurring expectations
+- Curriculum spines
+- Weekly rhythm
+- Unit-study format options
+- Thematic unit-study sequence
+- Year-end capstone
+- Journals and portfolios
+- Annual records
+
+The Annual Plan is a planning framework, not a compliance checklist. Daily logs document reality; the Annual Plan documents intent.
+
+Annual Plan exports:
+
+- `records/{schoolYear}/annual-plan.md`
+- Annual Plan PDF
+
+Annual Plan Markdown and PDF should include daily recurring expectations, weekly rhythm, unit-study format options, unit sequence with selected format type, and a note that daily logs remain the record of what actually happened.
 
 ### 1. Activity-First Daily Log
 

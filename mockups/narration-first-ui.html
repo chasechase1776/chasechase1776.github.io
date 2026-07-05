@@ -923,6 +923,37 @@
         padding: 9px;
       }
 
+      .plan-table-wrap {
+        overflow-x: auto;
+        margin-top: 12px;
+      }
+
+      .plan-table {
+        width: 100%;
+        min-width: 960px;
+        border-collapse: collapse;
+        font-size: 0.84rem;
+      }
+
+      .plan-table th,
+      .plan-table td {
+        border: 1px solid var(--soft-line);
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .plan-table th {
+        background: #eef4f5;
+        color: var(--accent-strong);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+      }
+
+      .plan-section {
+        margin-top: 18px;
+      }
+
       .coverage-summary-grid,
       .portfolio-grid {
         display: grid;
@@ -2160,19 +2191,217 @@
         <section class="panel" id="annual-plan" aria-labelledby="annual-title">
           <div class="panel-head">
             <div>
-              <p class="eyebrow">School-year records</p>
-              <h2 id="annual-title">Annual plan and long-term records</h2>
+              <p class="eyebrow">Annual Plan</p>
+              <h2 id="annual-title">Big-picture school-year planning</h2>
             </div>
-            <button class="quiet-button" type="button">Add school-year file</button>
+            <div class="review-actions">
+              <button class="quiet-button" type="button" id="save-annual-plan-button">Save Plan</button>
+              <button class="quiet-button" type="button" id="export-annual-plan-md-button">Export Markdown</button>
+              <button class="quiet-button" type="button" id="export-annual-plan-pdf-button">Export PDF</button>
+              <button class="primary-button" type="button" id="finalize-annual-plan-button">Finalize Plan</button>
+            </div>
           </div>
-          <div class="records-grid">
-            <div class="record-link"><strong>Annual plan</strong><span>Goals, unit studies, resources, and subject plans.</span></div>
-            <div class="record-link"><strong>Curriculum overview</strong><span>Core resources and visual curriculum evidence.</span></div>
-            <div class="record-link"><strong>Scope and sequence</strong><span>Expected skills and projects by term.</span></div>
-            <div class="record-link"><strong>Legal notes</strong><span>State context, assurance letters, and compliance notes.</span></div>
-            <div class="record-link"><strong>Attendance/time summary</strong><span>Derived from activity records and weekly totals.</span></div>
-            <div class="record-link"><strong>Portfolio exports</strong><span>Selected proof of learning and parent summaries.</span></div>
+          <p class="panel-note">
+            The Annual Plan documents intent: theme, curriculum spines, weekly rhythm, unit-study arc, journals, capstones, and annual records. Daily logs remain the record of what actually happened.
+          </p>
+
+          <div class="review-form-grid">
+            <label><span>Student</span><input id="annual-plan-student" value="Bennett"></label>
+            <label><span>School year</span><select id="annual-plan-school-year"><option>2026-2027</option><option>2027-2028</option></select></label>
+            <label><span>Grade level</span><input id="annual-plan-grade" value="2nd grade"></label>
+            <label><span>Status</span><select id="annual-plan-status"><option>draft</option><option selected>active</option><option>finalized</option><option>archived</option></select></label>
           </div>
+
+          <div class="parse-status" id="annual-plan-status-message" role="status">
+            Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.
+          </div>
+
+          <section class="plan-section" aria-labelledby="big-picture-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 1</p>
+                <h2 id="big-picture-title">Big Picture Framework</h2>
+              </div>
+            </div>
+            <div class="review-form-grid">
+              <label><span>Primary Theme</span><input value="Me and My Community"></label>
+              <label><span>Central Question</span><input value="How do people live together?"></label>
+              <label><span>Thinking Progression</span><input value="Observe"></label>
+              <label><span>Writing Progression</span><input value="Weekly Narrations"></label>
+              <label><span>Presentation Progression</span><input value="Tell us what you learned"></label>
+              <label><span>Annual Project Cycle</span><textarea rows="3">Weekly project and presentation cycles culminating in unit capstones and 1+ year-end projects.</textarea></label>
+              <label><span>Year-Long Journals</span><textarea rows="3">Observation Journal; Unit Lap Books</textarea></label>
+              <label><span>Spiral Curriculum Summary</span><textarea rows="5">This is a spiral curriculum. Core skills in literacy, mathematics, finance, observation, writing, project work, and presentation are practiced repeatedly across changing thematic unit studies. Each unit provides a new context for applying the same core skills at a deeper level.</textarea></label>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="spines-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 2</p>
+                <h2 id="spines-title">Daily recurring expectations and curriculum spines</h2>
+              </div>
+            </div>
+            <div class="records-grid">
+              <div class="record-link"><strong>Literacy Spine</strong><span>4x/week - Story Weavers Level 2 - reading, grammar, literature, memory work, phonics, spelling, writing, editing, fluency.</span></div>
+              <div class="record-link"><strong>Math Spine</strong><span>4x/week - Saxon Math 2 - number sense, operations, measurement, money, geometry, data, patterns, problem solving.</span></div>
+              <div class="record-link"><strong>Finance Spine</strong><span>4x/week or integrated weekly - Financial Literacy for Kids, Educa Fun, money activity book/game.</span></div>
+              <div class="record-link"><strong>Daily Science Journal / Nature Observation</strong><span>Daily or near-daily - observe, draw, label, ask questions, record changes, compare patterns.</span></div>
+              <div class="record-link"><strong>Daily Independent Reading</strong><span>Daily - reading stamina, fluency, independent book engagement, habit formation, and enjoyment of books.</span></div>
+              <div class="record-link"><strong>Daily Physical Activity / Education</strong><span>Daily - movement, coordination, outdoor play, strength, stamina, health habits, and physical development.</span></div>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="weekly-rhythm-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 3</p>
+                <h2 id="weekly-rhythm-title">Weekly Rhythm</h2>
+              </div>
+              <span class="tag">Flexible planning scaffold</span>
+            </div>
+            <p class="panel-note">
+              Each week includes a writing prompt developed throughout the week and finalized on Friday. Friday is the weekly culmination point; at the end of a unit, Final Friday becomes a larger unit capstone.
+            </p>
+            <div class="records-grid">
+              <div class="record-link"><strong>Question Monday</strong><span>Introduce weekly question, science topic, writing topic, and project direction. Evidence: discussion note, first sketch, prompt draft.</span></div>
+              <div class="record-link"><strong>Exploration Tuesday</strong><span>Hands-on exploration, nature, music, observation, experimentation, and continued core work. Evidence: journal page, photo, experiment note.</span></div>
+              <div class="record-link"><strong>Context Wednesday</strong><span>History, geography, maps, biographies, timelines, unit reading, and continued core work. Evidence: map, timeline, narration.</span></div>
+              <div class="record-link"><strong>Meaning Thursday</strong><span>Citizenship, philosophy, emotional intelligence, responsibility, service, communication, social studies, and project work. Evidence: reflection, discussion note.</span></div>
+              <div class="record-link"><strong>Creating Friday</strong><span>Finalize writing, present, complete project, art, science experiment, portfolio artifact, reflection, optional notable person review or Thinker Toy.</span></div>
+              <div class="record-link"><strong>Final Friday Summary</strong><span>Unit capstone: present the final project, explain learning, and select proof-of-learning artifacts.</span></div>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="unit-format-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 4</p>
+                <h2 id="unit-format-title">Unit Study Format Options</h2>
+              </div>
+            </div>
+            <div class="records-grid">
+              <div class="record-link"><strong>Harbor &amp; Sprout Template</strong><span>Use the Monday-Friday pattern: science/writing, nature/music, history/geography, U.S. study/citizenship/philosophy/EQ, and Friday presentation/art/science.</span></div>
+              <div class="record-link"><strong>Open-and-Go Published Unit</strong><span>Follow the publisher sequence in general. The app still tags activities, subjects, legal categories, skills, artifacts, and time.</span></div>
+              <div class="record-link"><strong>Minimal Structure / Parent-Designed</strong><span>Use the weekly rhythm as the default scaffold for parent-created activities, projects, writing prompts, presentation goals, and artifacts.</span></div>
+              <div class="record-link"><strong>Planning note</strong><span>These fields are the intended framework. The parent can deviate based on interest, pacing, field trips, family schedule, or unit depth.</span></div>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="unit-sequence-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 4 continued</p>
+                <h2 id="unit-sequence-title">Thematic unit-study sequence</h2>
+              </div>
+            </div>
+            <div class="plan-table-wrap">
+              <table class="plan-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Term</th>
+                    <th>Unit title</th>
+                    <th>Weeks</th>
+                    <th>Guiding question</th>
+                    <th>Primary competency</th>
+                    <th>Unit format type</th>
+                    <th>Weekly rhythm override</th>
+                    <th>Published sequence?</th>
+                    <th>Parent designed?</th>
+                    <th>Field trip / application</th>
+                    <th>Final Friday capstone</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td>Q1</td><td>Construction</td><td>3</td><td>How do people build safe structures?</td><td>Design and problem solving</td><td>Minimal Structure / Parent-Designed</td><td>Use full rhythm</td><td>No</td><td>Yes</td><td>Visit a build site or hardware store</td><td>Build and explain a model frame</td><td>active</td></tr>
+                  <tr><td>2</td><td>Q1</td><td>All About Me</td><td>2</td><td>Who am I in my family and community?</td><td>Identity and self-awareness</td><td>Harbor &amp; Sprout Template</td><td>None</td><td>No</td><td>Partial</td><td>Family interview</td><td>Identity lap book</td><td>planned</td></tr>
+                  <tr><td>3</td><td>Q1</td><td>Off the Land</td><td>3</td><td>How do people use land responsibly?</td><td>Self-sufficiency</td><td>Open-and-Go Published Unit</td><td>Light overlay</td><td>Yes</td><td>No</td><td>Farm or garden visit</td><td>Food source presentation</td><td>planned</td></tr>
+                  <tr><td>4</td><td>Q2</td><td>Gratitude and Thanksgiving</td><td>2</td><td>How do gratitude and service shape community?</td><td>Character and relationships</td><td>Minimal Structure / Parent-Designed</td><td>Use Thursday heavily</td><td>No</td><td>Yes</td><td>Service project</td><td>Thankfulness presentation</td><td>planned</td></tr>
+                  <tr><td>5</td><td>Q2</td><td>All About Money</td><td>3</td><td>How do people earn, save, spend, and give?</td><td>Financial literacy</td><td>Minimal Structure / Parent-Designed</td><td>Finance daily</td><td>No</td><td>Yes</td><td>Store comparison shopping</td><td>Budget board game</td><td>planned</td></tr>
+                  <tr><td>6</td><td>Q2</td><td>Let's Cook!</td><td>3</td><td>How does cooking use science and life skills?</td><td>Life skills and chemistry</td><td>Open-and-Go Published Unit</td><td>Cooking Friday</td><td>Yes</td><td>Partial</td><td>Cook a family meal</td><td>Recipe book</td><td>planned</td></tr>
+                  <tr><td>7</td><td>Q3</td><td>Human Body</td><td>3</td><td>How does my body work?</td><td>Health literacy</td><td>Harbor &amp; Sprout Template</td><td>None</td><td>No</td><td>Partial</td><td>Health habit tracker</td><td>Body systems display</td><td>planned</td></tr>
+                  <tr><td>8</td><td>Q3</td><td>Community Helpers</td><td>2</td><td>Who helps a community work?</td><td>Civic understanding</td><td>Minimal Structure / Parent-Designed</td><td>Meaning Thursday focus</td><td>No</td><td>Yes</td><td>Interview a helper</td><td>Helper presentation</td><td>planned</td></tr>
+                  <tr><td>9</td><td>Q3</td><td>World Cultures and Traditions</td><td>3</td><td>How do people celebrate and remember?</td><td>Cultural awareness</td><td>Open-and-Go Published Unit</td><td>Light overlay</td><td>Yes</td><td>No</td><td>Cultural food or event</td><td>Culture display</td><td>planned</td></tr>
+                  <tr><td>10</td><td>Q4</td><td>50 States</td><td>3</td><td>How do places shape people?</td><td>Geographic literacy</td><td>Minimal Structure / Parent-Designed</td><td>Context Wednesday focus</td><td>No</td><td>Yes</td><td>Map practice trip</td><td>State map portfolio</td><td>planned</td></tr>
+                  <tr><td>11</td><td>Q4</td><td>Transportation</td><td>2</td><td>How do people and goods move?</td><td>Systems and movement</td><td>Harbor &amp; Sprout Template</td><td>None</td><td>No</td><td>Partial</td><td>Transit observation</td><td>Transportation model</td><td>planned</td></tr>
+                  <tr><td>12</td><td>Q4</td><td>Outdoor Adventure and Stewardship</td><td>2</td><td>How do we explore responsibly?</td><td>Outdoor competence</td><td>Minimal Structure / Parent-Designed</td><td>Creating Friday capstone</td><td>No</td><td>Yes</td><td>Camping/outdoor field studies</td><td>Adventure Guide</td><td>planned</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="capstone-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 5</p>
+                <h2 id="capstone-title">Year-End Capstone</h2>
+              </div>
+            </div>
+            <div class="review-form-grid">
+              <label><span>Capstone title</span><input value="Outdoor Adventure and Stewardship"></label>
+              <label><span>Expected duration</span><input value="2 weeks"></label>
+              <label><span>Main product</span><input value="Adventure Guide"></label>
+              <label><span>Real-world application</span><input value="Camping/outdoor field studies"></label>
+              <label><span>Skills integrated</span><textarea rows="3">Nature journaling, map reading, safety, writing, observation, project work, presentation.</textarea></label>
+              <label><span>Summer bridge</span><textarea rows="3">Camping trips and continued nature journaling.</textarea></label>
+              <label><span>Summary</span><textarea rows="5">The year ends with an Outdoor Adventure and Stewardship capstone. The student creates an Adventure Guide containing packing lists, nature journal pages, animal observations, plant sketches, trail maps, camp recipes, safety rules, Leave No Trace principles, first-aid basics, and favorite parks. The binder becomes a real tool for summer camping and field studies.</textarea></label>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="journals-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 6</p>
+                <h2 id="journals-title">Journals and Portfolios</h2>
+              </div>
+            </div>
+            <div class="records-grid">
+              <div class="record-link"><strong>Observation Journal</strong><span>Daily or near-daily - nature observations, drawings, labels, questions, and pattern tracking.</span></div>
+              <div class="record-link"><strong>Unit Lap Books</strong><span>Each unit - organize narrations, maps, minibooks, vocabulary, and project artifacts.</span></div>
+              <div class="record-link"><strong>Writing Portfolio</strong><span>Weekly - keep prompts, narrations, edited work, and final Friday writing.</span></div>
+              <div class="record-link"><strong>Project Portfolio</strong><span>Weekly/unit - preserve photos, plans, presentation notes, and finished products.</span></div>
+              <div class="record-link"><strong>Adventure Guide</strong><span>Year-end - binder of outdoor field-study tools, safety, maps, recipes, and nature pages.</span></div>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="annual-records-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 7</p>
+                <h2 id="annual-records-title">Annual Records</h2>
+              </div>
+              <button class="quiet-button" type="button">Add school-year file</button>
+            </div>
+            <div class="records-grid">
+              <div class="record-link"><strong>Curriculum overview</strong><span>Core resources and visual curriculum evidence.</span></div>
+              <div class="record-link"><strong>Scope and sequence</strong><span>Expected skills, projects, weekly rhythm, and unit arc.</span></div>
+              <div class="record-link"><strong>Legal notes</strong><span>State context, assurance letters, and compliance notes.</span></div>
+              <div class="record-link"><strong>Reading list</strong><span>Planned and completed books for the school year.</span></div>
+              <div class="record-link"><strong>Field trip plan</strong><span>Real-world applications connected to units.</span></div>
+              <div class="record-link"><strong>Other school-year records</strong><span>Annual plan documents, uploaded files, and notes.</span></div>
+            </div>
+          </section>
+
+          <section class="plan-section" aria-labelledby="annual-plan-export-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Section 8</p>
+                <h2 id="annual-plan-export-title">Annual Plan Exports</h2>
+              </div>
+              <div class="review-actions">
+                <button class="quiet-button" type="button" id="generate-annual-plan-md-button">Generate Annual Plan Markdown</button>
+                <button class="quiet-button" type="button" id="generate-annual-plan-pdf-button">Generate Annual Plan PDF</button>
+                <button class="primary-button" type="button" id="add-annual-plan-archive-button">Add to Legal Archive</button>
+              </div>
+            </div>
+            <div class="coverage-summary-grid">
+              <div class="record-link"><strong>Markdown path</strong><span>records/2026-2027/annual-plan.md</span></div>
+              <div class="record-link"><strong>PDF export</strong><span>Includes all Annual Plan sections above.</span></div>
+              <div class="record-link"><strong>Archive note</strong><span>Annual Plan explains intent; daily logs document reality.</span></div>
+            </div>
+          </section>
         </section>
 
         <section class="panel" id="unit-study" aria-labelledby="unit-title">
@@ -2331,6 +2560,15 @@
       const quarterAlertStatusInput = document.querySelector("#quarter-alert-status");
       const quarterPortfolioCount = document.querySelector("#quarter-portfolio-count");
       const archiveYearButton = document.querySelector("#archive-year-button");
+      const annualPlanStatusInput = document.querySelector("#annual-plan-status");
+      const annualPlanStatusMessage = document.querySelector("#annual-plan-status-message");
+      const saveAnnualPlanButton = document.querySelector("#save-annual-plan-button");
+      const exportAnnualPlanMdButton = document.querySelector("#export-annual-plan-md-button");
+      const exportAnnualPlanPdfButton = document.querySelector("#export-annual-plan-pdf-button");
+      const finalizeAnnualPlanButton = document.querySelector("#finalize-annual-plan-button");
+      const generateAnnualPlanMdButton = document.querySelector("#generate-annual-plan-md-button");
+      const generateAnnualPlanPdfButton = document.querySelector("#generate-annual-plan-pdf-button");
+      const addAnnualPlanArchiveButton = document.querySelector("#add-annual-plan-archive-button");
       let selectedActivityType = "Language Arts";
       let previousQuarterEndDate = quarterEndInput.value;
 
@@ -2680,6 +2918,38 @@
         markdownSyncStatus.classList.add("is-success");
       }
 
+      function setAnnualPlanMessage(message, statusValue) {
+        if (statusValue) annualPlanStatusInput.value = statusValue;
+        annualPlanStatusMessage.textContent = message;
+        annualPlanStatusMessage.classList.add("is-success");
+      }
+
+      function saveAnnualPlan() {
+        setAnnualPlanMessage("Annual Plan saved as the intended school-year framework. Daily logs remain the record of what actually happened.", "active");
+      }
+
+      function exportAnnualPlanMarkdown() {
+        setAnnualPlanMessage("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records.", annualPlanStatusInput.value);
+        markdownSyncStatus.textContent =
+          "Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields.";
+        markdownSyncStatus.classList.add("is-success");
+      }
+
+      function exportAnnualPlanPdf() {
+        setAnnualPlanMessage("Generated Annual Plan PDF including all planning sections and the note that daily logs document reality.", annualPlanStatusInput.value);
+      }
+
+      function finalizeAnnualPlan() {
+        setAnnualPlanMessage("Annual Plan finalized for the school year. It can still be archived at annual closeout.", "finalized");
+      }
+
+      function addAnnualPlanToLegalArchive() {
+        setAnnualPlanMessage("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatusInput.value);
+        markdownSyncStatus.textContent =
+          "Annual Plan archive: linked records/2026-2027/annual-plan.md and Annual Plan PDF from the legal archive index.";
+        markdownSyncStatus.classList.add("is-success");
+      }
+
       dateInput.value = todayIso();
       dateInput.addEventListener("change", updateActivityTypeButtons);
       [studentNameInput, schoolYearInput, unitStudyInput, narrationInput].forEach((field) => {
@@ -2716,6 +2986,13 @@
       saveQuarterDraftButton.addEventListener("click", saveQuarterDraft);
       finalizeQuarterButton.addEventListener("click", finalizeQuarterReview);
       archiveYearButton.addEventListener("click", archiveSchoolYear);
+      saveAnnualPlanButton.addEventListener("click", saveAnnualPlan);
+      exportAnnualPlanMdButton.addEventListener("click", exportAnnualPlanMarkdown);
+      exportAnnualPlanPdfButton.addEventListener("click", exportAnnualPlanPdf);
+      finalizeAnnualPlanButton.addEventListener("click", finalizeAnnualPlan);
+      generateAnnualPlanMdButton.addEventListener("click", exportAnnualPlanMarkdown);
+      generateAnnualPlanPdfButton.addEventListener("click", exportAnnualPlanPdf);
+      addAnnualPlanArchiveButton.addEventListener("click", addAnnualPlanToLegalArchive);
       quarterEndInput.addEventListener("change", () => {
         if (quarterReviewDueInput.value === previousQuarterEndDate) {
           quarterReviewDueInput.value = quarterEndInput.value;

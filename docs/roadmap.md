@@ -27,6 +27,7 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 
 - [ ] Student profile
 - [ ] School year setup
+- [ ] Annual Plan planning framework tab
 - [ ] Unit studies
 - [ ] Texas legal requirement profile
 - [ ] Base subject list

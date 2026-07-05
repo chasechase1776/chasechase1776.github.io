@@ -28,6 +28,8 @@ When a parent finalizes or amends a Quarter Review, generate or update the Markd
 
 When a parent finalizes the Annual Review, generate or update the annual review Markdown file, legal summary, portfolio index, annual plan when annual plan fields change, and PDF exports.
 
+When a parent saves, finalizes, or exports the Annual Plan, generate or update `records/{school_year}/annual-plan.md` from the saved Annual Plan fields. Annual Plan PDF exports should include the same sections and clearly state that the plan is an intended framework while daily logs document reality.
+
 ## Affected Files
 
 After an approved activity save/update, regenerate:
@@ -78,6 +80,29 @@ records/
 The repository should not commit real generated record files.
 
 ## File Responsibilities
+
+### Annual Plan
+
+Path pattern:
+
+```text
+records/{school_year}/annual-plan.md
+```
+
+Include saved Annual Plan fields:
+
+- Header: student, school year, grade level, and status.
+- Big Picture Framework.
+- Daily recurring expectations and curriculum spines.
+- Weekly rhythm.
+- Unit-study format options.
+- Thematic unit-study sequence with selected format type.
+- Year-End Capstone.
+- Journals and Portfolios.
+- Annual Records.
+- Planning note that daily logs document reality while the Annual Plan documents intent.
+
+Annual Plan PDF should include the same sections.
 
 ### Daily Learning Record
 
