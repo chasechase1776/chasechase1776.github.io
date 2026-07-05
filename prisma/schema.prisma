@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Local MVP uses SQLite. The model avoids SQLite-only field types so the schema
+// can be moved to PostgreSQL later by changing the provider and DATABASE_URL.
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  schoolYears SchoolYear[]
+  activities  Activity[]
+}
+
+model SchoolYear {
+  id                              String         @id @default(cuid())
+  label                           String
+  status                          String         @default("trial")
+  startDate                       DateTime?
+  endDate                         DateTime?
+  officialHomeschoolStartDate     DateTime?
+  includeTrialRecordsInReports    Boolean        @default(false)
+  createdAt                       DateTime       @default(now())
+  updatedAt                       DateTime       @updatedAt
+  studentId                       String
+  student                         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  units                           UnitStudy[]
+  activities                      Activity[]
+  weeklyReviews                   WeeklyReview[]
+  exportSnapshots                 ExportSnapshot[]
+
+  @@unique([studentId, label])
+}
+
+model UnitStudy {
+  id            String      @id @default(cuid())
+  title         String
+  status        String      @default("active")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  schoolYearId  String
+  schoolYear    SchoolYear  @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  activities    Activity[]
+
+  @@unique([schoolYearId, title])
+}
+
+model Activity {
+  id             String                  @id @default(cuid())
+  title          String
+  date           DateTime
+  actualMinutes  Int
+  activityType   String
+  narration      String
+  notes          String?
+  recordStatus   String                  @default("trial")
+  parentApproved Boolean                 @default(false)
+  reviewStatus   String                  @default("needs_review")
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  studentId      String
+  student        Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  schoolYearId   String
+  schoolYear     SchoolYear              @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  unitStudyId    String?
+  unitStudy      UnitStudy?              @relation(fields: [unitStudyId], references: [id], onDelete: SetNull)
+  allocations    SubjectAllocation[]
+  legalTags      ActivityLegalTag[]
+  skills         ActivitySkill[]
+  artifacts      EvidenceArtifact[]
+
+  @@index([date, activityType, parentApproved, reviewStatus])
+  @@index([recordStatus])
+}
+
+model SubjectAllocation {
+  id         String   @id @default(cuid())
+  subject    String
+  minutes    Int
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model LegalTag {
+  id         String             @id @default(cuid())
+  label      String             @unique
+  activities ActivityLegalTag[]
+}
+
+model ActivityLegalTag {
+  activityId String
+  legalTagId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  legalTag   LegalTag @relation(fields: [legalTagId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, legalTagId])
+}
+
+model Skill {
+  id         String          @id @default(cuid())
+  subject    String
+  name       String
+  activities ActivitySkill[]
+
+  @@unique([subject, name])
+}
+
+model ActivitySkill {
+  activityId String
+  skillId    String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  skill      Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([activityId, skillId])
+}
+
+model EvidenceArtifact {
+  id              String    @id @default(cuid())
+  originalName    String
+  fileName        String
+  mimeType        String
+  sizeBytes       Int
+  storagePath     String
+  recordStatus    String    @default("trial")
+  classification  String?
+  tagsJson        String    @default("[]")
+  createdAt       DateTime  @default(now())
+  activityId      String?
+  activity        Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+}
+
+model WeeklyReview {
+  id             String     @id @default(cuid())
+  weekStartDate  DateTime
+  weekEndDate    DateTime
+  status         String     @default("draft")
+  dataJson       String
+  recordStatus   String     @default("trial")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  schoolYearId   String
+  schoolYear     SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolYearId, weekStartDate])
+}
+
+model ExportSnapshot {
+  id           String     @id @default(cuid())
+  type         String
+  label        String
+  filePath     String
+  createdAt    DateTime   @default(now())
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+}

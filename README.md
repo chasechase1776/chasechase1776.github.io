@@ -2,7 +2,7 @@
 
 Homeschool progress tracking and legal record archive app.
 
-This repository is currently in setup/planning mode. Application implementation has not started yet.
+This repository now contains the first private Next.js MVP scaffold alongside the planning documents, static mockups, and public GitHub Pages placeholder.
 
 ## Project Direction
 
@@ -17,6 +17,47 @@ Initial legal context: Texas homeschool records, with a data model that can supp
 - Node.js LTS installed
 - Public GitHub repository connected
 - GitHub Pages target website enabled
+- Next.js app scaffold started
+- Prisma schema and initial SQLite migration added
+- Backend routes added for activities, uploads, weekly review drafts, Markdown/PDF exports, and mock AI parsing
+
+## Local App Setup
+
+The real app runs separately from the public static placeholder in `site/`.
+
+1. Install dependencies:
+
+   ```powershell
+   pnpm install
+   ```
+
+2. Copy `.env.example` to `.env` and keep real secrets out of Git.
+
+3. Generate the Prisma client:
+
+   ```powershell
+   pnpm prisma:generate
+   ```
+
+4. Initialize the local SQLite database:
+
+   ```powershell
+   pnpm db:init
+   ```
+
+5. Start the app:
+
+   ```powershell
+   pnpm dev
+   ```
+
+6. Open:
+
+   ```text
+   http://localhost:3000
+   ```
+
+Manual activity logging works without AI. If `OPENAI_API_KEY` is missing, the AI parse route returns a mock draft and does not expose any API key to the frontend.
 
 ## Project Context
 
