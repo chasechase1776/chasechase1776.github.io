@@ -35,7 +35,7 @@ GitHub stores the codebase, planning documents, schema, migrations, and safe see
 - Reading log
 - Writing samples
 - Weekly reviews
-- 9-week reviews
+- Quarter reviews
 - Annual archive and reports
 
 ## Data Model Shape
@@ -70,13 +70,15 @@ Reports should be derived from stored activity data rather than maintained manua
 - Subject time report
 - Standards/skills progress report
 - Portfolio export
-- 9-week review report
+- Quarter review report
 - Annual archive PDF
 - Markdown record snapshots
 
 Markdown snapshots are generated from database records. The database remains the source of truth; Markdown is not the primary data store and manual Markdown edits do not update the database in the MVP.
 
 See [Markdown Export and Sync Plan](markdown-sync.md) for the regeneration rules and folder structure.
+See [Weekly Reviews Plan](weekly-reviews.md) for the guided weekly review workflow and skill rating model.
+See [Quarter Reviews and Year-Round School Year Plan](quarter-reviews.md) for instructional quarter checkpoints, summer extension, annual closeout, student reflection, and export requirements.
 
 ## UX Direction
 

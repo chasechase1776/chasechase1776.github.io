@@ -22,6 +22,12 @@ The save/update path should:
 
 Drafts and AI-parsed activities that have not been parent-approved should not update permanent Markdown record files. They may be shown in the app review UI or stored as draft database records.
 
+When a parent finalizes or amends a Weekly Review, generate or update the Markdown file for that week from current database records and the saved weekly review.
+
+When a parent finalizes or amends a Quarter Review, generate or update the Markdown file and PDF export for that instructional period from current database records and the saved quarter review.
+
+When a parent finalizes the Annual Review, generate or update the annual review Markdown file, legal summary, portfolio index, annual plan when annual plan fields change, and PDF exports.
+
 ## Affected Files
 
 After an approved activity save/update, regenerate:
@@ -51,6 +57,11 @@ records/
     weeks/
       2026-W37.md
       2026-W38.md
+    annual-review.md
+    quarter-reviews/
+      quarter-1.md
+      quarter-2.md
+      summer-extension.md
     units/
       construction/
         unit-summary.md
@@ -104,8 +115,70 @@ Include records derived from approved activities in that week:
 - Activities missing evidence.
 - Portfolio-worthy artifacts.
 - Skills introduced, practiced, mastered, or needing review.
+- Saved Weekly Review status, parent summary, rating, skill ratings, portfolio selections, and next week focus when a weekly review exists.
+
+When a Weekly Review is finalized or amended, regenerate this weekly Markdown file from current database records and the saved weekly review fields.
 
 The visible weekly dashboard may reset automatically as the current date changes, but historical weekly Markdown files remain retrievable.
+
+### Quarter Review
+
+Path pattern:
+
+```text
+records/{school_year}/quarter-reviews/{quarter_label}.md
+```
+
+Include records derived from daily logs and Weekly Reviews in the period:
+
+- Total approved learning time.
+- Days with records.
+- Activities logged.
+- Weekly reviews completed.
+- Subject time summary.
+- Texas legal coverage summary using Not Covered, Light, Adequate, or Strong.
+- Skill progression trends across weekly ratings.
+- Unit study progress summary.
+- Portfolio highlights.
+- Student reflection.
+- Parent reflection.
+- Next quarter priorities.
+
+When a Quarter Review is finalized or amended, regenerate this Markdown file and offer PDF export from current database records and the saved quarter review fields.
+
+For Summer Extension, use:
+
+```text
+records/{school_year}/quarter-reviews/summer-extension.md
+```
+
+### Annual Review
+
+Path pattern:
+
+```text
+records/{school_year}/annual-review.md
+```
+
+Include records derived from the entire school year:
+
+- Total learning time.
+- Days with records.
+- Activities logged.
+- Weekly reviews completed.
+- Quarter reviews completed.
+- Units completed.
+- Artifacts saved.
+- Annual portfolio highlights.
+- Texas legal coverage.
+- Subject time summary.
+- Skill progression summary.
+- Parent annual reflection.
+- Student annual reflection.
+- Next school year recommendations.
+- Close/archive status.
+
+When an Annual Review is finalized, regenerate annual review Markdown, legal summary, portfolio index, and PDF exports. The archived school year remains retrievable while the next school year starts a fresh quarter cycle.
 
 ### Unit Activities
 

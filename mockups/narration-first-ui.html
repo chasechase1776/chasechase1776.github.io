@@ -783,6 +783,124 @@
         margin-top: 12px;
       }
 
+      .review-form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .review-metrics {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .review-metric {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 10px;
+      }
+
+      .review-metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+
+      .review-metric strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 1.05rem;
+      }
+
+      .coverage-summary-grid,
+      .portfolio-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .skill-rating-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .skill-rating-row {
+        display: grid;
+        grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1fr) minmax(160px, 0.7fr);
+        gap: 10px;
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 10px;
+      }
+
+      .skill-evidence {
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.4;
+      }
+
+      .rating-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .rating-button {
+        min-height: 30px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--accent-strong);
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .rating-button.is-selected {
+        border-color: var(--blue);
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .portfolio-card {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 10px;
+      }
+
+      .portfolio-card.is-selected {
+        border-color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .portfolio-card label {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .portfolio-card input {
+        width: 18px;
+        min-height: 18px;
+        margin-top: 2px;
+      }
+
+      .weekly-notes-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+
       .sync-list {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -866,6 +984,12 @@
         .activity-type-grid,
         .artifact-grid,
         .records-grid,
+        .review-form-grid,
+        .review-metrics,
+        .coverage-summary-grid,
+        .portfolio-grid,
+        .skill-rating-row,
+        .weekly-notes-grid,
         .sync-list,
         .skill-list {
           grid-template-columns: 1fr;
@@ -917,7 +1041,7 @@
               <button class="is-active" type="button">2026-2027 <span>active</span></button>
               <ul>
                 <li><a href="#annual-plan">Annual Plan</a></li>
-                <li><a href="#annual-plan">Records</a></li>
+                <li><a href="#entry">Daily Records</a></li>
                 <li>
                   <button type="button">Unit Studies</button>
                   <ul>
@@ -927,10 +1051,33 @@
                     <li><a href="#unit-study">Early American History</a></li>
                   </ul>
                 </li>
-                <li><a href="#weekly-tally">Weekly Reviews</a></li>
-                <li><a href="#review-summary">9-Week Reviews</a></li>
+                <li><a href="#weekly-review">Weekly Reviews</a></li>
+                <li>
+                  <button type="button">Quarter Reviews</button>
+                  <ul>
+                    <li><a href="#quarter-review">Quarter 1</a></li>
+                    <li><a href="#quarter-review">Quarter 2</a></li>
+                    <li><a href="#quarter-review">Quarter 3</a></li>
+                    <li><a href="#quarter-review">Quarter 4</a></li>
+                    <li><a href="#quarter-review">Summer Extension</a></li>
+                  </ul>
+                </li>
                 <li><a href="#proof">Portfolio</a></li>
                 <li><a href="#legal-coverage">Legal Archive</a></li>
+                <li><a href="#annual-review">Annual Review</a></li>
+                <li><a href="#markdown">Reports</a></li>
+              </ul>
+            </li>
+            <li>
+              <button type="button">2027-2028</button>
+              <ul>
+                <li><a href="#entry">Daily Records</a></li>
+                <li><a href="#unit-study">Unit Studies</a></li>
+                <li><a href="#weekly-review">Weekly Reviews</a></li>
+                <li><a href="#quarter-review">Quarter Reviews</a></li>
+                <li><a href="#proof">Portfolio</a></li>
+                <li><a href="#legal-coverage">Legal Archive</a></li>
+                <li><a href="#annual-review">Annual Review</a></li>
                 <li><a href="#markdown">Reports</a></li>
               </ul>
             </li>
@@ -978,8 +1125,9 @@
           </div>
           <div class="mode-switch" aria-label="Mockup screens">
             <a href="#review-summary">Review</a>
-            <a href="#weekly-tally">Weekly</a>
-            <a href="#annual-plan">Year Records</a>
+            <a href="#weekly-review">Weekly</a>
+            <a href="#quarter-review">Quarter</a>
+            <a href="#annual-review">Annual</a>
             <a href="#markdown">Markdown</a>
           </div>
         </header>
@@ -1340,6 +1488,483 @@
           </aside>
         </div>
 
+        <section class="panel" id="weekly-review" aria-labelledby="weekly-review-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Weekly Reviews</p>
+              <h2 id="weekly-review-title">Guided weekly review form</h2>
+            </div>
+            <div class="review-actions">
+              <button class="quiet-button" type="button" id="generate-weekly-button">Generate from Logs</button>
+              <button class="quiet-button" type="button" id="save-weekly-draft-button">Save Draft</button>
+              <button class="primary-button" type="button" id="finalize-weekly-button">Finalize Weekly Review</button>
+            </div>
+          </div>
+          <p class="panel-note">
+            Generated from approved daily logs for the selected Monday-Sunday week. The parent can edit everything before saving or finalizing.
+          </p>
+
+          <div class="review-form-grid">
+            <label>
+              <span>Student</span>
+              <input id="weekly-student" value="Bennett">
+            </label>
+            <label>
+              <span>School year</span>
+              <select id="weekly-school-year">
+                <option>2026-2027</option>
+                <option>2025-2026</option>
+              </select>
+            </label>
+            <label>
+              <span>Week start date</span>
+              <input id="weekly-start" type="date" value="2026-06-29">
+            </label>
+            <label>
+              <span>Week end date</span>
+              <input id="weekly-end" type="date" value="2026-07-05">
+            </label>
+            <label>
+              <span>Primary unit study</span>
+              <input id="weekly-unit" value="Construction">
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="weekly-status">
+                <option>draft</option>
+                <option>finalized</option>
+                <option>amended</option>
+              </select>
+            </label>
+            <label>
+              <span>Overall weekly rating</span>
+              <select id="weekly-overall-rating">
+                <option>Not Observed</option>
+                <option>Introduced</option>
+                <option>Developing</option>
+                <option selected>Practicing</option>
+                <option>Proficient</option>
+                <option>Mastery</option>
+              </select>
+            </label>
+            <label>
+              <span>Previous weeks</span>
+              <select id="weekly-picker">
+                <option>Current week: 2026-06-29 to 2026-07-05</option>
+                <option>2026-06-22 to 2026-06-28</option>
+                <option>2026-06-15 to 2026-06-21</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="parse-status" id="weekly-review-status" role="status">
+            Waiting to generate a draft review from approved activity logs.
+          </div>
+
+          <div class="review-metrics" aria-label="Weekly review generated metrics">
+            <div class="review-metric"><span>Total approved time</span><strong id="weekly-total-time">0 min</strong></div>
+            <div class="review-metric"><span>Activities logged</span><strong id="weekly-activity-count">0</strong></div>
+            <div class="review-metric"><span>Days logged</span><strong id="weekly-days-count">0</strong></div>
+            <div class="review-metric"><span>Artifacts saved</span><strong id="weekly-artifact-count">0</strong></div>
+            <div class="review-metric"><span>Needs review</span><strong id="weekly-needs-review">0</strong></div>
+          </div>
+
+          <div class="coverage-summary-grid">
+            <div class="record-link"><strong>Subject time summary</strong><span id="weekly-subject-summary">Generate from logs to populate subject allocations.</span></div>
+            <div class="record-link"><strong>Texas legal coverage</strong><span id="weekly-legal-summary">Generate from logs to populate legal tags.</span></div>
+            <div class="record-link"><strong>Markdown target</strong><span id="weekly-markdown-target">records/2026-2027/weeks/2026-W27.md</span></div>
+          </div>
+
+          <div class="weekly-notes-grid">
+            <label>
+              <span>Parent weekly summary</span>
+              <textarea id="weekly-parent-summary" rows="5"></textarea>
+            </label>
+            <label>
+              <span>Next week focus</span>
+              <textarea id="weekly-next-focus" rows="5"></textarea>
+            </label>
+          </div>
+
+          <details class="skill-group" open>
+            <summary>Student reflection <span>separate from parent skill ratings</span></summary>
+            <div class="review-form-grid">
+              <label>
+                <span>Favorite activity this week</span>
+                <input id="weekly-student-favorite" value="Building the frame">
+              </label>
+              <label>
+                <span>Hardest activity this week</span>
+                <input id="weekly-student-hardest" value="Reading the tape measure">
+              </label>
+              <label>
+                <span>Proudest work this week</span>
+                <input id="weekly-student-proudest" value="Story Weaver narration">
+              </label>
+              <label>
+                <span>Question or curiosity</span>
+                <input id="weekly-student-question" value="How do builders make corners square?">
+              </label>
+              <label>
+                <span>Student self-rating</span>
+                <select id="weekly-student-rating">
+                  <option>I am just starting</option>
+                  <option>I am getting better</option>
+                  <option selected>I can do this with help</option>
+                  <option>I can do this by myself</option>
+                  <option>I can teach or explain this</option>
+                </select>
+              </label>
+              <label>
+                <span>Dictated reflection</span>
+                <textarea id="weekly-student-dictation" rows="3">I liked using the tools and explaining what I made.</textarea>
+              </label>
+            </div>
+          </details>
+
+          <section aria-labelledby="skills-touched-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Skills Touched This Week</p>
+                <h2 id="skills-touched-title">Rate weekly skill progress</h2>
+              </div>
+              <span class="tag">Parent rating overrides AI suggestion</span>
+            </div>
+            <div class="skill-rating-list" id="weekly-skill-ratings">
+              <article class="skill-rating-row" data-subject="Language Arts">
+                <div>
+                  <strong>Reading</strong>
+                  <p class="skill-evidence">Evidence: Story Weaver read-aloud, book narration.</p>
+                </div>
+                <div>
+                  <span class="tag">AI suggestion: Practicing</span>
+                  <div class="rating-buttons" aria-label="Reading rating">
+                    <button class="rating-button" type="button">Not Observed</button>
+                    <button class="rating-button" type="button">Introduced</button>
+                    <button class="rating-button" type="button">Developing</button>
+                    <button class="rating-button is-selected" type="button">Practicing</button>
+                    <button class="rating-button" type="button">Proficient</button>
+                    <button class="rating-button" type="button">Mastery</button>
+                  </div>
+                </div>
+                <label>
+                  <span>Parent note</span>
+                  <input value="Read aloud with steady fluency.">
+                </label>
+              </article>
+              <article class="skill-rating-row" data-subject="Math">
+                <div>
+                  <strong>Measurement and Money</strong>
+                  <p class="skill-evidence">Evidence: measured boards and compared lengths during Construction.</p>
+                </div>
+                <div>
+                  <span class="tag">AI suggestion: Developing</span>
+                  <div class="rating-buttons" aria-label="Measurement and Money rating">
+                    <button class="rating-button" type="button">Not Observed</button>
+                    <button class="rating-button" type="button">Introduced</button>
+                    <button class="rating-button is-selected" type="button">Developing</button>
+                    <button class="rating-button" type="button">Practicing</button>
+                    <button class="rating-button" type="button">Proficient</button>
+                    <button class="rating-button" type="button">Mastery</button>
+                  </div>
+                </div>
+                <label>
+                  <span>Parent note</span>
+                  <input value="Needs more practice reading measurements independently.">
+                </label>
+              </article>
+              <article class="skill-rating-row" data-subject="Science">
+                <div>
+                  <strong>Uses Tools and Models to Investigate the World</strong>
+                  <p class="skill-evidence">Evidence: mouse skeleton labeling and project photo.</p>
+                </div>
+                <div>
+                  <span class="tag">AI suggestion: Practicing</span>
+                  <div class="rating-buttons" aria-label="Science tools rating">
+                    <button class="rating-button" type="button">Not Observed</button>
+                    <button class="rating-button" type="button">Introduced</button>
+                    <button class="rating-button" type="button">Developing</button>
+                    <button class="rating-button is-selected" type="button">Practicing</button>
+                    <button class="rating-button" type="button">Proficient</button>
+                    <button class="rating-button" type="button">Mastery</button>
+                  </div>
+                </div>
+                <label>
+                  <span>Parent note</span>
+                  <input>
+                </label>
+              </article>
+            </div>
+
+            <details class="skill-group">
+              <summary>Full skill list <span>expand when needed</span></summary>
+              <div class="skill-list">
+                <div class="skill-pill">Language Arts: Reading, Grammar, Literature, Memory Work, Phonics, Spelling, Writing, Editing, Fluency</div>
+                <div class="skill-pill">Math: Number Sense, Operations, Fractions, Measurement and Money, Geometry, Data, Patterns, Communication, Problem-Solving</div>
+                <div class="skill-pill">Finance: Money Recognition, Earning, Saving, Spending, Budgeting, Giving, Tradeoffs, Banking, Risk, Advertising</div>
+                <div class="skill-pill">Science: Investigations, Questions, Problem Solving, Tools and Models, Matter, Force, Earth, Organisms</div>
+                <div class="skill-pill">Social Studies: History, Geography, Economics, Government, Citizenship, Culture, Life Skills, Communication, Business, Philosophy, Emotional Intelligence</div>
+              </div>
+            </details>
+          </section>
+
+          <section aria-labelledby="portfolio-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Portfolio</p>
+                <h2 id="portfolio-title">Choose 2-5 weekly highlights</h2>
+              </div>
+              <span class="tag" id="portfolio-count">2 selected</span>
+            </div>
+            <div class="portfolio-grid">
+              <div class="portfolio-card is-selected">
+                <label><input type="checkbox" checked><span><strong>Story Weaver narration</strong><br>Language Arts activity</span></label>
+              </div>
+              <div class="portfolio-card is-selected">
+                <label><input type="checkbox" checked><span><strong>Construction frame photo</strong><br>Project artifact</span></label>
+              </div>
+              <div class="portfolio-card">
+                <label><input type="checkbox"><span><strong>Mouse skeleton labels</strong><br>Science journal evidence</span></label>
+              </div>
+              <div class="portfolio-card">
+                <label><input type="checkbox"><span><strong>Measurement notes</strong><br>Math evidence</span></label>
+              </div>
+              <div class="portfolio-card">
+                <label><input type="checkbox"><span><strong>Group build reflection</strong><br>Good citizenship evidence</span></label>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="quarter-review" aria-labelledby="quarter-review-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Quarter Reviews</p>
+              <h2 id="quarter-review-title">Instructional quarter checkpoint</h2>
+            </div>
+            <div class="review-actions">
+              <button class="quiet-button" type="button" id="generate-quarter-button">Generate Quarter Review</button>
+              <button class="quiet-button" type="button" id="save-quarter-draft-button">Save Draft</button>
+              <button class="primary-button" type="button" id="finalize-quarter-button">Finalize & Export</button>
+            </div>
+          </div>
+          <p class="panel-note">
+            Quarter Reviews are approximately 9-week checkpoints. For year-round homeschooling, customize the dates or add a Summer Extension before closing the school year.
+          </p>
+
+          <div class="review-form-grid">
+            <label>
+              <span>Student</span>
+              <input id="quarter-student" value="Bennett">
+            </label>
+            <label>
+              <span>School year</span>
+              <select id="quarter-school-year">
+                <option>2026-2027</option>
+                <option>2027-2028</option>
+              </select>
+            </label>
+            <label>
+              <span>School year model</span>
+              <select id="school-year-model">
+                <option>Traditional 4-quarter school year</option>
+                <option selected>Year-round with optional Summer Extension</option>
+              </select>
+            </label>
+            <label>
+              <span>Quarter label</span>
+              <select id="quarter-label">
+                <option selected>Quarter 1</option>
+                <option>Quarter 2</option>
+                <option>Quarter 3</option>
+                <option>Quarter 4</option>
+                <option>Summer Extension</option>
+              </select>
+            </label>
+            <label>
+              <span>Start date</span>
+              <input id="quarter-start" type="date" value="2026-07-01">
+            </label>
+            <label>
+              <span>End date</span>
+              <input id="quarter-end" type="date" value="2026-08-30">
+            </label>
+            <label>
+              <span>Status</span>
+              <select id="quarter-status">
+                <option>draft</option>
+                <option>finalized</option>
+                <option>amended</option>
+              </select>
+            </label>
+            <label>
+              <span>Summer work assigned to</span>
+              <select id="summer-assignment">
+                <option>Ending school year</option>
+                <option selected>Next school year</option>
+                <option>Not a summer extension</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="parse-status" id="quarter-review-status" role="status">
+            Waiting to generate a draft quarter review from daily logs and Weekly Reviews.
+          </div>
+
+          <div class="review-metrics" aria-label="Quarter review generated metrics">
+            <div class="review-metric"><span>Total time</span><strong id="quarter-total-time">0 min</strong></div>
+            <div class="review-metric"><span>Days with records</span><strong id="quarter-days-count">0</strong></div>
+            <div class="review-metric"><span>Activities</span><strong id="quarter-activity-count">0</strong></div>
+            <div class="review-metric"><span>Weekly reviews</span><strong id="quarter-weekly-count">0</strong></div>
+            <div class="review-metric"><span>Needs review</span><strong id="quarter-needs-review">0</strong></div>
+          </div>
+
+          <div class="coverage-summary-grid">
+            <div class="record-link"><strong>Subject time summary</strong><span id="quarter-subject-summary">Generate to summarize subject allocations.</span></div>
+            <div class="record-link"><strong>Texas legal coverage</strong><span id="quarter-legal-summary">Reading, Spelling, Grammar, Mathematics, Good Citizenship, Visual Curriculum, Bona Fide Instruction.</span></div>
+            <div class="record-link"><strong>Exports</strong><span id="quarter-export-target">records/2026-2027/quarter-reviews/quarter-1.md + PDF</span></div>
+          </div>
+
+          <section aria-labelledby="quarter-skills-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Skill trends</p>
+                <h2 id="quarter-skills-title">Weekly ratings across the quarter</h2>
+              </div>
+              <span class="tag">Parent final rating overrides AI suggestion</span>
+            </div>
+            <div class="skill-rating-list" id="quarter-skill-ratings">
+              <article class="skill-rating-row">
+                <div>
+                  <strong>Reading</strong>
+                  <p class="skill-evidence">Evidence: read-aloud narrations, book notes, weekly portfolio picks.</p>
+                </div>
+                <div>
+                  <span class="tag">Trend: Developing -> Practicing -> Practicing</span>
+                  <div class="rating-buttons" aria-label="Quarter Reading rating">
+                    <button class="rating-button" type="button">Not Observed</button>
+                    <button class="rating-button" type="button">Introduced</button>
+                    <button class="rating-button" type="button">Developing</button>
+                    <button class="rating-button is-selected" type="button">Practicing</button>
+                    <button class="rating-button" type="button">Proficient</button>
+                    <button class="rating-button" type="button">Mastery</button>
+                  </div>
+                </div>
+                <label>
+                  <span>Parent note</span>
+                  <input value="Sustained practice with stronger narration stamina.">
+                </label>
+              </article>
+              <article class="skill-rating-row">
+                <div>
+                  <strong>Grammar</strong>
+                  <p class="skill-evidence">Evidence: editing marks, dictated sentences, narration cleanup.</p>
+                </div>
+                <div>
+                  <span class="tag">Trend: Introduced -> Developing -> Practicing</span>
+                  <div class="rating-buttons" aria-label="Quarter Grammar rating">
+                    <button class="rating-button" type="button">Not Observed</button>
+                    <button class="rating-button" type="button">Introduced</button>
+                    <button class="rating-button" type="button">Developing</button>
+                    <button class="rating-button is-selected" type="button">Practicing</button>
+                    <button class="rating-button" type="button">Proficient</button>
+                    <button class="rating-button" type="button">Mastery</button>
+                  </div>
+                </div>
+                <label>
+                  <span>Parent note</span>
+                  <input value="Ready for more independent editing.">
+                </label>
+              </article>
+            </div>
+          </section>
+
+          <div class="weekly-notes-grid">
+            <section aria-labelledby="quarter-student-title">
+              <p class="eyebrow">Student reflection</p>
+              <h2 id="quarter-student-title">Quarter reflection</h2>
+              <label><span>What did I learn this quarter?</span><textarea id="quarter-student-learned" rows="3">I learned how braces help make a frame strong.</textarea></label>
+              <label><span>What work am I most proud of?</span><input id="quarter-student-proud" value="The construction photo and narration"></label>
+              <label><span>What was hard for me?</span><input id="quarter-student-hard" value="Measuring exactly"></label>
+              <label><span>What do I want to learn next?</span><input id="quarter-student-next" value="How to make a roof"></label>
+              <label><span>Student self-rating</span><select id="quarter-student-rating"><option>I am just starting</option><option>I am getting better</option><option selected>I can do this with help</option><option>I can do this by myself</option><option>I can teach or explain this</option></select></label>
+            </section>
+            <section aria-labelledby="quarter-parent-title">
+              <p class="eyebrow">Parent reflection</p>
+              <h2 id="quarter-parent-title">Planning direction</h2>
+              <label><span>Overall quarter rating</span><select id="quarter-overall-rating"><option>Not Observed</option><option>Introduced</option><option>Developing</option><option selected>Practicing</option><option>Proficient</option><option>Mastery</option></select></label>
+              <label><span>What improved most</span><input id="quarter-improved" value="Narration detail and applied measurement"></label>
+              <label><span>What needs review</span><input id="quarter-review-needed" value="Measurement precision and spelling"></label>
+              <label><span>Next quarter priorities</span><textarea id="quarter-next-priorities" rows="3">Continue construction unit, add finance practice, and strengthen independent editing.</textarea></label>
+            </section>
+          </div>
+
+          <section aria-labelledby="quarter-portfolio-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Portfolio</p>
+                <h2 id="quarter-portfolio-title">Choose 8-15 quarter highlights</h2>
+              </div>
+              <span class="tag" id="quarter-portfolio-count">3 selected</span>
+            </div>
+            <div class="portfolio-grid">
+              <div class="portfolio-card quarter-portfolio-card is-selected"><label><input type="checkbox" checked><span><strong>Weekly narration set</strong><br>Suggested from Weekly Reviews</span></label></div>
+              <div class="portfolio-card quarter-portfolio-card is-selected"><label><input type="checkbox" checked><span><strong>Construction frame photo</strong><br>Student favorite</span></label></div>
+              <div class="portfolio-card quarter-portfolio-card is-selected"><label><input type="checkbox" checked><span><strong>Measurement journal</strong><br>Math evidence</span></label></div>
+              <div class="portfolio-card quarter-portfolio-card"><label><input type="checkbox"><span><strong>Science journal page</strong><br>Artifact suggestion</span></label></div>
+              <div class="portfolio-card quarter-portfolio-card"><label><input type="checkbox"><span><strong>Group event reflection</strong><br>Good Citizenship evidence</span></label></div>
+            </div>
+          </section>
+
+          <section aria-labelledby="quarter-units-title">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Unit studies</p>
+                <h2 id="quarter-units-title">Active units this quarter</h2>
+              </div>
+            </div>
+            <div class="records-grid">
+              <div class="record-link"><strong>Construction</strong><span>Active - 9 activities - 4 artifacts - supports Measurement, Tools and Models. Next action: Continue.</span></div>
+              <div class="record-link"><strong>Human Body</strong><span>Paused - 2 activities - 1 artifact - supports Organisms and Environments. Next action: Review later.</span></div>
+              <div class="record-link"><strong>Off the Land</strong><span>Not started - planned for next quarter. Next action: Continue planning.</span></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="panel" id="annual-review" aria-labelledby="annual-review-title">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Annual Review</p>
+              <h2 id="annual-review-title">School-year closeout</h2>
+            </div>
+            <div class="review-actions">
+              <button class="quiet-button" type="button" id="generate-annual-button">Generate Annual Review</button>
+              <button class="quiet-button" type="button">Export PDFs</button>
+              <button class="primary-button" type="button" id="archive-year-button">Close & Archive Year</button>
+            </div>
+          </div>
+          <p class="panel-note">
+            Annual closeout finalizes the school year, keeps previous records retrievable, and starts the next school year with a fresh quarter cycle.
+          </p>
+          <div class="review-metrics">
+            <div class="review-metric"><span>Total learning time</span><strong>0 min</strong></div>
+            <div class="review-metric"><span>Days with records</span><strong>0</strong></div>
+            <div class="review-metric"><span>Quarter reviews</span><strong>0</strong></div>
+            <div class="review-metric"><span>Units completed</span><strong>0</strong></div>
+            <div class="review-metric"><span>Artifacts saved</span><strong>0</strong></div>
+          </div>
+          <div class="weekly-notes-grid">
+            <label><span>Parent annual reflection</span><textarea rows="5">Summarize growth, legal coverage, portfolio choices, and next school year recommendations.</textarea></label>
+            <label><span>Student annual reflection</span><textarea rows="5">What did I learn this year? What am I proud of? What do I want to learn next year?</textarea></label>
+          </div>
+          <div class="records-grid">
+            <div class="record-link"><strong>Legal compliance summary</strong><span>Regenerate records/2026-2027/legal-summary.md and legal archive PDF.</span></div>
+            <div class="record-link"><strong>Annual portfolio</strong><span>Select final highlights and generate annual portfolio PDF.</span></div>
+            <div class="record-link"><strong>Student-selected best work</strong><span>One student favorite item is stored separately from parent portfolio picks.</span></div>
+            <div class="record-link"><strong>Archive status</strong><span>After closeout, prior school year remains retrievable and new records start in the next year.</span></div>
+          </div>
+        </section>
+
         <section class="panel" id="annual-plan" aria-labelledby="annual-title">
           <div class="panel-head">
             <div>
@@ -1395,6 +2020,8 @@
           <div class="sync-list" aria-label="Markdown files regenerated after approved activity save or update">
             <div class="sync-item"><strong>Daily record</strong><span>records/2026-2027/days/2026-09-08.md</span></div>
             <div class="sync-item"><strong>Weekly summary</strong><span>records/2026-2027/weeks/2026-W37.md</span></div>
+            <div class="sync-item"><strong>Quarter review</strong><span>records/2026-2027/quarter-reviews/quarter-1.md + PDF</span></div>
+            <div class="sync-item"><strong>Annual review</strong><span>records/2026-2027/annual-review.md + PDFs</span></div>
             <div class="sync-item"><strong>Unit activities</strong><span>records/2026-2027/units/construction/activities.md</span></div>
             <div class="sync-item"><strong>Unit skills</strong><span>records/2026-2027/units/construction/skills-covered.md</span></div>
             <div class="sync-item"><strong>Legal summary</strong><span>records/2026-2027/legal-summary.md</span></div>
@@ -1420,7 +2047,12 @@
   /weeks
     2026-W36.md
     2026-W37.md
-    2026-W38.md</pre>
+    2026-W38.md
+  /quarter-reviews
+    quarter-1.md
+    quarter-2.md
+    summer-extension.md
+  annual-review.md</pre>
         </section>
 
         <p class="footer-note">
@@ -1491,6 +2123,19 @@
       const saveApprovedButton = document.querySelector("#save-approved-button");
       const regenerateMarkdownButton = document.querySelector("#regenerate-markdown-button");
       const markdownSyncStatus = document.querySelector("#markdown-sync-status");
+      const generateWeeklyButton = document.querySelector("#generate-weekly-button");
+      const saveWeeklyDraftButton = document.querySelector("#save-weekly-draft-button");
+      const finalizeWeeklyButton = document.querySelector("#finalize-weekly-button");
+      const weeklyReviewStatus = document.querySelector("#weekly-review-status");
+      const weeklyStatusInput = document.querySelector("#weekly-status");
+      const portfolioCount = document.querySelector("#portfolio-count");
+      const generateQuarterButton = document.querySelector("#generate-quarter-button");
+      const saveQuarterDraftButton = document.querySelector("#save-quarter-draft-button");
+      const finalizeQuarterButton = document.querySelector("#finalize-quarter-button");
+      const quarterReviewStatus = document.querySelector("#quarter-review-status");
+      const quarterStatusInput = document.querySelector("#quarter-status");
+      const quarterPortfolioCount = document.querySelector("#quarter-portfolio-count");
+      const archiveYearButton = document.querySelector("#archive-year-button");
       let selectedActivityType = "Language Arts";
 
       function todayIso() {
@@ -1680,6 +2325,104 @@
         markdownSyncStatus.classList.add("is-success");
       }
 
+      function updatePortfolioCount() {
+        const selected = document.querySelectorAll("#weekly-review .portfolio-card input:checked").length;
+        portfolioCount.textContent = `${selected} selected`;
+        document.querySelectorAll("#weekly-review .portfolio-card").forEach((card) => {
+          const checkbox = card.querySelector("input");
+          card.classList.toggle("is-selected", checkbox.checked);
+        });
+      }
+
+      function updateQuarterPortfolioCount() {
+        const selected = document.querySelectorAll(".quarter-portfolio-card input:checked").length;
+        quarterPortfolioCount.textContent = `${selected} selected`;
+        document.querySelectorAll(".quarter-portfolio-card").forEach((card) => {
+          const checkbox = card.querySelector("input");
+          card.classList.toggle("is-selected", checkbox.checked);
+        });
+      }
+
+      function generateWeeklyReviewDraft() {
+        weeklyStatusInput.value = "draft";
+        document.querySelector("#weekly-total-time").textContent = "7 hr 20 min";
+        document.querySelector("#weekly-activity-count").textContent = "12";
+        document.querySelector("#weekly-days-count").textContent = "4";
+        document.querySelector("#weekly-artifact-count").textContent = "5";
+        document.querySelector("#weekly-needs-review").textContent = "2";
+        document.querySelector("#weekly-subject-summary").textContent =
+          "Language Arts 1h 45m; Math 35m; Science 1h 10m; Unit Study 2h 20m; Hands-On 1h 05m.";
+        document.querySelector("#weekly-legal-summary").textContent =
+          "Reading covered; Grammar covered; Mathematics covered; Good Citizenship light; Visual Curriculum covered.";
+        document.querySelector("#weekly-parent-summary").value =
+          "Strong week of narration, project work, and applied measurement. Reading and editing were steady; math appeared naturally in construction work.";
+        document.querySelector("#weekly-next-focus").value =
+          "Add explicit finance practice and one Good Citizenship discussion. Keep measuring during build work.";
+        weeklyReviewStatus.textContent =
+          "Draft generated from approved logs: activities, allocations, legal tags, skills, artifacts, and daily records were pulled for this week.";
+        weeklyReviewStatus.classList.add("is-success");
+      }
+
+      function saveWeeklyReviewDraft() {
+        weeklyStatusInput.value = "draft";
+        weeklyReviewStatus.textContent =
+          "Weekly review draft saved in the database model. No finalized Markdown archive is generated until finalization.";
+        weeklyReviewStatus.classList.remove("is-success");
+        weeklyReviewStatus.classList.add("is-draft");
+      }
+
+      function finalizeWeeklyReview() {
+        weeklyStatusInput.value = "finalized";
+        weeklyReviewStatus.textContent =
+          "Weekly review finalized and remains retrievable by school year and week. Markdown generated: records/2026-2027/weeks/2026-W27.md.";
+        weeklyReviewStatus.classList.remove("is-draft");
+        weeklyReviewStatus.classList.add("is-success");
+        markdownSyncStatus.textContent =
+          "Finalized weekly review: generated records/2026-2027/weeks/2026-W27.md from database records and saved weekly review fields.";
+        markdownSyncStatus.classList.add("is-success");
+      }
+
+      function generateQuarterReviewDraft() {
+        quarterStatusInput.value = "draft";
+        document.querySelector("#quarter-total-time").textContent = "38 hr 15 min";
+        document.querySelector("#quarter-days-count").textContent = "27";
+        document.querySelector("#quarter-activity-count").textContent = "64";
+        document.querySelector("#quarter-weekly-count").textContent = "8";
+        document.querySelector("#quarter-needs-review").textContent = "4";
+        document.querySelector("#quarter-subject-summary").textContent =
+          "Language Arts strong; Math adequate; Science adequate; Finance light; Social Studies light.";
+        document.querySelector("#quarter-legal-summary").textContent =
+          "Reading strong; Spelling adequate; Grammar adequate; Mathematics adequate; Good Citizenship light; Visual Curriculum strong; Bona Fide Instruction strong.";
+        quarterReviewStatus.textContent =
+          "Draft quarter review generated from daily records, Weekly Reviews, weekly skill ratings, subject allocations, legal tags, unit studies, artifacts, and portfolio selections.";
+        quarterReviewStatus.classList.add("is-success");
+      }
+
+      function saveQuarterDraft() {
+        quarterStatusInput.value = "draft";
+        quarterReviewStatus.textContent =
+          "Quarter review draft saved in the database model. Markdown and PDF exports wait for finalization.";
+        quarterReviewStatus.classList.remove("is-success");
+        quarterReviewStatus.classList.add("is-draft");
+      }
+
+      function finalizeQuarterReview() {
+        quarterStatusInput.value = "finalized";
+        quarterReviewStatus.textContent =
+          "Quarter Review finalized and retrievable by school year and quarter. Markdown and PDF exports generated.";
+        quarterReviewStatus.classList.remove("is-draft");
+        quarterReviewStatus.classList.add("is-success");
+        markdownSyncStatus.textContent =
+          "Finalized Quarter Review: generated records/2026-2027/quarter-reviews/quarter-1.md and the matching PDF export from database records.";
+        markdownSyncStatus.classList.add("is-success");
+      }
+
+      function archiveSchoolYear() {
+        markdownSyncStatus.textContent =
+          "Annual Review closeout: generated annual-review.md, legal-summary.md, portfolio-index.md, legal archive PDF, and annual portfolio PDF. The next school year starts with Quarter 1.";
+        markdownSyncStatus.classList.add("is-success");
+      }
+
       dateInput.value = todayIso();
       dateInput.addEventListener("change", updateActivityTypeButtons);
       [studentNameInput, schoolYearInput, unitStudyInput, narrationInput].forEach((field) => {
@@ -1709,9 +2452,33 @@
       clearEntryButton.addEventListener("click", clearCurrentEntry);
       saveApprovedButton.addEventListener("click", () => regenerateMarkdownSnapshots("Approved activity save"));
       regenerateMarkdownButton.addEventListener("click", () => regenerateMarkdownSnapshots("Manual snapshot regeneration"));
+      generateWeeklyButton.addEventListener("click", generateWeeklyReviewDraft);
+      saveWeeklyDraftButton.addEventListener("click", saveWeeklyReviewDraft);
+      finalizeWeeklyButton.addEventListener("click", finalizeWeeklyReview);
+      generateQuarterButton.addEventListener("click", generateQuarterReviewDraft);
+      saveQuarterDraftButton.addEventListener("click", saveQuarterDraft);
+      finalizeQuarterButton.addEventListener("click", finalizeQuarterReview);
+      archiveYearButton.addEventListener("click", archiveSchoolYear);
+
+      document.querySelectorAll(".rating-buttons").forEach((group) => {
+        group.addEventListener("click", (event) => {
+          if (!event.target.classList.contains("rating-button")) return;
+          group.querySelectorAll(".rating-button").forEach((button) => button.classList.remove("is-selected"));
+          event.target.classList.add("is-selected");
+        });
+      });
+
+      document.querySelectorAll("#weekly-review .portfolio-card input").forEach((checkbox) => {
+        checkbox.addEventListener("change", updatePortfolioCount);
+      });
+      document.querySelectorAll(".quarter-portfolio-card input").forEach((checkbox) => {
+        checkbox.addEventListener("change", updateQuarterPortfolioCount);
+      });
 
       updateActivityTypeButtons();
       updateParseButtonState();
+      updatePortfolioCount();
+      updateQuarterPortfolioCount();
     </script>
   </body>
 </html>

@@ -40,7 +40,7 @@ The app should also track broader subject areas:
 3. Map activities to required legal categories.
 4. Map activities to skills/standards.
 5. Archive proof-of-learning evidence.
-6. Generate weekly, 9-week, and annual reports.
+6. Generate weekly, quarter, and annual reports.
 7. Generate a legal/compliance archive PDF.
 
 ## Important Tracking Rule
@@ -338,9 +338,221 @@ Period types:
 
 - Weekly
 - Unit-end
-- 9-week
+- Quarter
+- Summer Extension
 - Semester
 - Annual
+
+School years should support both traditional and year-round homeschool models:
+
+- Model A: Quarter 1, Quarter 2, Quarter 3, Quarter 4, Annual closeout.
+- Model B: Quarter 1, Quarter 2, Quarter 3, Quarter 4, optional Summer Extension / Summer Term, Annual closeout.
+
+The app should not assume education stops during summer. Summer Extension may belong to the ending school year or the next school year, based on parent preference.
+
+Annual closeout finalizes the school year. After closeout, the next school year begins with a fresh quarter cycle.
+
+### instructional_periods
+
+- id
+- school_year_id
+- label
+- period_type: quarter, summer_extension, annual
+- sequence_number
+- start_date
+- end_date
+- status: planned, active, completed, finalized, amended
+- notes
+
+### weekly_reviews
+
+- id
+- student_id
+- school_year_id
+- week_start_date
+- week_end_date
+- primary_unit_id
+- status
+- total_approved_minutes
+- activities_logged_count
+- days_logged_count
+- artifacts_saved_count
+- activities_needing_review_count
+- subject_time_summary
+- texas_legal_coverage_summary
+- parent_weekly_summary
+- overall_weekly_rating
+- student_favorite_activity
+- student_hardest_activity
+- student_proudest_work
+- student_question_or_curiosity
+- student_self_rating
+- student_dictated_reflection
+- next_week_focus
+- finalized_at
+- amended_at
+
+Weekly review status options:
+
+- draft
+- finalized
+- amended
+
+Weekly review rating scale:
+
+- Not Observed
+- Introduced
+- Developing
+- Practicing
+- Proficient
+- Mastery
+
+### weekly_review_skill_ratings
+
+- id
+- weekly_review_id
+- standard_or_skill_id
+- subject
+- skill_name
+- evidence_summary
+- ai_suggested_rating
+- parent_rating
+- parent_note
+
+### weekly_review_portfolio_selections
+
+- id
+- weekly_review_id
+- activity_id
+- evidence_artifact_id
+- selection_note
+
+### quarter_reviews
+
+- id
+- student_id
+- school_year_id
+- instructional_period_id
+- quarter_label
+- start_date
+- end_date
+- status
+- total_minutes
+- days_logged_count
+- activities_count
+- weekly_reviews_count
+- artifacts_count
+- portfolio_items_count
+- activities_needing_review_count
+- overall_rating
+- overall_summary
+- what_improved
+- needs_review
+- what_surprised_me
+- what_was_difficult
+- what_should_continue
+- what_should_change
+- next_period_priorities
+- parent_reflection
+- student_favorite_activity
+- student_proudest_work
+- student_hardest_activity
+- student_question_or_curiosity
+- student_wants_to_learn_next
+- student_self_rating
+- student_dictated_reflection
+- created_at
+- updated_at
+- finalized_at
+
+Quarter review status options:
+
+- draft
+- finalized
+- amended
+
+Parent skill rating scale:
+
+- Not Observed
+- Introduced
+- Developing
+- Practicing
+- Proficient
+- Mastery
+
+Student self-rating scale:
+
+- I am just starting
+- I am getting better
+- I can do this with help
+- I can do this by myself
+- I can teach or explain this
+
+Legal/subject coverage scale:
+
+- Not Covered
+- Light
+- Adequate
+- Strong
+
+### quarter_review_skill_ratings
+
+- id
+- quarter_review_id
+- standard_or_skill_id
+- subject
+- skill_name
+- evidence_summary
+- weekly_rating_trend
+- ai_suggested_rating
+- parent_final_rating
+- parent_note
+
+### quarter_review_portfolio_selections
+
+- id
+- quarter_review_id
+- activity_id
+- evidence_artifact_id
+- source_weekly_review_id
+- selection_note
+
+### quarter_review_unit_summaries
+
+- id
+- quarter_review_id
+- unit_id
+- status
+- activities_count
+- artifacts_count
+- skills_supported
+- parent_summary
+- student_comment
+- next_action
+
+### annual_reviews
+
+- id
+- student_id
+- school_year_id
+- status: draft, finalized, amended
+- total_minutes
+- days_logged_count
+- activities_count
+- weekly_reviews_count
+- quarter_reviews_count
+- units_completed_count
+- artifacts_count
+- portfolio_items_count
+- legal_coverage_summary
+- subject_time_summary
+- skill_progress_summary
+- parent_annual_reflection
+- student_annual_reflection
+- student_selected_best_work
+- next_school_year_recommendations
+- finalized_at
+- archived_at
 
 ### legal_records
 
@@ -434,37 +646,226 @@ Each evidence item should link to:
 
 ### 5. Weekly Review
 
-At the end of each week, prompt the parent to select 2-5 portfolio items:
+Each school year should include a Weekly Reviews tab. Weekly Reviews are generated from approved daily activity logs for a selected Monday-Sunday week, then edited and finalized by the parent.
 
-- Best writing sample
-- Best project photo
-- Best math evidence
-- Best reading/narration evidence
-- Best good citizenship/civics evidence
+Weekly Review workflow:
 
-### 6. 9-Week Review
+1. Parent opens Weekly Reviews.
+2. App defaults to the current week, Monday-Sunday.
+3. Parent can select a previous week.
+4. Parent clicks Generate from Logs.
+5. App pulls approved activities, subject allocations, legal tags, skills, artifacts, and daily records from that week.
+6. App creates a draft weekly review.
+7. Parent edits the draft, rates skills, selects portfolio items, adds notes, and saves.
+8. Parent may finalize the weekly review.
+9. Finalized review remains retrievable by school year and week.
+10. App generates a Markdown file for the week.
 
-Generate a 9-week summary showing:
+Weekly Review should include:
 
-- What was covered
-- What the child read
-- What the child wrote
-- What the child built or presented
-- Subject time balance
-- Skills introduced/practiced/mastered
-- Skills needing review
+- Student
+- School year
+- Week start date
+- Week end date
+- Primary unit study
+- Status: draft, finalized, amended
+- Total approved learning time
+- Number of activities logged
+- Number of days logged
+- Number of artifacts saved
+- Activities needing review
+- Subject time summary
+- Texas legal coverage summary
+- Parent weekly summary
+- Overall weekly rating
+- Skill ratings
+- Portfolio selections
+- Next week focus
+- Student favorite activity this week
+- Student hardest activity this week
+- Student proudest work this week
+- Student question or curiosity
+- Student self-rating, optional
+- Student dictated reflection
+
+Prompt the parent to choose 2-5 artifacts or activities as portfolio highlights for the week.
+
+Weekly Review should not grade every individual activity. It should rate skill progress for the week based on the pattern of activities and evidence.
+
+### 6. Quarter Review
+
+Each school year should include a Quarter Reviews tab. Quarter Reviews are approximately 9-week checkpoints. For year-round homeschooling, customize the dates or add a Summer Extension before closing the school year.
+
+The parent should be able to edit the quarter start/end date range.
+
+Quarter Review workflow:
+
+1. Parent opens Quarter Reviews.
+2. App defaults to the current instructional quarter based on date.
+3. Parent can select a previous quarter.
+4. Parent can edit quarter start/end dates.
+5. Parent clicks Generate Quarter Review.
+6. App pulls daily activity records, daily learning records, weekly reviews, weekly skill ratings, subject allocations, legal tags, unit studies, artifacts, and portfolio selections.
+7. App creates a draft quarter review.
+8. Parent edits ratings, summaries, portfolio selections, student reflection, parent reflection, and next-step plans.
+9. Parent saves draft or finalizes.
+10. Finalized quarter review remains retrievable by school year and quarter.
+11. App generates Markdown and PDF exports.
+
+Quarter Review should include:
+
+- Student
+- School year
+- Quarter label
+- Start date
+- End date
+- Status: draft, finalized, amended
+- Total approved learning time
+- Days with records
+- Activities logged
+- Weekly reviews completed
+- Artifacts saved
+- Portfolio items selected
+- Activities needing review
+- Subject time summary
+- Texas legal coverage summary
+- Skill progression summary
+- Unit study progress summary
 - Portfolio highlights
-- Next 9-week goals
+- Student reflection
+- Parent reflection
+- Next quarter priorities
 
-### 7. Annual Archive
+The quarter review should show trends across Weekly Reviews, such as Reading: Developing -> Practicing -> Practicing.
 
-At the end of the school year:
+For each skill row, show:
 
-- Generate an annual PDF
-- Generate a legal compliance summary
-- Generate a portfolio export
-- Lock/archive the year from accidental editing
-- Allow amended notes only
+- Skill name
+- Evidence from activities/artifacts
+- Weekly rating trend
+- AI suggested quarter rating
+- Parent final rating
+- Parent note field
+
+Parent final rating overrides the AI suggestion.
+
+Legal coverage should track Texas categories:
+
+- Reading
+- Spelling
+- Grammar
+- Mathematics
+- Good Citizenship
+- Visual Curriculum
+- Bona Fide Instruction
+
+Prompt the parent to select 8-15 highlights for the quarter. Pull suggestions from weekly portfolio selections and artifacts.
+
+Student should also be able to select one student favorite portfolio item for the quarter.
+
+Show each unit active during the period with:
+
+- Status: not started, active, completed, paused
+- Activities count
+- Artifacts count
+- Skills supported
+- Parent summary
+- Student comment, optional
+- Continue, close, or review later
+
+Parent reflection should include:
+
+- Overall quarter rating
+- What improved most
+- What needs review
+- What surprised me
+- What was difficult
+- What should continue
+- What should change next quarter
+- Next quarter priorities
+
+When finalized, create or update:
+
+```text
+records/{schoolYear}/quarter-reviews/{quarterLabel}.md
+```
+
+When a Summer Extension is finalized, create or update:
+
+```text
+records/{schoolYear}/quarter-reviews/summer-extension.md
+```
+
+Also allow PDF export. The database remains the source of truth; Markdown and PDF are generated exports.
+
+### 7. Annual Review / School-Year Closeout
+
+Each school year should include an Annual Review tab.
+
+Annual Review workflow:
+
+1. Parent opens Annual Review.
+2. App pulls all quarter reviews, weekly reviews, daily records, activities, artifacts, legal tags, skills, and subject time summaries from the school year.
+3. App generates a draft annual review.
+4. Parent edits and adds final parent reflection.
+5. Student adds or dictates annual reflection.
+6. Parent selects final annual portfolio highlights.
+7. Parent generates legal archive PDF and annual portfolio PDF.
+8. Parent closes/archives the school year.
+9. App starts the next school year cycle when the parent creates the next school year.
+
+Annual Review should include:
+
+- Student
+- School year
+- Date range
+- Total learning time
+- Days with records
+- Activities logged
+- Weekly reviews completed
+- Quarter reviews completed
+- Units completed
+- Artifacts saved
+- Annual portfolio highlights
+- Texas legal coverage
+- Subject time summary
+- Skill progression summary
+- Parent annual reflection
+- Student annual reflection
+- Next school year recommendations
+- Close/archive school year action
+
+Annual Review student reflection fields:
+
+- What did I learn this year?
+- What am I most proud of this year?
+- What was hard this year?
+- What do I want to learn next year?
+- Favorite book / unit / project
+- Student-selected best work
+- Student dictated reflection
+
+School year closeout should support:
+
+- Final annual review
+- Annual portfolio selection
+- Legal compliance summary
+- Annual subject time summary
+- Annual skills progress summary
+- Annual unit study summary
+- Annual student reflection
+- Annual parent reflection
+- PDF export
+- Markdown export
+- Archive/lock school year
+
+After closeout:
+
+- Previous school year remains retrievable
+- New school year starts fresh
+- Activity type daily completion buttons reset because the date/school year changes
+- Weekly tallies continue by date but are grouped under the new school year
+- Quarter cycle restarts at Quarter 1
 
 ## Reports
 
@@ -509,7 +910,7 @@ At the end of the school year:
 - Good citizenship examples
 - Parent summary
 
-### 9-Week Review Report
+### Quarter Review Report
 
 - Unit summaries
 - Time by subject
@@ -583,7 +984,7 @@ The parent should be able to adjust all allocations manually.
 9. Reading log
 10. Writing samples
 11. Weekly summary
-12. 9-week review
+12. Quarter review
 13. Annual PDF export
 14. Portfolio export
 15. Legal compliance report

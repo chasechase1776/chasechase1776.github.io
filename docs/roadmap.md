@@ -54,7 +54,11 @@ This roadmap is intentionally setup-oriented. It should guide implementation onc
 ## Phase 5: Reviews and Reports
 
 - [ ] Weekly review
-- [ ] 9-week review
+- [ ] Guided Weekly Reviews tab by school year and week
+- [ ] Quarter review
+- [ ] Guided Quarter Reviews tab with customizable date ranges
+- [ ] Optional Summer Extension / Summer Term support
+- [ ] Annual Review tab and school-year closeout/archive
 - [ ] Legal compliance dashboard
 - [ ] Subject time report
 - [ ] Portfolio export
