@@ -9,6 +9,7 @@ Vercel supports Next.js projects and can run server-rendered Next.js routes thro
 Set these in Vercel Project Settings before production deployment:
 
 ```text
+ENABLE_PASSCODE_GATE=false
 APP_PASSCODE=
 OPENAI_API_KEY=
 AI_PARSER_MODE=enabled
@@ -33,7 +34,7 @@ Recommended setup:
 1. Create a Vercel project from this GitHub repository.
 2. Add a hosted Postgres database integration or external Postgres provider.
 3. Set `DATABASE_URL` to the production Postgres connection string.
-4. Add `APP_PASSCODE` and `OPENAI_API_KEY` in Vercel environment variables.
+4. Add `OPENAI_API_KEY` in Vercel environment variables if AI parsing is desired. Leave `ENABLE_PASSCODE_GATE=false` while the app is being built; set it to `true` and add `APP_PASSCODE` when family protection is ready.
 5. Deploy.
 
 The repository includes `vercel.json`, which runs:

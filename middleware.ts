@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, isValidAuthCookie } from "./lib/auth";
 
 const PUBLIC_PATHS = new Set(["/passcode", "/api/passcode", "/favicon.ico"]);
-const PASSCODE_GATE_ENABLED = process.env.NODE_ENV === "production";
+// Keep the gate opt-in while the app is being built. Enable it explicitly for a protected deployment.
+const PASSCODE_GATE_ENABLED = process.env.ENABLE_PASSCODE_GATE === "true";
 
 function isPublicAsset(pathname: string) {
   return (
