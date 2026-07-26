@@ -132,6 +132,7 @@ export default function Home() {
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -348,32 +349,23 @@ export default function Home() {
           <div>
             <p className="eyebrow">Narration-first daily logging</p>
             <h1>Log learning from narration</h1>
-            <p>The parent sets context, picks one primary activity type, narrates what happened, attaches proof if useful, then reviews AI-style draft records before saving.</p>
+            <p>Quick log first: pick an activity, add minutes, narrate what happened, then save. Details stay available without crowding the daily workflow.</p>
           </div>
           <div className="mode-switch" aria-label="Mockup sections">
-            <a href="#review-summary">Review</a>
-            <a href="#weekly-tally">Weekly</a>
-            <a href="#legal-panel">Legal</a>
-            <a href="#skills-panel">Skills</a>
+            <a href="#daily-log">Daily log</a>
+            <a href="#saved-records">Saved</a>
+            <a href="#weekly-tally">Coverage</a>
           </div>
         </header>
 
-        <section className="review-alert-card" id="quarter-alert" aria-label="Quarter review alert">
+        <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
           <div className="alert-head">
             <div>
               <p className="eyebrow">Quarter review alert</p>
               <h2>Quarter 1 review due soon</h2>
-              <p>Quarter 1 is due in 3 days. No records are changed when a review becomes overdue.</p>
+              <p>Due in 3 days. This flags review work only; daily records are never changed or deleted.</p>
             </div>
             <span className="alert-status">Urgent</span>
-          </div>
-          <div className="alert-grid">
-            <span><strong>Weekly reviews</strong> 8 / 9 completed</span>
-            <span><strong>Needs review</strong> 4 activities</span>
-            <span><strong>Missing time</strong> 3 activities</span>
-            <span><strong>Artifacts</strong> 5 need classification</span>
-            <span><strong>Portfolio candidates</strong> 12 candidates</span>
-            <span><strong>Legal gaps</strong> Good Citizenship, Finance</span>
           </div>
         </section>
 
@@ -384,17 +376,17 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Pre-launch status</p>
                   <h2>Trial Mode</h2>
-                  <p>Records before the official homeschool start date are saved as practice/enrichment records unless the parent includes them later.</p>
+                  <p>Practice records stay separate from official reporting unless you choose to include them later.</p>
                 </div>
                 <span className="alert-status">Trial</span>
               </div>
             </section>
 
-            <section className="panel">
+            <section className="panel quick-log-panel">
               <div className="section-head">
                 <div>
-                  <p className="eyebrow">Daily log</p>
-                  <h2>Choose one activity type</h2>
+                  <p className="eyebrow">Step 1</p>
+                  <h2>Select learning activity</h2>
                 </div>
                 <label className="date-selector"><span>Date</span><input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} /></label>
               </div>
@@ -417,10 +409,10 @@ export default function Home() {
               </p>
             </section>
 
-            <section className="panel">
+            <section className="panel quick-log-panel">
               <div className="section-head">
                 <div>
-                  <p className="eyebrow">Narration</p>
+                  <p className="eyebrow">Step 2</p>
                   <h2>Tell me what happened.</h2>
                 </div>
                 <span className="tag good">{selectedType}</span>
@@ -436,87 +428,100 @@ export default function Home() {
                 </label>
               </div>
               <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
-            </section>
-
-            <section className="panel">
-              <div className="section-head">
-                <div>
-                  <p className="eyebrow">Subject and legal metadata</p>
-                  <h2>Time allocation and editable legal tags</h2>
-                  <p className="panel-note">All {actualMinutes || 0} actual minutes are assigned to one inferred subject for this step, so subject time cannot double-count the activity.</p>
-                </div>
+              <div className="quick-summary-row">
                 <span className="tag good">{primarySubject}: {actualMinutes || 0} min</span>
-              </div>
-              <div className="tag-grid">
-                {["Reading", "Spelling", "Grammar", "Mathematics", "Good Citizenship", "Visual Curriculum", "Bona Fide Instruction"].map((tag) => (
-                  <button className={legalTags.includes(tag) ? "tag-button is-active" : "tag-button"} key={tag} type="button" onClick={() => toggleLegalTag(tag)}>
-                    {tag}
-                  </button>
-                ))}
+                <span className="tag">Legal tags suggested</span>
+                <button className="text-button" type="button" onClick={() => setShowDetails((value) => !value)}>
+                  {showDetails ? "Hide full details" : "Show full details"}
+                </button>
               </div>
             </section>
 
-            <section className="panel" id="proof">
+            <section className="panel action-panel">
               <div className="section-head">
                 <div>
-                  <p className="eyebrow">Artifact / proof</p>
-                  <h2>Proof of learning</h2>
-                </div>
-                <span className="tag">{selectedProof.length ? `${selectedProof.length} selected` : "Optional"}</span>
-              </div>
-              <div className="artifact-grid">
-                {["Upload photo", "Upload file", "Select existing artifact", "Record audio", "Skip proof for now"].map((label) => (
-                  <button className={selectedProof.includes(label) ? "artifact-option is-selected" : "artifact-option"} type="button" key={label} onClick={() => toggleProof(label)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="panel">
-              <div className="section-head">
-                <div>
-                  <p className="eyebrow">Parse or save</p>
-                  <h2>Parse or save the current log</h2>
-                  <p className="panel-note">Parse is available when student, school year, unit study, date, activity type, and narration are present. Artifacts are optional.</p>
+                  <p className="eyebrow">Step 3</p>
+                  <h2>Save now or parse for review</h2>
+                  <p className="panel-note">Manual save works without AI. Parse only prepares draft cards; it does not save permanent records.</p>
                 </div>
               </div>
               <div className="primary-action-row">
                 <button className="secondary-button" type="button" onClick={saveDraft} disabled={isSaving || !narration.trim()}>Save as Draft</button>
                 <button className="secondary-button" type="button" onClick={clearEntry}>Clear</button>
                 <button className="primary-button" type="button" disabled={!canParse} onClick={parseWithAi}>Parse with AI</button>
+                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={() => void saveActivity(true)}>Save Approved</button>
               </div>
               <p className="status-line" role="status">{status}</p>
             </section>
 
-            <section className="panel" id="review-summary">
-              <div className="section-head">
-                <div>
-                  <p className="eyebrow">AI Review Summary</p>
-                  <h2>Parent approval before save</h2>
-                </div>
-                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={() => void saveActivity(true)}>Save Approved Activities</button>
-              </div>
-              <div className="records-grid">
-                {(draftCards.length ? draftCards : mockDrafts(selectedType)).map((draft) => (
-                  <article className="activity-card" key={draft.title}>
-                    <div className="card-topline">
-                      <span className="tag review">Needs parent approval</span>
-                      <span className="tag">{draft.minutes} min</span>
+            {showDetails ? (
+              <>
+                <section className="panel">
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">Optional details</p>
+                      <h2>Subject time and editable legal tags</h2>
+                      <p className="panel-note">All {actualMinutes || 0} actual minutes are assigned to one inferred subject for this step, so subject time cannot double-count the activity.</p>
                     </div>
-                    <h3>{draft.title}</h3>
-                    <label><span>Title</span><input defaultValue={draft.title} /></label>
-                    <div className="chip-row">
-                      {draft.subjects.map((subject) => <span key={subject}>{subject}</span>)}
-                      {draft.legalTags.map((tag) => <span key={tag}>{tag}</span>)}
-                      {draft.skills.map((skill) => <span key={skill}>{skill}</span>)}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
+                    <span className="tag good">{primarySubject}: {actualMinutes || 0} min</span>
+                  </div>
+                  <div className="tag-grid">
+                    {["Reading", "Spelling", "Grammar", "Mathematics", "Good Citizenship", "Visual Curriculum", "Bona Fide Instruction"].map((tag) => (
+                      <button className={legalTags.includes(tag) ? "tag-button is-active" : "tag-button"} key={tag} type="button" onClick={() => toggleLegalTag(tag)}>
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </section>
 
-            <section className="panel">
+                <section className="panel" id="proof">
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">Optional proof</p>
+                      <h2>Proof of learning</h2>
+                    </div>
+                    <span className="tag">{selectedProof.length ? `${selectedProof.length} selected` : "Optional"}</span>
+                  </div>
+                  <div className="artifact-grid">
+                    {["Upload photo", "Upload file", "Select existing artifact", "Record audio", "Skip proof for now"].map((label) => (
+                      <button className={selectedProof.includes(label) ? "artifact-option is-selected" : "artifact-option"} type="button" key={label} onClick={() => toggleProof(label)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </>
+            ) : null}
+
+            {draftCards.length ? (
+              <section className="panel" id="review-summary">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">AI Review Summary</p>
+                    <h2>Parent approval before save</h2>
+                  </div>
+                </div>
+                <div className="records-grid">
+                  {draftCards.map((draft) => (
+                    <article className="activity-card" key={draft.title}>
+                      <div className="card-topline">
+                        <span className="tag review">Needs parent approval</span>
+                        <span className="tag">{draft.minutes} min</span>
+                      </div>
+                      <h3>{draft.title}</h3>
+                      <label><span>Title</span><input defaultValue={draft.title} /></label>
+                      <div className="chip-row">
+                        {draft.subjects.map((subject) => <span key={subject}>{subject}</span>)}
+                        {draft.legalTags.map((tag) => <span key={tag}>{tag}</span>)}
+                        {draft.skills.map((skill) => <span key={skill}>{skill}</span>)}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="panel" id="saved-records">
               <div className="section-head">
                 <div>
                   <p className="eyebrow">Saved records</p>

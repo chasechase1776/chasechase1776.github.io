@@ -274,7 +274,7 @@ textarea {
 }
 
 .main-grid {
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
 }
 
@@ -296,6 +296,16 @@ textarea {
   background: var(--panel);
   box-shadow: 0 6px 18px rgb(24 34 38 / 0.04);
   padding: 16px;
+}
+
+.quick-log-panel {
+  border-color: #c7d6d2;
+  box-shadow: 0 10px 24px rgb(24 34 38 / 0.06);
+}
+
+.action-panel {
+  border-color: #b8cdd1;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
 }
 
 .compact-panel {
@@ -404,6 +414,16 @@ textarea {
   line-height: 1.35;
 }
 
+.quick-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--soft-line);
+  margin-top: 14px;
+  padding-top: 12px;
+}
+
 .quick-entry-grid,
 .form-grid,
 .review-metrics,
@@ -431,13 +451,22 @@ textarea {
 .tag-button,
 .secondary-button,
 .primary-button,
-.primary-link {
+.primary-link,
+.text-button {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #fff;
   color: var(--ink);
   padding: 9px 12px;
   text-decoration: none;
+}
+
+.text-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent-strong);
+  font-weight: 700;
+  padding-inline: 4px;
 }
 
 .preset-button.is-active,
@@ -456,7 +485,8 @@ textarea {
 
 .secondary-button:hover,
 .preset-button:hover,
-.tag-button:hover {
+.tag-button:hover,
+.text-button:hover {
   background: var(--accent-soft);
 }
 
@@ -686,6 +716,24 @@ textarea {
 .review-alert-card {
   border-color: #f0c36a;
   background: #fff8e5;
+}
+
+.quiet-alert {
+  margin-top: 14px;
+  padding: 12px 14px;
+}
+
+.quiet-alert .alert-head {
+  margin-bottom: 0;
+}
+
+.quiet-alert h2 {
+  font-size: 1rem;
+}
+
+.quiet-alert p {
+  margin-bottom: 0;
+  color: var(--gold);
 }
 
 .trial-banner {
