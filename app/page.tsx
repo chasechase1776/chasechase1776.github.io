@@ -1,8 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ActivityButtonState = "neutral" | "completed" | "needs-review" | "selected";
+
+type SavedActivity = {
+  id: string;
+  title: string;
+  date: string;
+  actualMinutes: number;
+  activityType: string;
+  narration: string;
+  recordStatus: string;
+  parentApproved: boolean;
+  reviewStatus: string;
+  allocations: { subject: string; minutes: number }[];
+  legalTags: { legalTag: { label: string } }[];
+};
 
 type DraftCard = {
   title: string;
@@ -27,30 +41,6 @@ const activityTypes = [
   "Group Event"
 ];
 
-const initialStates: Record<string, ActivityButtonState> = {
-  "Language Arts": "completed",
-  Math: "needs-review",
-  Finance: "neutral",
-  "Unit Study": "completed",
-  "Science Journal": "neutral",
-  "Writing Project": "neutral",
-  "Project Cycle": "neutral",
-  "Presentation Cycle": "neutral",
-  "Hands-On Activity": "neutral",
-  "Physical Activity": "neutral",
-  "Field Trip": "neutral",
-  "Group Event": "neutral"
-};
-
-const subjectTallies = [
-  ["Language Arts", "1h 15m"],
-  ["Math", "35m"],
-  ["Finance", "0m"],
-  ["Science", "40m"],
-  ["Social Studies", "20m"],
-  ["Unit Study", "1h 10m"]
-];
-
 const legalCoverage = [
   ["Reading", "Covered"],
   ["Spelling", "Light"],
@@ -73,6 +63,35 @@ function todayIso() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
   return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+}
+
+function inferSubject(activityType: string) {
+  if (activityType === "Language Arts" || activityType === "Writing Project" || activityType === "Presentation Cycle") return "Language Arts";
+  if (activityType === "Math") return "Math";
+  if (activityType === "Finance") return "Finance";
+  if (activityType === "Science Journal") return "Science";
+  if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
+  return "Unit Study";
+}
+
+function legalTagSuggestions(activityType: string, subject: string) {
+  const tags = new Set<string>(["Bona Fide Instruction"]);
+  const combined = `${activityType} ${subject}`.toLowerCase();
+  if (combined.includes("language") || combined.includes("reading") || combined.includes("literature")) tags.add("Reading");
+  if (combined.includes("spelling")) tags.add("Spelling");
+  if (combined.includes("grammar") || combined.includes("writing")) tags.add("Grammar");
+  if (combined.includes("math") || combined.includes("finance") || combined.includes("money")) tags.add("Mathematics");
+  if (combined.includes("citizenship") || combined.includes("social") || combined.includes("group")) tags.add("Good Citizenship");
+  if (combined.includes("visual") || combined.includes("presentation") || combined.includes("journal") || combined.includes("field")) tags.add("Visual Curriculum");
+  return Array.from(tags);
+}
+
+function formatMinutes(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  if (!hours) return `${remainder}m`;
+  if (!remainder) return `${hours}h`;
+  return `${hours}h ${remainder}m`;
 }
 
 function mockDrafts(activityType: string): DraftCard[] {
@@ -102,25 +121,62 @@ export default function Home() {
   const [unitStudy, setUnitStudy] = useState("Construction");
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [selectedType, setSelectedType] = useState("Language Arts");
+  const [title, setTitle] = useState("");
+  const [actualMinutes, setActualMinutes] = useState(25);
   const [narration, setNarration] = useState(
     "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and helped measure boards for the Construction unit."
   );
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
-  const [activityStates, setActivityStates] = useState(initialStates);
+  const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
+  const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
 
   const canParse = useMemo(
     () => Boolean(student && schoolYear && unitStudy && selectedDate && selectedType && narration.trim()),
     [narration, schoolYear, selectedDate, selectedType, student, unitStudy]
   );
 
+  const canSaveApproved = Boolean(student && schoolYear && unitStudy && selectedDate && selectedType && narration.trim() && actualMinutes > 0);
+
+  useEffect(() => {
+    setLegalTags(legalTagSuggestions(selectedType, inferSubject(selectedType)));
+  }, [selectedType]);
+
+  async function loadSavedActivities(date = selectedDate) {
+    setIsLoadingRecords(true);
+    try {
+      const response = await fetch(`/api/activities?date=${date}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load saved activities.");
+      setSavedActivities(data.activities ?? []);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not load saved activities.");
+    } finally {
+      setIsLoadingRecords(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadSavedActivities(selectedDate);
+  }, [selectedDate]);
+
   function selectActivityType(type: string) {
     setSelectedType(type);
   }
 
   function buttonState(type: string) {
-    return type === selectedType ? "selected" : activityStates[type] ?? "neutral";
+    if (type === selectedType) return "selected";
+    const matching = savedActivities.filter((activity) => activity.activityType === type);
+    const hasApproved = matching.some((activity) => activity.parentApproved);
+    if (hasApproved) return "completed";
+    const hasNeedsReview = matching.some((activity) => !activity.parentApproved || activity.reviewStatus === "needs_review");
+    if (hasNeedsReview) return "needs-review";
+    return "neutral";
   }
 
   function toggleProof(label: string) {
@@ -135,9 +191,64 @@ export default function Home() {
     });
   }
 
+  function toggleLegalTag(tag: string) {
+    setLegalTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+  }
+
+  function activityPayload(parentApproved: boolean) {
+    return {
+      title: title.trim() || `${selectedType} - ${selectedDate}`,
+      date: selectedDate,
+      actualMinutes,
+      activityType: selectedType,
+      narration,
+      studentName: student,
+      schoolYearLabel: schoolYear,
+      schoolYearStatus,
+      officialHomeschoolStartDate: officialStartDate,
+      unitTitle: unitStudy,
+      parentApproved,
+      subjectAllocations: [{ subject: primarySubject, minutes: actualMinutes }],
+      legalTags,
+      skills: []
+    };
+  }
+
+  async function saveActivity(parentApproved: boolean) {
+    if (!narration.trim()) {
+      setStatus("Narration is required before saving a draft or approved activity.");
+      return;
+    }
+    if (parentApproved && !canSaveApproved) {
+      setStatus("Approved save requires student, school year, unit, date, type, narration, and actual minutes.");
+      return;
+    }
+
+    setIsSaving(true);
+    setStatus(parentApproved ? "Saving approved activity to the database..." : "Saving draft activity to the database...");
+    try {
+      const response = await fetch("/api/activities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(activityPayload(parentApproved))
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Activity save failed.");
+      await loadSavedActivities(selectedDate);
+      setStatus(
+        parentApproved
+          ? `Approved activity saved. ${selectedType} will show green for ${selectedDate}.`
+          : `Draft saved. ${selectedType} will show yellow for ${selectedDate} unless an approved record also exists.`
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Activity save failed.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   function saveDraft() {
-    setActivityStates((current) => ({ ...current, [selectedType]: current[selectedType] === "completed" ? "completed" : "needs-review" }));
-    setStatus(`Draft saved locally for ${selectedType} on ${selectedDate}. It will stay yellow until approved in a later backend step.`);
+    void saveActivity(false);
   }
 
   function clearEntry() {
@@ -152,6 +263,22 @@ export default function Home() {
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
   }
+
+  const subjectTallies = useMemo(() => {
+    const totals = new Map<string, number>();
+    savedActivities
+      .filter((activity) => activity.parentApproved)
+      .forEach((activity) => {
+        activity.allocations.forEach((allocation) => {
+          totals.set(allocation.subject, (totals.get(allocation.subject) ?? 0) + allocation.minutes);
+        });
+      });
+
+    return ["Language Arts", "Math", "Finance", "Science", "Social Studies", "Unit Study"].map((subject) => [
+      subject,
+      formatMinutes(totals.get(subject) ?? 0)
+    ]);
+  }, [savedActivities]);
 
   return (
     <main className="mockup-shell">
@@ -285,7 +412,9 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <p className="panel-note">Completion states are local mock states in this step. Later they will be calculated from saved activity records for the selected date.</p>
+              <p className="panel-note">
+                Completion states are calculated from saved database records for the selected date. Changing the date reloads historical activity states without deleting prior records.
+              </p>
             </section>
 
             <section className="panel">
@@ -296,7 +425,35 @@ export default function Home() {
                 </div>
                 <span className="tag good">{selectedType}</span>
               </div>
+              <div className="quick-entry-grid">
+                <label>
+                  <span>Title</span>
+                  <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={`${selectedType} - ${selectedDate}`} />
+                </label>
+                <label>
+                  <span>Actual minutes</span>
+                  <input type="number" min="1" value={actualMinutes} onChange={(event) => setActualMinutes(Number(event.target.value))} />
+                </label>
+              </div>
               <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
+            </section>
+
+            <section className="panel">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Subject and legal metadata</p>
+                  <h2>Time allocation and editable legal tags</h2>
+                  <p className="panel-note">All {actualMinutes || 0} actual minutes are assigned to one inferred subject for this step, so subject time cannot double-count the activity.</p>
+                </div>
+                <span className="tag good">{primarySubject}: {actualMinutes || 0} min</span>
+              </div>
+              <div className="tag-grid">
+                {["Reading", "Spelling", "Grammar", "Mathematics", "Good Citizenship", "Visual Curriculum", "Bona Fide Instruction"].map((tag) => (
+                  <button className={legalTags.includes(tag) ? "tag-button is-active" : "tag-button"} key={tag} type="button" onClick={() => toggleLegalTag(tag)}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </section>
 
             <section className="panel" id="proof">
@@ -325,7 +482,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="primary-action-row">
-                <button className="secondary-button" type="button" onClick={saveDraft}>Save as Draft</button>
+                <button className="secondary-button" type="button" onClick={saveDraft} disabled={isSaving || !narration.trim()}>Save as Draft</button>
                 <button className="secondary-button" type="button" onClick={clearEntry}>Clear</button>
                 <button className="primary-button" type="button" disabled={!canParse} onClick={parseWithAi}>Parse with AI</button>
               </div>
@@ -338,7 +495,7 @@ export default function Home() {
                   <p className="eyebrow">AI Review Summary</p>
                   <h2>Parent approval before save</h2>
                 </div>
-                <button className="primary-button" type="button" onClick={() => setStatus("Approved activity save is intentionally mocked in this visual parity step.")}>Save Approved Activities</button>
+                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={() => void saveActivity(true)}>Save Approved Activities</button>
               </div>
               <div className="records-grid">
                 {(draftCards.length ? draftCards : mockDrafts(selectedType)).map((draft) => (
@@ -356,6 +513,44 @@ export default function Home() {
                     </div>
                   </article>
                 ))}
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Saved records</p>
+                  <h2>Saved records for selected date</h2>
+                </div>
+                <button className="secondary-button" type="button" onClick={() => void loadSavedActivities(selectedDate)} disabled={isLoadingRecords}>
+                  {isLoadingRecords ? "Loading..." : "Refresh"}
+                </button>
+              </div>
+              <div className="record-list">
+                {savedActivities.length === 0 ? (
+                  <p className="muted">No saved activities for {selectedDate} yet.</p>
+                ) : (
+                  savedActivities.map((activity) => (
+                    <article className="activity-card" key={activity.id}>
+                      <div className="card-topline">
+                        <span className={activity.parentApproved ? "tag good" : "tag review"}>
+                          {activity.parentApproved ? "approved" : "draft / needs review"}
+                        </span>
+                        <span className="tag">{activity.actualMinutes} min</span>
+                      </div>
+                      <h3>{activity.title}</h3>
+                      <p>{activity.activityType} - {activity.recordStatus}</p>
+                      <div className="chip-row">
+                        {activity.allocations.map((allocation) => (
+                          <span key={`${activity.id}-${allocation.subject}`}>{allocation.subject}: {allocation.minutes}m</span>
+                        ))}
+                        {activity.legalTags.map((item) => (
+                          <span key={`${activity.id}-${item.legalTag.label}`}>{item.legalTag.label}</span>
+                        ))}
+                      </div>
+                    </article>
+                  ))
+                )}
               </div>
             </section>
           </section>
