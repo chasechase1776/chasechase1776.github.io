@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME, isValidAuthCookie } from "./lib/auth";
 
 const PUBLIC_PATHS = new Set(["/passcode", "/api/passcode", "/favicon.ico"]);
+const PASSCODE_GATE_ENABLED = process.env.NODE_ENV === "production";
 
 function isPublicAsset(pathname: string) {
   return (
@@ -15,6 +16,10 @@ function isPublicAsset(pathname: string) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (!PASSCODE_GATE_ENABLED) {
+    return NextResponse.next();
+  }
 
   if (PUBLIC_PATHS.has(pathname) || isPublicAsset(pathname)) {
     return NextResponse.next();
