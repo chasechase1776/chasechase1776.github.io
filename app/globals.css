@@ -1,23 +1,24 @@
 :root {
   color-scheme: light;
-  --ink: #182226;
-  --muted: #607079;
-  --line: #d5dde1;
-  --soft-line: #e9eef1;
+  /* Professional palette: slate navy foundation, muted teal actions, warm review cues. */
+  --ink: #17212b;
+  --muted: #5a6872;
+  --line: #d4dde4;
+  --soft-line: #e8edf1;
   --panel: #ffffff;
-  --surface: #f5f7f3;
-  --accent: #236a72;
-  --accent-strong: #174b52;
-  --accent-soft: #e4f0ef;
-  --gold: #8a5a12;
-  --gold-soft: #fff3d8;
-  --green: #2f6f4f;
-  --green-soft: #e6f2ea;
-  --blue: #315f8c;
-  --blue-soft: #e8eff8;
-  --red: #8b3a2b;
-  --red-soft: #f8e8e4;
-  --shadow: 0 12px 30px rgb(24 34 38 / 0.08);
+  --surface: #f4f7f8;
+  --accent: #2f6f7e;
+  --accent-strong: #1e4f5c;
+  --accent-soft: #e3f0f2;
+  --gold: #896419;
+  --gold-soft: #fff5d9;
+  --green: #2e6b4d;
+  --green-soft: #e4f1e9;
+  --blue: #3b6e9e;
+  --blue-soft: #e8f0f8;
+  --red: #8b4a3d;
+  --red-soft: #f7eae7;
+  --shadow: 0 12px 30px rgb(23 33 43 / 0.08);
 }
 
 * {
@@ -93,7 +94,7 @@ a {
   height: 100vh;
   overflow: auto;
   border-right: 1px solid var(--line);
-  background: #fbfcfb;
+  background: #f8fafb;
   padding: 18px;
 }
 
@@ -182,7 +183,7 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
-  border: 1px solid #b8cdd1;
+  border: 1px solid #b9cfd5;
   border-radius: 8px;
   background: rgb(255 255 255 / 0.97);
   box-shadow: var(--shadow);
@@ -219,7 +220,7 @@ select,
 textarea {
   width: 100%;
   min-height: 42px;
-  border: 1px solid #c8d2d7;
+  border: 1px solid #c7d3da;
   border-radius: 6px;
   background: #fff;
   color: var(--ink);
@@ -299,13 +300,13 @@ textarea {
 }
 
 .quick-log-panel {
-  border-color: #c7d6d2;
-  box-shadow: 0 10px 24px rgb(24 34 38 / 0.06);
+  border-color: #bfd4d8;
+  box-shadow: 0 10px 24px rgb(23 33 43 / 0.06);
 }
 
 .action-panel {
-  border-color: #b8cdd1;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+  border-color: #b9cfd5;
+  background: linear-gradient(180deg, #ffffff 0%, #f5fafb 100%);
 }
 
 .compact-panel {
