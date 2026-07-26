@@ -68,3 +68,7 @@ See [docs/project-brief.md](docs/project-brief.md) for the full product brief an
 The person creating and reviewing this website has no coding experience. Development should be organized so changes can be verified by opening the target website, following short checklists, and confirming visible behavior.
 
 See [docs/nontechnical-workflow.md](docs/nontechnical-workflow.md) for the working process.
+
+## Standard Change Delivery
+
+User-approved changes are normally verified, committed, pushed to GitHub, deployed to Vercel, and smoke-tested at the live URL in the same work cycle. The app should continuously improve in intuitiveness, sleekness, clarity, and parent usability while preserving its activity-first data model and homeschool legal record structure. See [AGENTS.md](AGENTS.md), [docs/nontechnical-workflow.md](docs/nontechnical-workflow.md), and [docs/vercel-deployment.md](docs/vercel-deployment.md).

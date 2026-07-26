@@ -23,6 +23,21 @@ Preferred stack when implementation begins:
 
 After the GitHub remote is connected, commit and push completed changes at each logical stopping point. Keep commits focused and descriptive.
 
+## Normal Operating Procedure
+
+For any change that the user requests or approves in any project thread:
+
+1. Implement the smallest complete change that meets the request.
+2. Run the relevant build, type, lint, and browser checks.
+3. Commit the verified change with a focused message.
+4. Push the commit to the connected GitHub repository.
+5. Deploy the same change to the Vercel production project.
+6. Smoke-test the live Vercel URL and report the URL, checks, limitations, and deployment result.
+
+Do not claim completion until the change is committed, pushed, deployed, and checked live. If a build, push, deployment, or smoke test is blocked, report the blocker clearly and continue with safe diagnostics or fixes when possible. Do not deploy when the user explicitly requests analysis only, asks to pause, or withholds required approval or secrets.
+
+Every implementation should also improve the product experience where relevant: maximize intuitiveness, keep the interface sleek and calm, remove redundant controls or copy, preserve useful information hierarchy, and reduce friction in the parent’s daily workflow. These refinements must preserve the activity-first model, progressive disclosure, legal context, accessibility, and data integrity.
+
 ## User Experience for the Builder
 
 Assume the person reviewing the work has no coding experience and will validate changes by checking the running website.

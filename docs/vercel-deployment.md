@@ -45,6 +45,22 @@ pnpm prisma:generate && pnpm prisma:migrate:deploy && pnpm exec next build
 
 That means Vercel generates the Prisma client and applies checked-in database migrations during deployment.
 
+## Standard Change Delivery
+
+User-approved application changes are expected to be delivered through the full loop:
+
+1. Verify the change locally and with the production build when practical.
+2. Commit the change to Git.
+3. Push the commit to GitHub.
+4. Deploy the production project to Vercel.
+5. Smoke-test the live Vercel URL.
+
+This procedure is the default for work started in any thread for this project unless the user explicitly requests analysis only, local-only work, or no deployment. The live deployment result and any blockers should be included in the handoff.
+
+## Ongoing Product Quality
+
+Every relevant change should also look for safe improvements to intuitiveness, sleekness, clarity, and daily usability. Remove redundant UI, reduce friction, and preserve progressive disclosure without removing legal, evidence, skill, review, or export data from the underlying system.
+
 ## Current AI Behavior
 
 The `/api/ai/parse` route:
