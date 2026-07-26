@@ -12,7 +12,12 @@
     "prisma:push": "prisma db push",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "ontoly": "ontoly",
+    "ontoly:build": "ontoly build . --output .ontoly",
+    "ontoly:doctor": "ontoly doctor .",
+    "ontoly:summary": "ontoly repository-summary .",
+    "ontoly:graph": "ontoly graph . --format html"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -22,6 +27,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@0xsarwagya/ontoly-cli": "0.1.0-alpha.19",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

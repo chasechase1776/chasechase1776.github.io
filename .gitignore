@@ -9,6 +9,10 @@ out/
 dist/
 build/
 
+# Local code intelligence artifacts
+.ontoly/
+ontoly-output/
+
 # Environment
 .env
 .env.*

@@ -24,6 +24,9 @@ importers:
         specifier: ^3.24.0
         version: 3.25.76
     devDependencies:
+      '@0xsarwagya/ontoly-cli':
+        specifier: 0.1.0-alpha.19
+        version: 0.1.0-alpha.19
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.0
@@ -47,6 +50,75 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@0xsarwagya/ontoly-analyzers@0.1.0-alpha.19':
+    resolution: {integrity: sha512-usnXcs0H8Dg5YCC6E8aqyNNbw3PcthcBdOslfP7Et2JHYx4QfKoq2Rl2+xhr+OptJ1sXl/eloQ1CqDhSSQFGHQ==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-cache@0.1.0-alpha.19':
+    resolution: {integrity: sha512-RkdJtuSfReRJdeOh1bPq7wbI7iNAshQdxJw9WCS5Sgc8qsNcDUXD1ZXJ2LYH7DJiHKvkgZii+3ahVT57Cxrz7A==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-capabilities@0.1.0-alpha.19':
+    resolution: {integrity: sha512-Q+80yNzwVEFqYxJ+/zH2I69o+qLEvFbRrFF5Reqc7cv0ZCwyYLo4Lcv7fStrtf95+w5TyctWOpVH7stWcVSekw==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-cli@0.1.0-alpha.19':
+    resolution: {integrity: sha512-ZPQmVKbDzrAoE7xFjHRLFSDqIkmDnFWZY1Brez2FCFlvdgm6L+nv88Wh6qL2nXvmX+dri2BaVMAc5ym1Kp+dlA==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+    hasBin: true
+
+  '@0xsarwagya/ontoly-compiler@0.1.0-alpha.19':
+    resolution: {integrity: sha512-e6UXgAU0J68Lf0O64jiYxbzvEUw2FcczUK6SlGA16e9bY8y6nYdqVcZSSJIvZ0Te6OpFU1iUwtbhbEwdepSfIg==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-core@0.1.0-alpha.19':
+    resolution: {integrity: sha512-1jgJRmQ0r2HZMSgYztTSFTcMZcl+GMdr1NO3VQv3PhgvUYehUwe1ZPP7B6GckdpFg9rOlEqXn9IzphNxdK9h7g==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-diagnostics@0.1.0-alpha.19':
+    resolution: {integrity: sha512-9a//KqA8pKaUrJqo5lfsOpAH6eLBMqvbV9+VU4sexpdycvINB4wMuUfvgdLoG9gVdwX1DYqjbYmBZXK3sf+U6w==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-enhancer-semantics@0.1.0-alpha.19':
+    resolution: {integrity: sha512-LbWCprDPSzo/f0jXeAqs1h1csIt0b8LILpUI+BehZB63frrAmuFKEgRVnm7fLyzsE9/S7B94DlTOM2c6UUoowg==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-enhancer@0.1.0-alpha.19':
+    resolution: {integrity: sha512-hpWAeuxrqkIoMHojUdqCVgWHA5xP2a1+yq/jJnwS5T01rgpdSNRfhrmf/Vr4wKsQEooa785s7pGYdaTm8BIejw==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-intelligence@0.1.0-alpha.19':
+    resolution: {integrity: sha512-B99kMjFi+5bc4KKBHD3euG+KTEu1s1eMT0RZSOlWScxWCsAHbEArDMjvXq0Fwpij2i82rR03QBhWx+BpLRVfPw==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-mcp@0.1.0-alpha.19':
+    resolution: {integrity: sha512-+4flw1e/NS2hOYoYYLGZOINV1iEws31jDgMjevIubLP4rPmIj5v9YJXreoX+vFlm9dCAY6+WAvWjGptV5ZQSyg==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-parser-openapi@0.1.0-alpha.19':
+    resolution: {integrity: sha512-6PLO1q1gXopB+LveJWFlgpz5wg+LRM875BHJxbtFb137jzZbseYtnxGaHDFL2LFvEfB2wNhtD2yfEvFO7eQMjA==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-parser-typescript@0.1.0-alpha.19':
+    resolution: {integrity: sha512-XMl228BiEYSMSlystg/AwMu5gUUI+iuLKNCaPD2irYF4bca7ZcwZKaLIirv8/Ksxj7gcN89MAENFB9/XybybIw==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-plugin-html@0.1.0-alpha.19':
+    resolution: {integrity: sha512-OdCT9HnNoOFG0Lrq+y5+1ck3GrUcLCpWoCBaNJlh91keX5hPFT/pQpeHtFHUbAj6FWUmweF55MR9YJ+aOBPtWQ==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-query@0.1.0-alpha.19':
+    resolution: {integrity: sha512-ORj51dEqJ8XIEeRQSzEyMast1u3bmGOgn0XGWGxzrNEBY6CMvyBfgIxSJlM9s4v6lRGqQfrd3aW+SWhNRJC+hQ==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-semantic@0.1.0-alpha.19':
+    resolution: {integrity: sha512-BFx4Ap5euBJflRAS5YUe2AdwlA0tY4dWLilaAEYryX+a82Ux3Zv7v2elOsD+5HhjCij7DpUjrBZ38+ZfMyWkpw==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
+
+  '@0xsarwagya/ontoly-typescript@0.1.0-alpha.19':
+    resolution: {integrity: sha512-35K1aVDCnqVoTVzxtNsClNuVbxH0Hw70DoARPJHrSTMEPR8wpzJ2QkHqC3KgeE4ZPTYJLjqPstDVo2cc0vkWYw==}
+    engines: {node: '>=22.0.0', pnpm: '>=11.0.0'}
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -1729,6 +1801,11 @@ packages:
     resolution: {integrity: sha512-phPGCwqr2+Qo0fwniCE8e4pKnGu/yFb5nD5Y8bf0EEeiI5GklnACYA9GFy/DrAeRrKHXvHn+1SUsOWgJp6RO+g==}
     engines: {node: '>= 0.4'}
 
+  typescript@5.9.2:
+    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
@@ -1780,6 +1857,102 @@ packages:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
+
+  '@0xsarwagya/ontoly-analyzers@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-cache@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-capabilities@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-query': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-cli@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-analyzers': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-cache': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-capabilities': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-compiler': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-enhancer': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-enhancer-semantics': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-intelligence': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-mcp': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-parser-openapi': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-parser-typescript': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-plugin-html': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-query': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-semantic': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-typescript': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-compiler@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-cache': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-diagnostics': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-core@0.1.0-alpha.19': {}
+
+  '@0xsarwagya/ontoly-diagnostics@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-enhancer-semantics@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-enhancer': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-enhancer@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-intelligence@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-enhancer-semantics': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-mcp@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-capabilities': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-intelligence': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-query': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-parser-openapi@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-compiler': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-parser-typescript@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-compiler': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-semantic': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-typescript': 0.1.0-alpha.19
+      typescript: 5.9.2
+
+  '@0xsarwagya/ontoly-plugin-html@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-query@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-semantic@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-compiler': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      '@0xsarwagya/ontoly-typescript': 0.1.0-alpha.19
+
+  '@0xsarwagya/ontoly-typescript@0.1.0-alpha.19':
+    dependencies:
+      '@0xsarwagya/ontoly-core': 0.1.0-alpha.19
+      typescript: 5.9.2
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -3648,6 +3821,8 @@ snapshots:
       is-typed-array: 1.1.15
       possible-typed-array-names: 1.1.0
       reflect.getprototypeof: 1.0.10
+
+  typescript@5.9.2: {}
 
   typescript@5.9.3: {}
 
