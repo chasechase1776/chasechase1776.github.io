@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { skillTaxonomy } from "@/lib/domain";
 
 type ActivityButtonState = "neutral" | "completed" | "needs-review" | "selected";
 
@@ -49,14 +50,6 @@ const legalCoverage = [
   ["Good Citizenship", "Light"],
   ["Visual Curriculum", "Covered"],
   ["Bona Fide Instruction", "Covered"]
-];
-
-const skillGroups: Array<[string, string[]]> = [
-  ["Language Arts", ["Reading", "Grammar", "Spelling", "Writing", "Editing"]],
-  ["Math", ["Measurement and Money", "Problem-Solving and Application"]],
-  ["Finance", ["Saving and Goal Setting", "Spending and Decision-Making"]],
-  ["Science", ["Asks Questions and Seeks Answers", "Uses Tools and Models"]],
-  ["Social Studies", ["Citizenship", "Communication", "Life Skills"]]
 ];
 
 function todayIso() {
@@ -582,16 +575,21 @@ export default function Home() {
             </section>
 
             <section className="panel" id="skills-panel">
-              <p className="eyebrow">Skills</p>
-              <h2>Subject skills panel</h2>
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">AI matching source</p>
+                  <h2>Subject skills panel</h2>
+                </div>
+                <span className="tag">Editable taxonomy</span>
+              </div>
               <div className="skills-matrix">
-                {skillGroups.map(([subject, skills]) => (
-                  <div className="skill-group" key={subject}>
-                    <h3>{subject}</h3>
+                {Object.entries(skillTaxonomy).map(([subject, skills]) => (
+                  <details className="skill-group" key={subject} open={subject === "Language Arts"}>
+                    <summary><span>{subject}</span><span>{skills.length} skills</span></summary>
                     <div className="skill-list">
-                      {skills.map((skill) => <span className="tag" key={skill}>{skill}</span>)}
+                      {skills.map((skill) => <span className="skill-pill" key={skill}>{skill}</span>)}
                     </div>
-                  </div>
+                  </details>
                 ))}
               </div>
             </section>
