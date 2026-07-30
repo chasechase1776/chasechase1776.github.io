@@ -25,6 +25,18 @@ LOCAL_UPLOAD_DIR=./storage/evidence
 
 Do not commit real values to GitHub.
 
+## Current Local CLI Status
+
+The project includes the Vercel CLI as a development dependency and exposes:
+
+```text
+corepack pnpm run deploy:prod
+```
+
+Current blocker: this machine is not authenticated with Vercel yet. Run `vercel login` or provide a Vercel token before production deployments can be completed from this workspace.
+
+Do not treat GitHub Pages as the production app deployment. GitHub Pages can only serve the static placeholder in `site/`.
+
 ## Database Requirement
 
 The deployed app uses PostgreSQL through Prisma. The Vercel Prisma Postgres integration should provide the `DATABASE_URL` environment variable.

@@ -62,6 +62,7 @@ Manual activity logging works without AI. If `OPENAI_API_KEY` is missing, the AI
 ## Project Context
 
 See [docs/project-brief.md](docs/project-brief.md) for the full product brief and data model notes.
+See [docs/app-foundation.md](docs/app-foundation.md) for local setup, checks, smoke tests, and deployment status.
 
 ## Builder Assumption
 

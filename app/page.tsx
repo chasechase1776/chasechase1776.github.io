@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { skillTaxonomy } from "@/lib/domain";
-
-type ActivityButtonState = "neutral" | "completed" | "needs-review" | "selected";
 
 type SavedActivity = {
   id: string;
@@ -141,7 +139,7 @@ export default function Home() {
     setLegalTags(legalTagSuggestions(selectedType, inferSubject(selectedType)));
   }, [selectedType]);
 
-  async function loadSavedActivities(date = selectedDate) {
+  const loadSavedActivities = useCallback(async (date: string) => {
     setIsLoadingRecords(true);
     try {
       const response = await fetch(`/api/activities?date=${date}`, { cache: "no-store" });
@@ -153,11 +151,11 @@ export default function Home() {
     } finally {
       setIsLoadingRecords(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     void loadSavedActivities(selectedDate);
-  }, [selectedDate]);
+  }, [loadSavedActivities, selectedDate]);
 
   function selectActivityType(type: string) {
     setSelectedType(type);
