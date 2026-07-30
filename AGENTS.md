@@ -44,13 +44,14 @@ Assume the person reviewing the work has no coding experience and will validate 
 
 Every implementation handoff should include:
 
-- The local URL to open.
+- The Vercel production URL to open when deployment is available.
 - A short list of what changed in plain language.
 - A short browser checklist for verifying the change.
+- A note naming any Markdown (`.md`) files changed, or saying no Markdown files changed.
 - Any known limitations or unfinished pieces.
 - A note confirming tests/build checks that were run.
 
-Prefer visible, clickable UI over hidden configuration. Avoid asking the user to inspect code, JSON, databases, logs, or terminal output unless there is no practical alternative.
+Prefer visible, clickable UI over hidden configuration. Avoid asking the user to inspect code, JSON, databases, logs, terminal output, or localhost unless there is no practical alternative.
 
 ## Constraints
 

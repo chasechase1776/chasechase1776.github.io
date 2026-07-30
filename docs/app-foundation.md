@@ -29,6 +29,8 @@ http://localhost:3000
 
 If `pnpm` is available directly on the machine, `pnpm run dev` is also fine.
 
+Localhost is optional for developer troubleshooting. It is not required as a predeployment review step. The normal review target for the user should be the deployed Vercel production URL after the change is committed and pushed.
+
 ## Checks
 
 Run these before committing application changes:
@@ -47,19 +49,13 @@ corepack pnpm run check
 
 ## Smoke Checks
 
-Local smoke check:
-
-```text
-corepack pnpm run smoke:local
-```
-
 Live GitHub Pages placeholder smoke check:
 
 ```text
 corepack pnpm run smoke:live
 ```
 
-The smoke check confirms the target URL is reachable and contains the expected `Bennett Homeschool` page text.
+The smoke check confirms the public placeholder URL is reachable and contains the expected `Bennett Homeschool` page text. Once Vercel production is authenticated, add or run a Vercel production smoke check against the Vercel URL after deployment.
 
 ## Production Deployment Path
 
@@ -84,10 +80,11 @@ Current blocker: Vercel CLI is installed, but the available Vercel credentials a
 
 Each handoff should include:
 
-1. Local URL or live URL to open.
+1. Vercel production URL to open when deployment is available.
 2. What changed in plain language.
 3. A short click-through checklist.
 4. Checks that passed.
 5. Any deployment blockers.
+6. Markdown files changed, or confirmation that no Markdown files changed.
 
 Do not ask the reviewer to inspect code or terminal output unless there is no practical alternative.

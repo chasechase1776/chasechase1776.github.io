@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "check": "tsc --noEmit && eslint . --max-warnings=0 && prisma generate && next build",
-    "smoke:local": "node scripts/smoke-url.mjs http://localhost:3000",
     "smoke:live": "node scripts/smoke-url.mjs https://chasechase1776.github.io",
     "deploy:prod": "vercel --prod",
     "prisma:generate": "prisma generate",

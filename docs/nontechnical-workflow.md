@@ -9,15 +9,17 @@ After each meaningful change, Codex should provide:
 - Website URL to open.
 - Plain-language summary of what changed.
 - Browser checklist with 3-7 concrete things to click, enter, or confirm.
+- Markdown files changed, or confirmation that no Markdown files changed.
 - Any known limitations.
 - Confirmation that the change was committed and pushed.
+- Vercel deployment result when deployment is available.
 
 ## Approved Change Delivery Loop
 
 User-approved implementation changes follow this loop automatically in every project thread:
 
 1. Make the change in the existing app structure.
-2. Run focused checks, the production build when practical, and browser verification.
+2. Run focused checks and the production build when practical.
 3. Commit the completed change.
 4. Push it to GitHub.
 5. Deploy it to the Vercel production project.
@@ -44,14 +46,15 @@ Avoid requiring the user to:
 - Use Git commands.
 - Read terminal logs.
 - Edit configuration files manually.
+- Open localhost unless Codex clearly explains that Vercel deployment is blocked.
 
 ## Development Expectations
 
 When implementation begins:
 
 - Keep the app runnable with one simple command.
-- Keep local development URLs stable when possible.
-- Start the dev server before asking the user to review UI changes.
+- Deploy user-approved changes to Vercel after the GitHub push when credentials and required environment variables are available.
+- Use the Vercel production URL as the normal review target.
 - Explain changes in terms of homeschool workflows, not implementation details.
 - Use realistic sample data for demos and verification.
 - Preserve privacy by keeping real records out of Git.
