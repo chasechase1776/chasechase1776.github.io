@@ -33,7 +33,7 @@ The project includes the Vercel CLI as a development dependency and exposes:
 corepack pnpm run deploy:prod
 ```
 
-Current blocker: this machine is not authenticated with Vercel yet. Run `vercel login` or provide a Vercel token before production deployments can be completed from this workspace.
+Current blocker: this machine does not have valid Vercel credentials. Run `vercel login` or provide a fresh Vercel token before production deployments can be completed from this workspace.
 
 Do not treat GitHub Pages as the production app deployment. GitHub Pages can only serve the static placeholder in `site/`.
 

@@ -78,7 +78,7 @@ Required Vercel setup:
 - Production `DATABASE_URL` configured
 - Any optional AI/passcode/storage environment variables configured
 
-Current blocker: Vercel CLI is installed, but this machine is not logged in to Vercel yet.
+Current blocker: Vercel CLI is installed, but the available Vercel credentials are not valid. Run `vercel login` or provide a fresh Vercel token before production deployment.
 
 ## Nontechnical Browser Verification
 
