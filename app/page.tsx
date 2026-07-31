@@ -235,7 +235,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(activityPayload(parentApproved))
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ error: "Activity save failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Activity save failed.");
       await loadSavedActivities(selectedDate);
       setStatus(
