@@ -5,8 +5,12 @@ import { createClient } from "@supabase/supabase-js";
 
 const workspaceRoot = process.cwd();
 
+function envValue(name: string) {
+  return process.env[name]?.trim();
+}
+
 export function uploadRoot() {
-  return path.resolve(workspaceRoot, process.env.LOCAL_UPLOAD_DIR ?? "./storage/evidence");
+  return path.resolve(workspaceRoot, envValue("LOCAL_UPLOAD_DIR") ?? "./storage/evidence");
 }
 
 type SavedFile = {
@@ -44,10 +48,10 @@ async function saveLocalUploadedFile(file: File): Promise<SavedFile> {
 }
 
 function supabaseStorageConfig() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const bucket = process.env.SUPABASE_STORAGE_BUCKET;
-  const prefix = process.env.SUPABASE_STORAGE_PREFIX ?? "evidence";
+  const supabaseUrl = envValue("SUPABASE_URL");
+  const serviceRoleKey = envValue("SUPABASE_SERVICE_ROLE_KEY");
+  const bucket = envValue("SUPABASE_STORAGE_BUCKET");
+  const prefix = envValue("SUPABASE_STORAGE_PREFIX") ?? "evidence";
 
   if (!supabaseUrl || !serviceRoleKey || !bucket) {
     throw new Error("Supabase storage requires SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_STORAGE_BUCKET.");
@@ -86,7 +90,7 @@ async function saveSupabaseUploadedFile(file: File): Promise<SavedFile> {
 }
 
 export async function saveUploadedFile(file: File) {
-  if (process.env.STORAGE_PROVIDER === "supabase") {
+  if (envValue("STORAGE_PROVIDER") === "supabase") {
     return saveSupabaseUploadedFile(file);
   }
 
