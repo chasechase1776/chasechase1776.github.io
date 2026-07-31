@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { createClient } from "@supabase/supabase-js";
 
 const workspaceRoot = process.cwd();
 
@@ -63,21 +62,27 @@ function supabaseStorageConfig() {
 async function saveSupabaseUploadedFile(file: File): Promise<SavedFile> {
   const bytes = Buffer.from(await file.arrayBuffer());
   const { bucket, prefix, serviceRoleKey, supabaseUrl } = supabaseStorageConfig();
-  const client = createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false
-    }
-  });
 
   const fileName = storageFileName(file);
   const storagePath = `${prefix.replace(/^\/+|\/+$/g, "")}/${fileName}`;
-  const { error } = await client.storage.from(bucket).upload(storagePath, bytes, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false
+  const uploadUrl = `${supabaseUrl.replace(/\/+$/g, "")}/storage/v1/object/${encodeURIComponent(bucket)}/${storagePath
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/")}`;
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": file.type || "application/octet-stream",
+      "x-upsert": "false"
+    },
+    body: bytes
   });
 
-  if (error) {
-    throw new Error(`Supabase upload failed: ${error.message}`);
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(`Supabase upload failed with ${response.status}${details ? `: ${details}` : "."}`);
   }
 
   return {
