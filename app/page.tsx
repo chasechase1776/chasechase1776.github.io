@@ -276,7 +276,7 @@ export default function Home() {
         method: "POST",
         body: formData
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ error: "Proof upload failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Proof upload failed.");
 
       setUploadedArtifacts((current) => [...current, data.artifact]);

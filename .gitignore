@@ -22,8 +22,8 @@ ontoly-output/
 # Database and local uploads
 *.db
 *.db-journal
-uploads/
-storage/
+/uploads/
+/storage/
 
 # Logs
 *.log
