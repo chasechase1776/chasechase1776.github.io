@@ -58,6 +58,8 @@ const legalCoverage = [
   ["Bona Fide Instruction", "Covered"]
 ];
 
+const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
+
 function todayIso() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
@@ -524,7 +526,7 @@ export default function Home() {
                     <span className="tag">{selectedProof.length ? `${selectedProof.length} selected` : "Optional"}</span>
                   </div>
                   <div className="artifact-grid">
-                    {["Upload photo", "Upload file", "Select existing artifact", "Record audio", "Skip proof for now"].map((label) => (
+                    {proofOptions.map((label) => (
                       <button className={selectedProof.includes(label) ? "artifact-option is-selected" : "artifact-option"} type="button" key={label} onClick={() => toggleProof(label)}>
                         {label}
                       </button>
