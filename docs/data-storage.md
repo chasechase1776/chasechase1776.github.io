@@ -29,7 +29,7 @@ GitHub should not store:
 Use Prisma/PostgreSQL for saved app records. Use Supabase Storage for deployed file uploads once the required environment variables are configured.
 
 - App database: Prisma Postgres through `DATABASE_URL`
-- Evidence uploads in production: Supabase Storage bucket, recommended name `homeschool-files`
+- Evidence uploads in production: Supabase Storage bucket named `bennett-homeschool`
 - Evidence uploads in local troubleshooting: `storage/evidence/`
 - Generated reports in local troubleshooting: `storage/exports/`
 - Generated Markdown record snapshots: `records/`
@@ -62,7 +62,7 @@ The app should keep storage access behind a small abstraction so local filesyste
 Create a private Supabase Storage bucket named:
 
 ```text
-homeschool-files
+bennett-homeschool
 ```
 
 Set these Vercel environment variables for Production and Preview:
@@ -71,7 +71,7 @@ Set these Vercel environment variables for Production and Preview:
 STORAGE_PROVIDER=supabase
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
-SUPABASE_STORAGE_BUCKET=homeschool-files
+SUPABASE_STORAGE_BUCKET=bennett-homeschool
 SUPABASE_STORAGE_PREFIX=evidence
 ```
 
