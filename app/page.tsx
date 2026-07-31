@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChangeEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { skillTaxonomy } from "@/lib/domain";
 
@@ -15,6 +16,13 @@ type SavedActivity = {
   reviewStatus: string;
   allocations: { subject: string; minutes: number }[];
   legalTags: { legalTag: { label: string } }[];
+};
+
+type UploadedArtifact = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
 };
 
 type DraftCard = {
@@ -118,11 +126,13 @@ export default function Home() {
     "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and helped measure boards for the Construction unit."
   );
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
+  const [uploadedArtifacts, setUploadedArtifacts] = useState<UploadedArtifact[]>([]);
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
@@ -202,7 +212,8 @@ export default function Home() {
       parentApproved,
       subjectAllocations: [{ subject: primarySubject, minutes: actualMinutes }],
       legalTags,
-      skills: []
+      skills: [],
+      artifactIds: uploadedArtifacts.map((artifact) => artifact.id)
     };
   }
 
@@ -229,9 +240,10 @@ export default function Home() {
       await loadSavedActivities(selectedDate);
       setStatus(
         parentApproved
-          ? `Approved activity saved. ${selectedType} will show green for ${selectedDate}.`
-          : `Draft saved. ${selectedType} will show yellow for ${selectedDate} unless an approved record also exists.`
+          ? `Approved activity saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show green for ${selectedDate}.`
+          : `Draft saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show yellow for ${selectedDate} unless an approved record also exists.`
       );
+      setUploadedArtifacts([]);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Activity save failed.");
     } finally {
@@ -246,8 +258,46 @@ export default function Home() {
   function clearEntry() {
     setNarration("");
     setSelectedProof([]);
+    setUploadedArtifacts([]);
     setDraftCards([]);
     setStatus("Narration and proof selection cleared. Student, school year, unit, date, and activity type were preserved.");
+  }
+
+  async function uploadProofFile(file: File) {
+    setIsUploadingProof(true);
+    setStatus(`Uploading ${file.name} to proof storage...`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("recordStatus", schoolYearStatus);
+      formData.append("tagsJson", JSON.stringify({ activityType: selectedType, unitStudy }));
+
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Proof upload failed.");
+
+      setUploadedArtifacts((current) => [...current, data.artifact]);
+      setSelectedProof((current) => {
+        const withoutSkip = current.filter((item) => item !== "Skip proof for now");
+        return withoutSkip.includes("Uploaded file") ? withoutSkip : [...withoutSkip, "Uploaded file"];
+      });
+      setStatus(`${file.name} uploaded. It will attach to the activity when you save.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Proof upload failed.");
+    } finally {
+      setIsUploadingProof(false);
+    }
+  }
+
+  function handleProofUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      void uploadProofFile(file);
+    }
+    event.target.value = "";
   }
 
   function parseWithAi() {
@@ -479,6 +529,24 @@ export default function Home() {
                         {label}
                       </button>
                     ))}
+                  </div>
+                  <div className="upload-proof-box">
+                    <label className="file-picker">
+                      <span>{isUploadingProof ? "Uploading proof..." : "Choose proof file"}</span>
+                      <input type="file" onChange={handleProofUpload} disabled={isUploadingProof} />
+                    </label>
+                    <div className="uploaded-proof-list" aria-live="polite">
+                      {uploadedArtifacts.length === 0 ? (
+                        <p className="muted">No proof files uploaded for this activity yet.</p>
+                      ) : (
+                        uploadedArtifacts.map((artifact) => (
+                          <div className="uploaded-proof-item" key={artifact.id}>
+                            <strong>{artifact.originalName}</strong>
+                            <span>{artifact.mimeType || "file"} - {Math.ceil(artifact.sizeBytes / 1024)} KB</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </section>
               </>

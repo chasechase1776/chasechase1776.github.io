@@ -556,6 +556,38 @@ textarea {
   max-width: 220px;
 }
 
+.upload-proof-box {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.45fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.uploaded-proof-list {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 96px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 10px;
+}
+
+.uploaded-proof-item {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--soft-line);
+  border-radius: 6px;
+  background: #fff;
+  padding: 9px;
+}
+
+.uploaded-proof-item span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
 .primary-action-row {
   flex-wrap: wrap;
   margin-top: 14px;
@@ -915,10 +947,11 @@ details.skill-group[open] summary {
   .context-box,
   .context-fields,
   .form-grid,
-  .quick-entry-grid,
-  .artifact-block,
-  .artifact-grid,
-  .allocation-panel,
+    .quick-entry-grid,
+    .artifact-block,
+    .artifact-grid,
+    .upload-proof-box,
+    .allocation-panel,
   .records-grid,
   .review-metrics,
   .alert-grid,
