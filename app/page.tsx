@@ -25,6 +25,30 @@ type UploadedArtifact = {
   sizeBytes: number;
 };
 
+type PortfolioArtifact = UploadedArtifact & {
+  storagePath: string;
+  recordStatus: string;
+  createdAt: string;
+  activity: {
+    id: string;
+    title: string;
+    date: string;
+    actualMinutes: number;
+    activityType: string;
+    schoolYear: { label: string };
+    unitStudy: { title: string } | null;
+    allocations: { subject: string; minutes: number }[];
+    legalTags: { legalTag: { label: string } }[];
+  } | null;
+};
+
+type PortfolioNode = {
+  key: string;
+  label: string;
+  count: number;
+  level: number;
+};
+
 type DraftCard = {
   title: string;
   minutes: number;
@@ -95,6 +119,16 @@ function formatMinutes(minutes: number) {
   return `${hours}h ${remainder}m`;
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function dateLabel(value: string) {
+  return value.slice(0, 10);
+}
+
 function mockDrafts(activityType: string): DraftCard[] {
   return [
     {
@@ -130,9 +164,12 @@ export default function Home() {
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
   const [uploadedArtifacts, setUploadedArtifacts] = useState<UploadedArtifact[]>([]);
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
+  const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
+  const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [isLoadingPortfolio, setIsLoadingPortfolio] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -165,9 +202,27 @@ export default function Home() {
     }
   }, []);
 
+  const loadPortfolio = useCallback(async () => {
+    setIsLoadingPortfolio(true);
+    try {
+      const response = await fetch("/api/artifacts", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load proof files.");
+      setPortfolioArtifacts(data.artifacts ?? []);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not load proof files.");
+    } finally {
+      setIsLoadingPortfolio(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadSavedActivities(selectedDate);
   }, [loadSavedActivities, selectedDate]);
+
+  useEffect(() => {
+    void loadPortfolio();
+  }, [loadPortfolio]);
 
   function selectActivityType(type: string) {
     setSelectedType(type);
@@ -240,6 +295,7 @@ export default function Home() {
       const data = await response.json().catch(() => ({ error: "Activity save failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Activity save failed.");
       await loadSavedActivities(selectedDate);
+      await loadPortfolio();
       setStatus(
         parentApproved
           ? `Approved activity saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show green for ${selectedDate}.`
@@ -324,6 +380,53 @@ export default function Home() {
     ]);
   }, [savedActivities]);
 
+  const portfolioNodes = useMemo<PortfolioNode[]>(() => {
+    const countBy = (getKey: (artifact: PortfolioArtifact) => string | null) => {
+      const counts = new Map<string, number>();
+      portfolioArtifacts.forEach((artifact) => {
+        const key = getKey(artifact);
+        if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+      });
+      return counts;
+    };
+
+    const years = countBy((artifact) => artifact.activity?.schoolYear.label ?? null);
+    const units = countBy((artifact) => artifact.activity?.unitStudy?.title ?? null);
+    const subjects = countBy((artifact) => artifact.activity?.allocations[0]?.subject ?? null);
+    const legalTags = countBy((artifact) => artifact.activity?.legalTags[0]?.legalTag.label ?? null);
+    const unattachedCount = portfolioArtifacts.filter((artifact) => !artifact.activity).length;
+
+    return [
+      { key: "all", label: "All proof files", count: portfolioArtifacts.length, level: 0 },
+      { key: "years", label: "School years", count: years.size, level: 0 },
+      ...Array.from(years, ([label, count]) => ({ key: `year:${label}`, label, count, level: 1 })),
+      { key: "units", label: "Unit studies", count: units.size, level: 0 },
+      ...Array.from(units, ([label, count]) => ({ key: `unit:${label}`, label, count, level: 1 })),
+      { key: "subjects", label: "Subjects", count: subjects.size, level: 0 },
+      ...Array.from(subjects, ([label, count]) => ({ key: `subject:${label}`, label, count, level: 1 })),
+      { key: "legal", label: "Legal tags", count: legalTags.size, level: 0 },
+      ...Array.from(legalTags, ([label, count]) => ({ key: `legal:${label}`, label, count, level: 1 })),
+      { key: "unattached", label: "Unattached uploads", count: unattachedCount, level: 0 }
+    ];
+  }, [portfolioArtifacts]);
+
+  const selectedPortfolioArtifacts = useMemo(() => {
+    if (selectedPortfolioKey === "all") return portfolioArtifacts;
+    if (selectedPortfolioKey === "unattached") return portfolioArtifacts.filter((artifact) => !artifact.activity);
+    if (!selectedPortfolioKey.includes(":")) return portfolioArtifacts;
+
+    const [type, value] = selectedPortfolioKey.split(/:(.*)/s);
+    return portfolioArtifacts.filter((artifact) => {
+      if (type === "year") return artifact.activity?.schoolYear.label === value;
+      if (type === "unit") return artifact.activity?.unitStudy?.title === value;
+      if (type === "subject") return artifact.activity?.allocations.some((allocation) => allocation.subject === value);
+      if (type === "legal") return artifact.activity?.legalTags.some((item) => item.legalTag.label === value);
+      return true;
+    });
+  }, [portfolioArtifacts, selectedPortfolioKey]);
+
+  const selectedPortfolioNode = portfolioNodes.find((node) => node.key === selectedPortfolioKey);
+
   return (
     <main className="mockup-shell">
       <aside className="sidebar" aria-label="School year and unit study navigation">
@@ -343,7 +446,7 @@ export default function Home() {
                 <li><a href="#daily-log">Daily Records</a></li>
                 <li><a href="#weekly-tally">Weekly Reviews</a></li>
                 <li><a href="#quarter-alert">Quarter Reviews <span className="alert-sidebar-badge">Urgent</span></a></li>
-                <li><a href="#proof">Portfolio</a></li>
+                <li><a href="#portfolio">Portfolio</a></li>
                 <li><a href="#legal-panel">Legal Archive</a></li>
                 <li><a href="#skills-panel">Reports</a></li>
               </ul>
@@ -397,6 +500,7 @@ export default function Home() {
           <div className="mode-switch" aria-label="Mockup sections">
             <a href="#daily-log">Daily log</a>
             <a href="#saved-records">Saved</a>
+            <a href="#portfolio">Portfolio</a>
             <a href="#weekly-tally">Coverage</a>
           </div>
         </header>
@@ -617,6 +721,69 @@ export default function Home() {
                     </article>
                   ))
                 )}
+              </div>
+            </section>
+
+            <section className="panel portfolio-panel" id="portfolio">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Portfolio</p>
+                  <h2>Proof file explorer</h2>
+                  <p className="panel-note">Files are stored in Supabase and linked back to the activity record when you save.</p>
+                </div>
+                <button className="secondary-button" type="button" onClick={() => void loadPortfolio()} disabled={isLoadingPortfolio}>
+                  {isLoadingPortfolio ? "Loading..." : "Refresh"}
+                </button>
+              </div>
+              <div className="file-explorer">
+                <nav className="explorer-tree" aria-label="Proof file folders">
+                  {portfolioNodes.map((node) => (
+                    <button
+                      className={selectedPortfolioKey === node.key ? "explorer-node is-selected" : "explorer-node"}
+                      data-level={node.level}
+                      key={node.key}
+                      type="button"
+                      onClick={() => setSelectedPortfolioKey(node.key)}
+                    >
+                      <span>{node.level === 0 ? "[+]" : "--"} {node.label}</span>
+                      <strong>{node.count}</strong>
+                    </button>
+                  ))}
+                </nav>
+                <div className="explorer-list" aria-live="polite">
+                  <div className="explorer-toolbar">
+                    <strong>{selectedPortfolioNode?.label ?? "Proof files"}</strong>
+                    <span>{selectedPortfolioArtifacts.length} item{selectedPortfolioArtifacts.length === 1 ? "" : "s"}</span>
+                  </div>
+                  <div className="file-list-header" aria-hidden="true">
+                    <span>Name</span>
+                    <span>Activity</span>
+                    <span>Date</span>
+                    <span>Size</span>
+                    <span>Action</span>
+                  </div>
+                  {selectedPortfolioArtifacts.length === 0 ? (
+                    <p className="muted explorer-empty">No proof files in this folder yet.</p>
+                  ) : (
+                    selectedPortfolioArtifacts.map((artifact) => (
+                      <article className="file-list-row" key={artifact.id}>
+                        <div>
+                          <strong>{artifact.originalName}</strong>
+                          <span>{artifact.mimeType || "file"} - {artifact.recordStatus}</span>
+                        </div>
+                        <div>
+                          <strong>{artifact.activity?.title ?? "Not attached yet"}</strong>
+                          <span>{artifact.activity?.activityType ?? "Upload waiting for save"}</span>
+                        </div>
+                        <span>{artifact.activity ? dateLabel(artifact.activity.date) : dateLabel(artifact.createdAt)}</span>
+                        <span>{formatBytes(artifact.sizeBytes)}</span>
+                        <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">
+                          Download
+                        </a>
+                      </article>
+                    ))
+                  )}
+                </div>
               </div>
             </section>
           </section>
