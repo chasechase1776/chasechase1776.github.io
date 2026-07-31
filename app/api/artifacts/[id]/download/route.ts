@@ -48,7 +48,12 @@ async function signedSupabaseDownloadUrl(storagePath: string) {
   const data = (await response.json()) as { signedURL?: string };
   if (!data.signedURL) throw new Error("Supabase did not return a download link.");
 
-  return data.signedURL.startsWith("http") ? data.signedURL : `${supabaseUrl.replace(/\/+$/g, "")}${data.signedURL}`;
+  if (data.signedURL.startsWith("http")) return data.signedURL;
+
+  const relativePath = data.signedURL.startsWith("/storage/v1/")
+    ? data.signedURL
+    : `/storage/v1${data.signedURL.startsWith("/") ? data.signedURL : `/${data.signedURL}`}`;
+  return `${supabaseUrl.replace(/\/+$/g, "")}${relativePath}`;
 }
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
