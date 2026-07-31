@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "check": "tsc --noEmit && eslint . --max-warnings=0 && prisma generate && next build",
-    "smoke:live": "node scripts/smoke-url.mjs https://chasechase1776.github.io",
+    "smoke:live": "node scripts/smoke-url.mjs https://chasechase1776-github-io.vercel.app",
     "deploy:prod": "vercel --prod",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
+    "@supabase/supabase-js": "^2.111.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

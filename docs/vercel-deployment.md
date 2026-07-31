@@ -15,12 +15,15 @@ OPENAI_API_KEY=
 AI_PARSER_MODE=enabled
 OPENAI_MODEL=gpt-5.5
 DATABASE_URL=
-APP_BASE_URL=
+APP_BASE_URL=https://chasechase1776-github-io.vercel.app
 NODE_ENV=production
 OFFICIAL_HOMESCHOOL_START_DATE=2027-05-01
 INCLUDE_TRIAL_RECORDS_IN_REPORTS=false
-STORAGE_PROVIDER=local
-LOCAL_UPLOAD_DIR=./storage/evidence
+STORAGE_PROVIDER=supabase
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=homeschool-files
+SUPABASE_STORAGE_PREFIX=evidence
 ```
 
 Do not commit real values to GitHub.
@@ -33,9 +36,19 @@ The project includes the Vercel CLI as a development dependency and exposes:
 corepack pnpm run deploy:prod
 ```
 
-Current blocker: this machine does not have valid Vercel credentials. Run `vercel login` or provide a fresh Vercel token before production deployments can be completed from this workspace.
+Current status: Vercel CLI is authenticated and production deployment is available from this workspace.
 
 Do not treat GitHub Pages as the production app deployment. GitHub Pages can only serve the static placeholder in `site/`.
+
+## Stable Production URL
+
+Use this URL for every production review unless a custom domain is added later:
+
+```text
+https://chasechase1776-github-io.vercel.app
+```
+
+Vercel may print one-off deployment URLs during deployment. Those are useful for debugging, but the stable project URL above should be the normal handoff URL.
 
 ## Database Requirement
 
@@ -84,5 +97,5 @@ The `/api/ai/parse` route:
 
 ## Current Deployment Limitations
 
-- Production file uploads need durable object storage before real artifacts are used.
+- Production file uploads require Supabase environment variables and a Supabase Storage bucket before real artifacts are used.
 - The passcode is simple family protection, not full multi-user authentication.

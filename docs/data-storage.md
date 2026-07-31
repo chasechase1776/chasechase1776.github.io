@@ -26,13 +26,14 @@ GitHub should not store:
 
 ## MVP Storage
 
-Use Prisma/PostgreSQL for saved app records and local filesystem storage for MVP uploads and exports:
+Use Prisma/PostgreSQL for saved app records. Use Supabase Storage for deployed file uploads once the required environment variables are configured.
 
 - App database: Prisma Postgres through `DATABASE_URL`
-- Evidence uploads: `storage/evidence/`
-- Generated reports: `storage/exports/`
+- Evidence uploads in production: Supabase Storage bucket, recommended name `homeschool-files`
+- Evidence uploads in local troubleshooting: `storage/evidence/`
+- Generated reports in local troubleshooting: `storage/exports/`
 - Generated Markdown record snapshots: `records/`
-- Temporary files: `storage/tmp/`
+- Temporary files in local troubleshooting: `storage/tmp/`
 
 The existing `.gitignore` excludes local databases and runtime storage so records do not get committed accidentally.
 
@@ -48,13 +49,33 @@ A good future backup workflow would create encrypted archive files that can be c
 
 ## Future Cloud Option
 
-If the app needs cloud access later:
+Production cloud storage direction:
 
 - Hosted database: Postgres
-- Evidence storage: S3-compatible object storage
-- App hosting: Vercel, Railway, Render, Fly.io, or a VPS
+- Evidence storage: Supabase Storage
+- App hosting: Vercel
 
 The app should keep storage access behind a small abstraction so local filesystem storage can be replaced later without rewriting the domain model.
+
+## Supabase Storage Setup
+
+Create a private Supabase Storage bucket named:
+
+```text
+homeschool-files
+```
+
+Set these Vercel environment variables for Production and Preview:
+
+```text
+STORAGE_PROVIDER=supabase
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=homeschool-files
+SUPABASE_STORAGE_PREFIX=evidence
+```
+
+Use the service role key only on the server. Never expose it as `NEXT_PUBLIC_*` and never commit it to GitHub.
 
 ## Practical Rule
 

@@ -49,13 +49,13 @@ corepack pnpm run check
 
 ## Smoke Checks
 
-Live GitHub Pages placeholder smoke check:
+Stable Vercel production smoke check:
 
 ```text
 corepack pnpm run smoke:live
 ```
 
-The smoke check confirms the public placeholder URL is reachable and contains the expected `Bennett Homeschool` page text. Once Vercel production is authenticated, add or run a Vercel production smoke check against the Vercel URL after deployment.
+The smoke check confirms the stable Vercel production URL is reachable and contains the expected `Bennett Homeschool` page text.
 
 ## Production Deployment Path
 
@@ -74,7 +74,7 @@ Required Vercel setup:
 - Production `DATABASE_URL` configured
 - Any optional AI/passcode/storage environment variables configured
 
-Current blocker: Vercel CLI is installed, but the available Vercel credentials are not valid. Run `vercel login` or provide a fresh Vercel token before production deployment.
+Current status: Vercel CLI is authenticated. Production deployment is available after checks pass.
 
 ## Nontechnical Browser Verification
 
