@@ -86,6 +86,7 @@ type WeeklyReviewData = {
   studentQuestion: string;
   studentRating: string;
   studentDictation: string;
+  unitStudy?: string;
 };
 
 const activityTypes = [
@@ -548,7 +549,7 @@ export default function Home() {
       const response = await fetch("/api/reviews/weekly", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewId: weeklyReviewId, status: statusValue, data: weeklyData, recordStatus: schoolYearStatus })
+        body: JSON.stringify({ reviewId: weeklyReviewId, status: statusValue, data: { ...weeklyData, unitStudy }, recordStatus: schoolYearStatus })
       });
       const data = await response.json().catch(() => ({ error: "Weekly review save failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Weekly review save failed.");
@@ -574,9 +575,14 @@ export default function Home() {
     setIsWeeklyBusy(true);
     setWeeklyStatusMessage("Compiling weekly review PDF and saving it to Portfolio...");
     try {
-      if (weeklyStatus !== "finalized") {
-        await saveWeeklyReview("finalized");
-      }
+      const saveResponse = await fetch("/api/reviews/weekly", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: weeklyReviewId, status: "finalized", data: { ...weeklyData, unitStudy }, recordStatus: schoolYearStatus })
+      });
+      const saveData = await saveResponse.json().catch(() => ({ error: "Weekly review save failed before the PDF was compiled." }));
+      if (!saveResponse.ok) throw new Error(typeof saveData.error === "string" ? saveData.error : "Weekly review save failed before the PDF was compiled.");
+
       const response = await fetch("/api/reviews/weekly/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

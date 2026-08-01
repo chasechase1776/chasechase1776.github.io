@@ -10,14 +10,24 @@ const pdfSchema = z.object({
   reviewId: z.string().min(1)
 });
 
-type SelectedPdfImage = {
+type SelectedEvidenceFile = {
   title: string;
   mimeType: string;
   bytes: Uint8Array;
 };
 
+type PdfHeader = {
+  studentYear: string;
+  weekDates: string;
+  unitStudy: string;
+};
+
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function dateDisplay(date: Date) {
+  return `${String(date.getUTCMonth() + 1).padStart(2, "0")}/${String(date.getUTCDate()).padStart(2, "0")}/${date.getUTCFullYear()}`;
 }
 
 function weekKey(date: Date) {
@@ -48,6 +58,10 @@ function pdfText(value: string) {
   return value.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "?");
 }
 
+function attachmentName(name: string) {
+  return pdfText(name).replace(/["\r\n]/g, "-") || "portfolio-evidence";
+}
+
 function wrapLine(value: string, width = 92) {
   const words = value.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -67,7 +81,26 @@ function wrapLine(value: string, width = 92) {
   return lines.length ? lines : [""];
 }
 
-async function buildPdf(lines: string[], selectedImages: SelectedPdfImage[]) {
+async function selectedEvidenceFiles(selectedArtifacts: { originalName: string; mimeType: string; storagePath: string }[]) {
+  const files: SelectedEvidenceFile[] = [];
+  for (const artifact of selectedArtifacts.slice(0, 10)) {
+    try {
+      const bytes = await readStoredFile(artifact.storagePath);
+      if (bytes.length) {
+        files.push({
+          title: artifact.originalName,
+          mimeType: artifact.mimeType,
+          bytes
+        });
+      }
+    } catch {
+      // Keep the report generation working even if one selected evidence file cannot be retrieved.
+    }
+  }
+  return files;
+}
+
+async function buildPdf(lines: string[], evidenceFiles: SelectedEvidenceFile[], header: PdfHeader) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -76,6 +109,18 @@ async function buildPdf(lines: string[], selectedImages: SelectedPdfImage[]) {
   let page = pdf.addPage([612, 792]);
   let y = 744;
   let pageNumber = 1;
+
+  const drawCentered = (value: string, yPosition: number, size: number, font = regular) => {
+    const safeValue = pdfText(value || " ");
+    const width = font.widthOfTextAtSize(safeValue, size);
+    page.drawText(safeValue, {
+      x: (612 - width) / 2,
+      y: yPosition,
+      size,
+      font,
+      color: rgb(0.09, 0.13, 0.17)
+    });
+  };
 
   const drawFooter = () => {
     page.drawText(`Weekly Review - Page ${pageNumber}`, {
@@ -95,75 +140,112 @@ async function buildPdf(lines: string[], selectedImages: SelectedPdfImage[]) {
     y = 744;
   };
 
-  for (const line of lines) {
-    if (y < 64) {
-      drawFooter();
-      page = pdf.addPage([612, 792]);
-      pageNumber += 1;
-      y = 744;
-    }
-
-    const isHeading = ["Weekly Review", "Generated Metrics", "Coverage Summary", "Parent Notes", "Student Reflection", "Skills and Portfolio"].includes(line);
+  const drawLine = (line: string, options?: { heading?: boolean; indent?: number; color?: ReturnType<typeof rgb> }) => {
+    ensureSpace(options?.heading ? 24 : lineHeight);
     page.drawText(pdfText(line || " "), {
-      x: margin,
+      x: margin + (options?.indent ?? 0),
       y,
-      size: isHeading ? 12 : 10,
-      font: isHeading ? bold : regular,
-      color: isHeading ? rgb(0.09, 0.13, 0.17) : rgb(0.12, 0.16, 0.2)
+      size: options?.heading ? 12 : 10,
+      font: options?.heading ? bold : regular,
+      color: options?.color ?? (options?.heading ? rgb(0.09, 0.13, 0.17) : rgb(0.12, 0.16, 0.2))
     });
-    y -= isHeading ? lineHeight + 4 : lineHeight;
+    y -= options?.heading ? lineHeight + 4 : lineHeight;
+  };
+
+  drawCentered(header.studentYear, y, 12);
+  y -= 18;
+  drawCentered("Weekly Review", y, 12, bold);
+  y -= 18;
+  drawCentered(header.weekDates, y, 12, bold);
+  y -= 18;
+  drawCentered(header.unitStudy, y, 12);
+  y -= 36;
+
+  for (const line of lines) {
+    const isHeading = ["Generated Metrics", "Coverage Summary", "Parent Notes", "Student Reflection", "Skills and Portfolio"].includes(line);
+    drawLine(line, { heading: isHeading });
   }
 
-  if (selectedImages.length) {
+  if (evidenceFiles.length) {
     ensureSpace(42);
     y -= 8;
-    page.drawText("Selected Image Evidence", {
-      x: margin,
-      y,
-      size: 12,
-      font: bold,
-      color: rgb(0.09, 0.13, 0.17)
-    });
-    y -= 24;
+    drawLine("Selected Portfolio Evidence", { heading: true });
 
-    for (const imageFile of selectedImages) {
+    let embeddedPdfPages = 0;
+    for (const evidenceFile of evidenceFiles) {
+      const mimeType = evidenceFile.mimeType.toLowerCase();
+
       try {
-        const image = imageFile.mimeType.toLowerCase().includes("png")
-          ? await pdf.embedPng(imageFile.bytes)
-          : await pdf.embedJpg(imageFile.bytes);
-        const maxWidth = 500;
-        const maxHeight = 320;
-        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
-        const width = image.width * scale;
-        const height = image.height * scale;
-        ensureSpace(height + 42);
-
-        page.drawText(pdfText(imageFile.title), {
-          x: margin,
-          y,
-          size: 10,
-          font: bold,
-          color: rgb(0.12, 0.16, 0.2)
+        await pdf.attach(evidenceFile.bytes, attachmentName(evidenceFile.title), {
+          mimeType: evidenceFile.mimeType,
+          description: `Selected weekly portfolio evidence: ${evidenceFile.title}`
         });
-        y -= 16;
-        page.drawImage(image, {
-          x: margin,
-          y: y - height,
-          width,
-          height
-        });
-        y -= height + 22;
       } catch {
-        ensureSpace(32);
-        page.drawText(pdfText(`Could not embed image: ${imageFile.title}`), {
-          x: margin,
-          y,
-          size: 10,
-          font: regular,
-          color: rgb(0.55, 0.28, 0.24)
-        });
-        y -= lineHeight;
+        // Visible previews below are the main proof path; attachments are a convenience where supported.
       }
+
+      if (["image/jpeg", "image/jpg", "image/png"].includes(mimeType)) {
+        try {
+          const image = mimeType.includes("png") ? await pdf.embedPng(evidenceFile.bytes) : await pdf.embedJpg(evidenceFile.bytes);
+          const maxWidth = 500;
+          const maxHeight = 320;
+          const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+          const width = image.width * scale;
+          const height = image.height * scale;
+          ensureSpace(height + 42);
+
+          drawLine(evidenceFile.title);
+          page.drawImage(image, {
+            x: margin,
+            y: y - height,
+            width,
+            height
+          });
+          y -= height + 22;
+        } catch {
+          drawLine(`Could not embed image preview: ${evidenceFile.title}`, { color: rgb(0.55, 0.28, 0.24) });
+        }
+        continue;
+      }
+
+      if (mimeType === "application/pdf" && embeddedPdfPages < 6) {
+        try {
+          const sourcePdf = await PDFDocument.load(evidenceFile.bytes);
+          const pageCount = Math.min(sourcePdf.getPageCount(), 3, 6 - embeddedPdfPages);
+          const embeddedPages = await pdf.embedPdf(sourcePdf, Array.from({ length: pageCount }, (_value, index) => index));
+
+          for (const [index, embeddedPage] of embeddedPages.entries()) {
+            embeddedPdfPages += 1;
+            const scale = Math.min(500 / embeddedPage.width, 620 / embeddedPage.height, 1);
+            const width = embeddedPage.width * scale;
+            const height = embeddedPage.height * scale;
+            ensureSpace(height + 48);
+            drawLine(`${evidenceFile.title} - page ${index + 1}`);
+            page.drawPage(embeddedPage, {
+              x: margin,
+              y: y - height,
+              width,
+              height
+            });
+            y -= height + 22;
+          }
+        } catch {
+          drawLine(`Attached PDF could not be previewed: ${evidenceFile.title}`, { color: rgb(0.55, 0.28, 0.24) });
+        }
+        continue;
+      }
+
+      if (mimeType.startsWith("text/") || mimeType === "application/json") {
+        const excerpt = new TextDecoder("utf-8").decode(evidenceFile.bytes).slice(0, 2500);
+        drawLine(evidenceFile.title);
+        for (const line of wrapLine(excerpt.replace(/\s+/g, " "), 88).slice(0, 45)) {
+          drawLine(line, { indent: 12 });
+        }
+        continue;
+      }
+
+      drawLine(`Attached file: ${evidenceFile.title} (${evidenceFile.mimeType || "file"})`);
+      drawLine("Open the PDF attachments panel in your PDF viewer to access this file.", { indent: 12 });
     }
   }
 
@@ -189,28 +271,13 @@ async function pdfBufferForWeeklyReview(review: {
       })
     : [];
   const selectedArtifactNames = selectedArtifacts.map((artifact) => artifact.originalName);
-  const selectedImages: SelectedPdfImage[] = [];
-  for (const artifact of selectedArtifacts
-    .filter((item) => ["image/jpeg", "image/jpg", "image/png"].includes(item.mimeType.toLowerCase()))
-    .slice(0, 6)) {
-    try {
-      const bytes = await readStoredFile(artifact.storagePath);
-      if (bytes.length) {
-        selectedImages.push({
-          title: artifact.originalName,
-          mimeType: artifact.mimeType,
-          bytes
-        });
-      }
-    } catch {
-      // Keep the report generation working even if one selected evidence file cannot be embedded.
-    }
-  }
+  const evidenceFiles = await selectedEvidenceFiles(selectedArtifacts);
+  const header = {
+    studentYear: `${review.schoolYear.student.name} - ${review.schoolYear.label}`,
+    weekDates: `${dateDisplay(review.weekStartDate)} to ${dateDisplay(review.weekEndDate)}`,
+    unitStudy: typeof data.unitStudy === "string" && data.unitStudy.trim() ? data.unitStudy : "Unit study not specified"
+  };
   const sourceLines = [
-    "Weekly Review",
-    `${review.schoolYear.student.name} - ${review.schoolYear.label}`,
-    `${dateKey(review.weekStartDate)} to ${dateKey(review.weekEndDate)} - ${review.status}`,
-    "",
     "Generated Metrics",
     `Total approved time: ${data.totalApprovedLearningTime ?? 0} minutes`,
     `Activities logged: ${data.activitiesLogged ?? 0}`,
@@ -240,7 +307,7 @@ async function pdfBufferForWeeklyReview(review: {
     `Portfolio selections: ${selectedArtifactNames.length ? selectedArtifactNames.join(", ") : stringifySummary(data.portfolioSelections)}`
   ];
 
-  return buildPdf(sourceLines.flatMap((line) => wrapLine(line)), selectedImages);
+  return buildPdf(sourceLines.flatMap((line) => wrapLine(line)), evidenceFiles, header);
 }
 
 export async function POST(request: Request) {
