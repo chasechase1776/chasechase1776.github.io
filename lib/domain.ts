@@ -2,8 +2,8 @@ export const activityTypes = [
   "Language Arts",
   "Math",
   "Finance",
-  "Unit Study",
   "Science Journal",
+  "Unit Study",
   "Writing Project",
   "Project Cycle",
   "Presentation Cycle",
@@ -13,7 +13,8 @@ export const activityTypes = [
   "Independent Reading",
   "Extracurricular",
   "Field Trip",
-  "Group Event"
+  "Group Event",
+  "Special Event"
 ] as const;
 
 export const texasLegalTags = [
@@ -136,6 +137,6 @@ export function inferSubject(activityType: string) {
   if (activityType === "Independent Reading") return "Independent Reading";
   if (activityType === "Extracurricular") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
-  if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
+  if (activityType === "Field Trip" || activityType === "Group Event" || activityType === "Special Event") return "Social Studies";
   return "Unit Study";
 }

@@ -213,8 +213,8 @@ const activityTypes = [
   "Language Arts",
   "Math",
   "Finance",
-  "Unit Study",
   "Science Journal",
+  "Unit Study",
   "Writing Project",
   "Project Cycle",
   "Presentation Cycle",
@@ -224,7 +224,21 @@ const activityTypes = [
   "Independent Reading",
   "Extracurricular",
   "Field Trip",
-  "Group Event"
+  "Group Event",
+  "Special Event"
+];
+
+const subjectSplitActivityTypes = [
+  "Unit Study",
+  "Writing Project",
+  "Project Cycle",
+  "Presentation Cycle",
+  "Hands-On Activity",
+  "Field Trip",
+  "Group Event",
+  "Independent Reading",
+  "Extracurricular",
+  "Special Event"
 ];
 
 const extracurricularOptions = [
@@ -709,7 +723,7 @@ function inferSubject(activityType: string) {
   if (activityType === "Independent Reading") return "Independent Reading";
   if (activityType === "Extracurricular") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
-  if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
+  if (activityType === "Field Trip" || activityType === "Group Event" || activityType === "Special Event") return "Social Studies";
   return "Unit Study";
 }
 
@@ -774,6 +788,9 @@ function defaultNarrationForType(activityType: string) {
   if (activityType === "Field Trip") {
     return "Today we connected real-world observations to the current unit study and discussed what we noticed.";
   }
+  if (activityType === "Special Event") {
+    return "Today we attended a special event and connected the experience to the current unit, skills, and legal learning areas.";
+  }
   return "";
 }
 
@@ -784,7 +801,7 @@ function parsedSubjectForType(activityType: string) {
   if (activityType === "Independent Reading") return "Independent Reading";
   if (activityType === "Extracurricular") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
-  if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
+  if (activityType === "Field Trip" || activityType === "Group Event" || activityType === "Special Event") return "Social Studies";
   if (activityType === "Unit Study") return "Unit Study";
   return "Language Arts";
 }
@@ -848,13 +865,15 @@ function splitMinutesAcrossSubjects(subjects: string[], minutes: number) {
   });
 }
 
-function inferUnitStudyAllocations(text: string, minutes: number) {
+function inferSubjectSplitAllocations(activityType: string, text: string, minutes: number) {
   const combined = text.toLowerCase();
   const subjects: string[] = [];
   const addSubject = (subject: string) => {
     if (!subjects.includes(subject)) subjects.push(subject);
   };
 
+  const primarySubject = parsedSubjectForType(activityType);
+  if (primarySubject !== "Unit Study") addSubject(primarySubject);
   if (/(read|book|story|chapter|author|literature|narrat|frank lloyd wright|wright)/.test(combined)) addSubject("Language Arts");
   if (/(physics|science|structure|building|construction|force|motion|stand|frame|model|experiment)/.test(combined)) addSubject("Science");
   if (/(math|measure|geometry|fraction|angle|count|calculate|number)/.test(combined)) addSubject("Math");
@@ -880,8 +899,8 @@ function mockDrafts(activityType: string, minutes: number, draftTitle: string, n
   const primaryMinutes = minutes || 25;
   const parseText = `${draftTitle} ${narrationText} ${extracurricularSelections.join(" ")}`;
   const subjectAllocations =
-    activityType === "Unit Study"
-      ? inferUnitStudyAllocations(parseText, primaryMinutes)
+    subjectSplitActivityTypes.includes(activityType)
+      ? inferSubjectSplitAllocations(activityType, parseText, primaryMinutes)
       : [{ subject: primarySubject, minutes: primaryMinutes }];
 
   return [
@@ -1109,15 +1128,16 @@ export default function Home() {
     () => unitStudyAllocations.reduce((sum, allocation) => sum + (Number.isFinite(allocation.minutes) ? allocation.minutes : 0), 0),
     [unitStudyAllocations]
   );
-  const unitStudyAllocationIsBalanced = selectedType !== "Unit Study" || unitStudyAllocationTotal === actualMinutes;
+  const hasSubjectTimeSplit = subjectSplitActivityTypes.includes(selectedType);
+  const unitStudyAllocationIsBalanced = !hasSubjectTimeSplit || unitStudyAllocationTotal === actualMinutes;
   const activitySubjectAllocations = useMemo(
     () =>
-      selectedType === "Unit Study"
+      hasSubjectTimeSplit
         ? unitStudyAllocations
             .filter((allocation) => allocation.subject.trim() && allocation.minutes > 0)
             .map((allocation) => ({ subject: allocation.subject.trim(), minutes: allocation.minutes }))
         : [{ subject: primarySubject, minutes: actualMinutes }],
-    [actualMinutes, primarySubject, selectedType, unitStudyAllocations]
+    [actualMinutes, hasSubjectTimeSplit, primarySubject, unitStudyAllocations]
   );
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
   const savedMinutesForSelectedDate = useMemo(
@@ -1194,10 +1214,12 @@ export default function Home() {
       [selectedType]: { title, narration, minutes: actualMinutes }
     };
     const saved = nextDrafts[type];
+    const nextMinutes = saved?.minutes ?? 25;
     setEntryDraftsByType(nextDrafts);
     setTitle(saved?.title ?? "");
     setNarration(saved?.narration ?? defaultNarrationForType(type));
-    setActualMinutes(saved?.minutes ?? 25);
+    setActualMinutes(nextMinutes);
+    setUnitStudyAllocations([{ id: `subject-allocation-${Date.now()}`, subject: parsedSubjectForType(type), minutes: nextMinutes }]);
     setSelectedType(type);
     setDraftCards([]);
     setUploadedArtifacts([]);
@@ -1240,7 +1262,7 @@ export default function Home() {
   function setActualMinutesForEntry(minutes: number) {
     const nextMinutes = Math.max(0, minutes);
     setActualMinutes(nextMinutes);
-    if (selectedType === "Unit Study" && unitStudyAllocations.length === 1 && unitStudyAllocations[0]?.subject === "Unit Study") {
+    if (hasSubjectTimeSplit && unitStudyAllocations.length === 1) {
       setUnitStudyAllocations((current) => current.map((allocation) => ({ ...allocation, minutes: nextMinutes })));
     }
   }
@@ -1258,7 +1280,7 @@ export default function Home() {
       ...current,
       { id: `unit-study-allocation-${Date.now()}-${current.length}`, subject: "Science", minutes: 0 }
     ]);
-    setStatus("Subject row added. Adjust minutes so the Unit Study split equals the actual minutes.");
+    setStatus(`Subject row added. Adjust minutes so the ${selectedType} split equals the actual minutes.`);
   }
 
   function updateUnitStudyAllocation(id: string, patch: Partial<Omit<UnitStudyAllocation, "id">>) {
@@ -1280,7 +1302,7 @@ export default function Home() {
       if (current.length === 1) return current;
       return current.filter((allocation) => allocation.id !== id);
     });
-    setStatus("Subject row removed. Confirm the remaining minutes still match the Unit Study total.");
+    setStatus(`Subject row removed. Confirm the remaining minutes still match the ${selectedType} total.`);
   }
 
   function balanceLastUnitStudyAllocation() {
@@ -1291,7 +1313,7 @@ export default function Home() {
         index === current.length - 1 ? { ...allocation, minutes: Math.max(0, actualMinutes - usedBeforeLast) } : allocation
       );
     });
-    setStatus("Last subject row balanced to the remaining Unit Study minutes.");
+    setStatus(`Last subject row balanced to the remaining ${selectedType} minutes.`);
   }
 
   function defaultActivityTitle() {
@@ -1332,8 +1354,8 @@ export default function Home() {
     }
     if (!canSaveApproved) {
       setStatus(
-        selectedType === "Unit Study" && !unitStudyAllocationIsBalanced
-          ? `Unit Study subject minutes must equal ${actualMinutes} before saving. Current split totals ${unitStudyAllocationTotal}.`
+        hasSubjectTimeSplit && !unitStudyAllocationIsBalanced
+          ? `${selectedType} subject minutes must equal ${actualMinutes} before saving. Current split totals ${unitStudyAllocationTotal}.`
           : "Approved save requires student, school year, unit, date, type, narration, and actual minutes."
       );
       return;
@@ -1439,7 +1461,7 @@ export default function Home() {
   function parseWithAi() {
     const drafts = mockDrafts(selectedType, actualMinutes, title.trim() || defaultActivityTitle(), narration, selectedExtracurriculars);
     setDraftCards(drafts);
-    if (selectedType === "Unit Study" && drafts[0]) {
+    if (hasSubjectTimeSplit && drafts[0]) {
       setUnitStudyAllocations(unitStudyRowsFromAllocations(drafts[0].subjectAllocations));
     }
     setStatus("Mock AI parse complete. Review the editable cards below before saving.");
@@ -1457,7 +1479,7 @@ export default function Home() {
         const nextSkills = isRemoving ? draft.skills.filter((item) => item !== skill) : [...draft.skills, skill];
         const allocationSubject = allocationSubjectForSkill(skill);
         const nextSubjectAllocations =
-          selectedType === "Unit Study" && !isRemoving && !draft.subjectAllocations.some((allocation) => allocation.subject === allocationSubject)
+          hasSubjectTimeSplit && !isRemoving && !draft.subjectAllocations.some((allocation) => allocation.subject === allocationSubject)
             ? [...draft.subjectAllocations, { subject: allocationSubject, minutes: 0 }]
             : draft.subjectAllocations;
         return {
@@ -1468,8 +1490,8 @@ export default function Home() {
       })
     );
     setStatus(
-      selectedType === "Unit Study"
-        ? "Skill tags updated. New Unit Study subject rows start at 0 minutes so you can assign the correct split."
+      hasSubjectTimeSplit
+        ? `Skill tags updated. New ${selectedType} subject rows start at 0 minutes so you can assign the correct split.`
         : "Skill tags updated for parsed card."
     );
   }
@@ -1629,12 +1651,12 @@ export default function Home() {
 
   function approveDraftCard(id: string) {
     const draft = draftCards.find((item) => item.id === id);
-    if (selectedType === "Unit Study" && draft) {
+    if (hasSubjectTimeSplit && draft) {
       setUnitStudyAllocations(unitStudyRowsFromAllocations(draft.subjectAllocations));
     }
     setDraftCards((current) => current.map((item) => (item.id === id ? { ...item, status: "approved" } : item)));
     setStatus(
-      selectedType === "Unit Study"
+      hasSubjectTimeSplit
         ? "Parsed card approved and its subject split was applied to Step 2. Use Save Approved when the daily record is ready."
         : "Parsed card approved for parent review. Use Save Approved when the daily record is ready to become permanent."
     );
@@ -2499,12 +2521,12 @@ export default function Home() {
                   </div>
                 </div>
               ) : null}
-              {selectedType === "Unit Study" ? (
+              {hasSubjectTimeSplit ? (
                 <div className="activity-detail-panel unit-study-allocation-panel">
                   <div className="allocation-panel-head">
                     <div>
                       <span className="field-label">Subject time split</span>
-                      <p className="muted">Split the Unit Study total into subjects without double-counting time.</p>
+                      <p className="muted">Split the {selectedType} total into subjects without double-counting time.</p>
                     </div>
                     <span className={unitStudyAllocationIsBalanced ? "tag good" : "tag review"}>
                       {unitStudyAllocationTotal}/{actualMinutes || 0} min
@@ -2546,13 +2568,13 @@ export default function Home() {
                     <button className="secondary-button" type="button" onClick={balanceLastUnitStudyAllocation}>Balance last row</button>
                   </div>
                   {!unitStudyAllocationIsBalanced ? (
-                    <p className="status-line warning">Save Approved turns back on when the subject split equals the Unit Study actual minutes.</p>
+                    <p className="status-line warning">Save Approved turns back on when the subject split equals the {selectedType} actual minutes.</p>
                   ) : null}
                 </div>
               ) : null}
               <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
               <div className="quick-summary-row">
-                {selectedType === "Unit Study" ? (
+                {hasSubjectTimeSplit ? (
                   activitySubjectAllocations.map((allocation) => (
                     <span className="tag good" key={`${allocation.subject}-${allocation.minutes}`}>{allocation.subject}: {allocation.minutes} min</span>
                   ))
@@ -2757,7 +2779,7 @@ export default function Home() {
                               <div className="allocation-track">
                                 <span style={{ width: `${percent}%` }} />
                               </div>
-                              {selectedType === "Unit Study" ? (
+                              {hasSubjectTimeSplit ? (
                                 <div className="parsed-allocation-controls">
                                   <label>
                                     <span>Subject</span>
@@ -2840,12 +2862,15 @@ export default function Home() {
               </section>
             ) : null}
 
-            <section className="panel" id="saved-records">
-              <div className="section-head">
+            <details className="panel expandable-records-panel" id="saved-records">
+              <summary>
                 <div>
                   <p className="eyebrow">Saved records</p>
                   <h2>Saved records for selected date</h2>
                 </div>
+                <span className="tag">{savedActivities.length} saved</span>
+              </summary>
+              <div className="expandable-records-body">
                 <div className="primary-action-row">
                   <button className="secondary-button" type="button" onClick={() => void loadSavedActivities(selectedDate)} disabled={isLoadingRecords}>
                     {isLoadingRecords ? "Loading..." : "Refresh"}
@@ -2854,42 +2879,42 @@ export default function Home() {
                     {isDailyPdfBusy ? "Creating..." : "Create Daily Summary PDF"}
                   </button>
                 </div>
-              </div>
-              {lastDailyPdfArtifact ? (
-                <div className="status-line">
-                  <span>{lastDailyPdfArtifact.originalName}</span>
-                  <a className="download-link" href={`/api/artifacts/${lastDailyPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
-                    Open PDF
-                  </a>
+                {lastDailyPdfArtifact ? (
+                  <div className="status-line">
+                    <span>{lastDailyPdfArtifact.originalName}</span>
+                    <a className="download-link" href={`/api/artifacts/${lastDailyPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
+                      Open PDF
+                    </a>
+                  </div>
+                ) : null}
+                <div className="record-list">
+                  {savedActivities.length === 0 ? (
+                    <p className="muted">No saved activities for {selectedDate} yet.</p>
+                  ) : (
+                    savedActivities.map((activity) => (
+                      <article className="activity-card" key={activity.id}>
+                        <div className="card-topline">
+                          <span className={activity.parentApproved ? "tag good" : "tag review"}>
+                            {activity.parentApproved ? "approved" : "draft / needs review"}
+                          </span>
+                          <span className="tag">{activity.actualMinutes} min</span>
+                        </div>
+                        <h3>{activity.title}</h3>
+                        <p>{activity.activityType} - {activity.recordStatus}</p>
+                        <div className="chip-row">
+                          {activity.allocations.map((allocation) => (
+                            <span key={`${activity.id}-${allocation.subject}`}>{allocation.subject}: {allocation.minutes}m</span>
+                          ))}
+                          {activity.legalTags.map((item) => (
+                            <span key={`${activity.id}-${item.legalTag.label}`}>{item.legalTag.label}</span>
+                          ))}
+                        </div>
+                      </article>
+                    ))
+                  )}
                 </div>
-              ) : null}
-              <div className="record-list">
-                {savedActivities.length === 0 ? (
-                  <p className="muted">No saved activities for {selectedDate} yet.</p>
-                ) : (
-                  savedActivities.map((activity) => (
-                    <article className="activity-card" key={activity.id}>
-                      <div className="card-topline">
-                        <span className={activity.parentApproved ? "tag good" : "tag review"}>
-                          {activity.parentApproved ? "approved" : "draft / needs review"}
-                        </span>
-                        <span className="tag">{activity.actualMinutes} min</span>
-                      </div>
-                      <h3>{activity.title}</h3>
-                      <p>{activity.activityType} - {activity.recordStatus}</p>
-                      <div className="chip-row">
-                        {activity.allocations.map((allocation) => (
-                          <span key={`${activity.id}-${allocation.subject}`}>{allocation.subject}: {allocation.minutes}m</span>
-                        ))}
-                        {activity.legalTags.map((item) => (
-                          <span key={`${activity.id}-${item.legalTag.label}`}>{item.legalTag.label}</span>
-                        ))}
-                      </div>
-                    </article>
-                  ))
-                )}
               </div>
-            </section>
+            </details>
 
               </>
             ) : null}
