@@ -56,6 +56,10 @@ async function signedSupabaseDownloadUrl(storagePath: string) {
   return `${supabaseUrl.replace(/\/+$/g, "")}${relativePath}`;
 }
 
+function downloadFileName(name: string) {
+  return name.replace(/["\r\n]/g, "-");
+}
+
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
@@ -65,7 +69,19 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     }
 
     const url = await signedSupabaseDownloadUrl(artifact.storagePath);
-    return NextResponse.redirect(url);
+    const response = await fetch(url);
+    if (!response.ok) {
+      return NextResponse.json({ error: "Stored file could not be retrieved." }, { status: response.status });
+    }
+
+    const bytes = await response.arrayBuffer();
+    return new NextResponse(bytes, {
+      headers: {
+        "Content-Type": artifact.mimeType || "application/octet-stream",
+        "Content-Disposition": `${artifact.mimeType === "application/pdf" ? "inline" : "attachment"}; filename="${downloadFileName(artifact.originalName)}"`,
+        "Cache-Control": "private, max-age=60"
+      }
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Download failed.";
     return NextResponse.json({ error: message }, { status: 500 });
