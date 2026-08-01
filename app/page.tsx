@@ -777,20 +777,13 @@ function parsedSkillsForType(activityType: string) {
   return ["Reading", "Fluency", "Editing"];
 }
 
-function parsedTitleForType(activityType: string, language: string, extracurricularSelections: string[]) {
-  if (activityType === "Language Arts") return "Story Weaver read-aloud and editing";
-  if (activityType === "Foreign Language") return `${language || "Spanish"} practice narration record`;
-  if (activityType === "Extracurricular" && extracurricularSelections.length) return `${extracurricularSelections.join(", ")} extracurricular record`;
-  return `${activityType} narration record`;
-}
-
-function mockDrafts(activityType: string, minutes: number, language: string, extracurricularSelections: string[]): DraftCard[] {
+function mockDrafts(activityType: string, minutes: number, draftTitle: string): DraftCard[] {
   const primarySubject = parsedSubjectForType(activityType);
   const primaryMinutes = minutes || 25;
   return [
     {
       id: "draft-primary",
-      title: parsedTitleForType(activityType, language, extracurricularSelections),
+      title: draftTitle,
       minutes: primaryMinutes,
       status: "needs_approval",
       subjectAllocations: [{ subject: primarySubject, minutes: primaryMinutes }],
@@ -1162,7 +1155,7 @@ export default function Home() {
   }
 
   function parseWithAi() {
-    const drafts = mockDrafts(selectedType, actualMinutes, foreignLanguage, selectedExtracurriculars);
+    const drafts = mockDrafts(selectedType, actualMinutes, title.trim() || defaultActivityTitle());
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
   }
