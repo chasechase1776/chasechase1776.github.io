@@ -30,6 +30,7 @@ type WeeklyPdfArtifact = UploadedArtifact;
 type PortfolioArtifact = UploadedArtifact & {
   storagePath: string;
   recordStatus: string;
+  classification: string | null;
   createdAt: string;
   activity: {
     id: string;
@@ -42,6 +43,20 @@ type PortfolioArtifact = UploadedArtifact & {
     allocations: { subject: string; minutes: number }[];
     legalTags: { legalTag: { label: string } }[];
   } | null;
+};
+
+type BookListEntry = {
+  id: string;
+  title: string;
+  author: string;
+  rating: number;
+};
+
+type ReportBucket = {
+  key: string;
+  label: string;
+  description: string;
+  classifications: string[];
 };
 
 type PortfolioNode = {
@@ -291,6 +306,58 @@ const legalCoverage = [
 ];
 
 const allLegalTagOptions = legalCoverage.map(([label]) => label);
+
+const reportBuckets: ReportBucket[] = [
+  {
+    key: "daily",
+    label: "Daily Summary",
+    description: "Daily summary PDFs generated from saved daily records.",
+    classifications: ["daily_summary"]
+  },
+  {
+    key: "weekly",
+    label: "Weekly Review",
+    description: "Weekly review PDFs generated from weekly review workspaces.",
+    classifications: ["weekly_report"]
+  },
+  {
+    key: "quarter",
+    label: "Quarter Review",
+    description: "Quarter review PDFs generated from quarter review workspaces.",
+    classifications: ["quarter_report"]
+  },
+  {
+    key: "annual-review",
+    label: "Annual Review",
+    description: "Annual review and year-end closeout reports.",
+    classifications: ["annual_review", "annual_report"]
+  },
+  {
+    key: "annual-plan",
+    label: "Annual Plan",
+    description: "Annual plan PDFs and planning-framework exports.",
+    classifications: ["annual_plan"]
+  },
+  {
+    key: "legal",
+    label: "Legal Reports",
+    description: "Legal archive, legal summary, and compliance reports.",
+    classifications: ["legal_report", "legal_summary", "legal_archive"]
+  },
+  {
+    key: "other",
+    label: "Other Reports",
+    description: "Generated report files that do not fit another bucket yet.",
+    classifications: []
+  }
+];
+
+function isReportArtifact(artifact: Pick<PortfolioArtifact, "classification" | "mimeType" | "originalName">) {
+  const classification = artifact.classification ?? "";
+  if (reportBuckets.some((bucket) => bucket.classifications.includes(classification))) return true;
+  if (!artifact.mimeType.includes("pdf")) return false;
+  return /(summary|review|annual-plan|annual review|quarter|weekly|legal|report)/i.test(artifact.originalName);
+}
 
 const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
 const weeklyRatings = ["Not Observed", "Introduced", "Developing", "Practicing", "Proficient", "Mastery"];
@@ -673,8 +740,8 @@ const workspaceTabs: WorkspaceTab[] = [
     key: "portfolio",
     label: "Portfolio",
     eyebrow: "Proof archive",
-    headline: "Browse proof files",
-    description: "Use a folder tree and list view to find uploaded proof files and download them from storage."
+    headline: "Browse proof of learning",
+    description: "Use a folder tree and list view to find uploaded proof files, learning artifacts, and Bennett's running book list."
   },
   {
     key: "legal",
@@ -687,8 +754,8 @@ const workspaceTabs: WorkspaceTab[] = [
     key: "reports",
     label: "Reports",
     eyebrow: "Reports",
-    headline: "Prepare report sources",
-    description: "Review the skill taxonomy and report source data before report exports are built out."
+    headline: "Browse generated report buckets",
+    description: "Keep generated PDFs and legal reports separate from proof-of-learning artifacts."
   },
   {
     key: "records",
@@ -1069,6 +1136,9 @@ export default function Home() {
   const [duplicateApprovedActivities, setDuplicateApprovedActivities] = useState<SavedActivity[]>([]);
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
+  const [bookListEntries, setBookListEntries] = useState<BookListEntry[]>([]);
+  const [bookListMessage, setBookListMessage] = useState("Running book list is ready.");
+  const [isBookListBusy, setIsBookListBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
   const [activeWeeklySection, setActiveWeeklySection] = useState<WeeklyReviewSection>("summary");
   const [reviewedWeeklySections, setReviewedWeeklySections] = useState<WeeklyReviewSection[]>([]);
@@ -1243,6 +1313,23 @@ export default function Home() {
     }
   }, []);
 
+  const loadBookList = useCallback(async () => {
+    if (!student || !schoolYear) return;
+    setIsBookListBusy(true);
+    try {
+      const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear });
+      const response = await fetch(`/api/book-list?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load book list.");
+      setBookListEntries(data.entries ?? []);
+      setBookListMessage(data.entries?.length ? "Book list loaded." : "No completed books saved yet.");
+    } catch (error) {
+      setBookListMessage(error instanceof Error ? error.message : "Could not load book list.");
+    } finally {
+      setIsBookListBusy(false);
+    }
+  }, [schoolYear, student]);
+
   useEffect(() => {
     void loadSavedActivities(selectedDate);
   }, [loadSavedActivities, selectedDate]);
@@ -1250,6 +1337,10 @@ export default function Home() {
   useEffect(() => {
     void loadPortfolio();
   }, [loadPortfolio]);
+
+  useEffect(() => {
+    void loadBookList();
+  }, [loadBookList]);
 
   function selectActivityType(type: string) {
     const nextDrafts = {
@@ -1300,6 +1391,53 @@ export default function Home() {
     setSelectedExtracurriculars((current) =>
       current.includes(option) ? current.filter((item) => item !== option) : [...current, option]
     );
+  }
+
+  function addBookListEntry() {
+    setBookListEntries((current) => [
+      ...current,
+      { id: `book-${Date.now()}`, title: "", author: "", rating: 5 }
+    ]);
+    setBookListMessage("Book row added. Save the book list when finished.");
+  }
+
+  function updateBookListEntry(id: string, patch: Partial<Omit<BookListEntry, "id">>) {
+    setBookListEntries((current) => current.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)));
+  }
+
+  function deleteBookListEntry(id: string) {
+    setBookListEntries((current) => current.filter((entry) => entry.id !== id));
+    setBookListMessage("Book row removed. Save the book list when finished.");
+  }
+
+  async function saveBookList() {
+    setIsBookListBusy(true);
+    try {
+      const response = await fetch("/api/book-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          entries: bookListEntries
+            .filter((entry) => entry.title.trim())
+            .map((entry) => ({
+              title: entry.title.trim(),
+              author: entry.author.trim(),
+              rating: entry.rating
+            }))
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Book list save failed.");
+      setBookListEntries(data.entries ?? []);
+      setBookListMessage("Book list saved.");
+    } catch (error) {
+      setBookListMessage(error instanceof Error ? error.message : "Book list save failed.");
+    } finally {
+      setIsBookListBusy(false);
+    }
   }
 
   function setActualMinutesForEntry(minutes: number) {
@@ -2068,7 +2206,7 @@ export default function Home() {
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Annual Plan PDF generation failed.");
       setLastAnnualPlanPdfArtifact(data.artifact);
       window.open(`/api/artifacts/${data.artifact.id}/download`, "_blank", "noopener,noreferrer");
-      setAnnualPlanMessage(`${data.artifact.originalName} was generated with Section 7 attachments and saved to the Portfolio.`);
+      setAnnualPlanMessage(`${data.artifact.originalName} was generated with Section 7 attachments and saved to Reports.`);
     } catch (error) {
       setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan PDF generation failed.");
     } finally {
@@ -2095,7 +2233,7 @@ export default function Home() {
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Daily summary PDF generation failed.");
       setLastDailyPdfArtifact(data.artifact);
       window.open(`/api/artifacts/${data.artifact.id}/download`, "_blank", "noopener,noreferrer");
-      setStatus(`${data.artifact.originalName} was saved to the Portfolio and is ready to open.`);
+      setStatus(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
       await loadPortfolio();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Daily summary PDF generation failed.");
@@ -2223,7 +2361,7 @@ export default function Home() {
     }
 
     setIsWeeklyBusy(true);
-    setWeeklyStatusMessage("Compiling weekly review PDF and saving it to Portfolio...");
+    setWeeklyStatusMessage("Compiling weekly review PDF and saving it to Reports...");
     try {
       const saveResponse = await fetch("/api/reviews/weekly", {
         method: "POST",
@@ -2243,7 +2381,7 @@ export default function Home() {
       await loadPortfolio();
       setWeeklyStatus("finalized");
       setLastWeeklyPdfArtifact(data.artifact);
-      setWeeklyStatusMessage(`${data.artifact.originalName} was saved to the Portfolio and is ready to open.`);
+      setWeeklyStatusMessage(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
     } catch (error) {
       setWeeklyStatusMessage(error instanceof Error ? error.message : "Weekly PDF generation failed.");
     } finally {
@@ -2332,7 +2470,7 @@ export default function Home() {
     }
 
     setIsQuarterBusy(true);
-    setQuarterStatusMessage("Compiling quarter review PDF and saving it to Portfolio...");
+    setQuarterStatusMessage("Compiling quarter review PDF and saving it to Reports...");
     try {
       const saveResponse = await fetch("/api/reviews/quarter", {
         method: "POST",
@@ -2359,7 +2497,7 @@ export default function Home() {
       await loadPortfolio();
       setQuarterStatus("finalized");
       setLastQuarterPdfArtifact(data.artifact);
-      setQuarterStatusMessage(`${data.artifact.originalName} was saved to the Portfolio and is ready to open.`);
+      setQuarterStatusMessage(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
     } catch (error) {
       setQuarterStatusMessage(error instanceof Error ? error.message : "Quarter PDF generation failed.");
     } finally {
@@ -2384,9 +2522,10 @@ export default function Home() {
   }, [savedActivities]);
 
   const portfolioNodes = useMemo<PortfolioNode[]>(() => {
+    const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact));
     const countBy = (getKey: (artifact: PortfolioArtifact) => string | null) => {
       const counts = new Map<string, number>();
-      portfolioArtifacts.forEach((artifact) => {
+      proofArtifacts.forEach((artifact) => {
         const key = getKey(artifact);
         if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
       });
@@ -2397,10 +2536,10 @@ export default function Home() {
     const units = countBy((artifact) => artifact.activity?.unitStudy?.title ?? null);
     const subjects = countBy((artifact) => artifact.activity?.allocations[0]?.subject ?? null);
     const legalTags = countBy((artifact) => artifact.activity?.legalTags[0]?.legalTag.label ?? null);
-    const unattachedCount = portfolioArtifacts.filter((artifact) => !artifact.activity).length;
+    const unattachedCount = proofArtifacts.filter((artifact) => !artifact.activity).length;
 
     return [
-      { key: "all", label: "All proof files", count: portfolioArtifacts.length, level: 0 },
+      { key: "all", label: "All proof files", count: proofArtifacts.length, level: 0 },
       { key: "years", label: "School years", count: years.size, level: 0 },
       ...Array.from(years, ([label, count]) => ({ key: `year:${label}`, label, count, level: 1 })),
       { key: "units", label: "Unit studies", count: units.size, level: 0 },
@@ -2414,12 +2553,13 @@ export default function Home() {
   }, [portfolioArtifacts]);
 
   const selectedPortfolioArtifacts = useMemo(() => {
-    if (selectedPortfolioKey === "all") return portfolioArtifacts;
-    if (selectedPortfolioKey === "unattached") return portfolioArtifacts.filter((artifact) => !artifact.activity);
-    if (!selectedPortfolioKey.includes(":")) return portfolioArtifacts;
+    const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact));
+    if (selectedPortfolioKey === "all") return proofArtifacts;
+    if (selectedPortfolioKey === "unattached") return proofArtifacts.filter((artifact) => !artifact.activity);
+    if (!selectedPortfolioKey.includes(":")) return proofArtifacts;
 
     const [type, value] = selectedPortfolioKey.split(/:(.*)/s);
-    return portfolioArtifacts.filter((artifact) => {
+    return proofArtifacts.filter((artifact) => {
       if (type === "year") return artifact.activity?.schoolYear.label === value;
       if (type === "unit") return artifact.activity?.unitStudy?.title === value;
       if (type === "subject") return artifact.activity?.allocations.some((allocation) => allocation.subject === value);
@@ -2430,6 +2570,17 @@ export default function Home() {
 
   const selectedPortfolioNode = portfolioNodes.find((node) => node.key === selectedPortfolioKey);
   const activeWorkspace = workspaceTabs.find((tab) => tab.key === activeTab) ?? workspaceTabs[0];
+  const reportBucketRows = useMemo(
+    () =>
+      reportBuckets.map((bucket) => {
+        const artifacts = portfolioArtifacts.filter((artifact) => {
+          if (bucket.key === "other") return isReportArtifact(artifact) && !reportBuckets.some((item) => item.key !== "other" && item.classifications.includes(artifact.classification ?? ""));
+          return bucket.classifications.includes(artifact.classification ?? "");
+        });
+        return { ...bucket, artifacts };
+      }),
+    [portfolioArtifacts]
+  );
   const annualReviewSubjectTimeSummary = useMemo(() => {
     const totals: Record<string, number> = {};
     portfolioArtifacts.forEach((artifact) => {
@@ -3068,7 +3219,7 @@ export default function Home() {
                 <button className="secondary-button" type="button" onClick={() => void generateWeeklyReview()} disabled={isWeeklyBusy}>Generate from Logs</button>
                 <button className="secondary-button" type="button" onClick={() => void saveWeeklyReview("draft")} disabled={isWeeklyBusy || !weeklyReviewId}>Save Draft</button>
                 <button className="primary-button" type="button" onClick={() => void saveWeeklyReview("finalized")} disabled={isWeeklyBusy || !weeklyReviewId}>Finalize Weekly Review</button>
-                <button className="primary-button" type="button" onClick={() => void compileWeeklyPdf()} disabled={isWeeklyBusy || !weeklyReviewId}>Compile PDF to Portfolio</button>
+                <button className="primary-button" type="button" onClick={() => void compileWeeklyPdf()} disabled={isWeeklyBusy || !weeklyReviewId}>Compile PDF to Reports</button>
               </div>
 
               <p className="status-line" role="status">{weeklyStatusMessage}</p>
@@ -3134,7 +3285,7 @@ export default function Home() {
               <div className="coverage-summary-grid">
                 <div className="record-link"><strong>Subject time summary</strong><span>{Object.entries(weeklyData.subjectTimeSummary).length ? Object.entries(weeklyData.subjectTimeSummary).map(([subject, minutes]) => `${subject} ${formatMinutes(minutes)}`).join("; ") : "Generate from logs to populate subject allocations."}</span></div>
                 <div className="record-link"><strong>Texas legal coverage</strong><span>{weeklyData.legalCoverageSummary.length ? weeklyData.legalCoverageSummary.join(", ") : "Generate from logs to populate legal tags."}</span></div>
-                <div className="record-link"><strong>Portfolio save target</strong><span>Portfolio / weekly-review-{weeklyStartDate}.pdf</span></div>
+                <div className="record-link"><strong>Report save target</strong><span>Reports / weekly-review-{weeklyStartDate}.pdf</span></div>
               </div>
               <SubjectTimeCharts summary={weeklyData.subjectTimeSummary} emptyText="Generate from logs to populate the weekly subject time bar and pie charts." />
               <CrossSubjectChartPlaceholder />
@@ -3297,7 +3448,7 @@ export default function Home() {
                 <button className="secondary-button" type="button" onClick={() => void generateQuarterReview()} disabled={isQuarterBusy}>Generate Quarter Review</button>
                 <button className="secondary-button" type="button" onClick={() => void saveQuarterReview("draft")} disabled={isQuarterBusy || !quarterReviewId}>Save Draft</button>
                 <button className="primary-button" type="button" onClick={() => void saveQuarterReview("finalized")} disabled={isQuarterBusy || !quarterReviewId}>Finalize Quarter Review</button>
-                <button className="primary-button" type="button" onClick={() => void compileQuarterPdf()} disabled={isQuarterBusy || !quarterReviewId}>Compile PDF to Portfolio</button>
+                <button className="primary-button" type="button" onClick={() => void compileQuarterPdf()} disabled={isQuarterBusy || !quarterReviewId}>Compile PDF to Reports</button>
               </div>
 
               <p className="status-line" role="status">{quarterStatusMessage}</p>
@@ -4105,7 +4256,7 @@ export default function Home() {
                       <span><strong>{artifact.originalName}</strong><br />{artifact.activity?.title ?? "Portfolio artifact"}</span>
                     </label>
                   ))}
-                  {portfolioArtifacts.length === 0 ? <p className="muted">Portfolio highlights will appear here after proof files and reports are saved to Portfolio.</p> : null}
+                  {portfolioArtifacts.length === 0 ? <p className="muted">Portfolio highlights will appear here after proof files are saved. Generated PDFs are grouped in Reports.</p> : null}
                 </div>
               <div className="records-grid">
                 <div className="record-link"><strong>Legal compliance summary</strong><span>Regenerate records/{schoolYear}/legal-summary.md and legal archive PDF.</span></div>
@@ -4164,13 +4315,54 @@ export default function Home() {
             </section>
             ) : null}
 
+            {activeTab === "reports" ? (
+            <section className="panel reports-panel" id="reports">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Reports</p>
+                  <h2>Generated report buckets</h2>
+                  <p className="panel-note">Generated PDFs live here. Portfolio stays focused on proof of learning: uploads, images, documents, and artifacts.</p>
+                </div>
+                <button className="secondary-button" type="button" onClick={() => void loadPortfolio()} disabled={isLoadingPortfolio}>
+                  {isLoadingPortfolio ? "Loading..." : "Refresh reports"}
+                </button>
+              </div>
+              <div className="report-bucket-grid">
+                {reportBucketRows.map((bucket) => (
+                  <section className="report-bucket-card" key={bucket.key}>
+                    <div className="section-head compact-head">
+                      <div>
+                        <p className="eyebrow">{bucket.label}</p>
+                        <h3>{bucket.artifacts.length} report{bucket.artifacts.length === 1 ? "" : "s"}</h3>
+                        <p className="panel-note">{bucket.description}</p>
+                      </div>
+                    </div>
+                    <div className="report-list">
+                      {bucket.artifacts.length ? bucket.artifacts.map((artifact) => (
+                        <article className="report-list-row" key={artifact.id}>
+                          <div>
+                            <strong>{artifact.originalName}</strong>
+                            <span>{dateLabel(artifact.createdAt)} - {artifact.recordStatus}</span>
+                          </div>
+                          <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">
+                            Open
+                          </a>
+                        </article>
+                      )) : <p className="muted">No reports in this bucket yet.</p>}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            </section>
+            ) : null}
+
             {activeTab === "portfolio" ? (
             <section className="panel portfolio-panel" id="portfolio">
               <div className="section-head">
                 <div>
                   <p className="eyebrow">Portfolio</p>
                   <h2>Proof file explorer</h2>
-                  <p className="panel-note">Files are stored in Supabase and linked back to the activity record when you save.</p>
+                  <p className="panel-note">Portfolio shows proof of learning: uploaded images, documents, and activity artifacts. Generated reports are grouped in Reports.</p>
                 </div>
                 <button className="secondary-button" type="button" onClick={() => void loadPortfolio()} disabled={isLoadingPortfolio}>
                   {isLoadingPortfolio ? "Loading..." : "Refresh"}
@@ -4226,11 +4418,56 @@ export default function Home() {
                   )}
                 </div>
               </div>
+              <section className="book-list-panel">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Running Book List</p>
+                    <h2>Completed books</h2>
+                    <p className="panel-note">Track completed books only. Bennett&apos;s book journal can hold reviews and longer notes.</p>
+                  </div>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button" onClick={addBookListEntry}>Add book</button>
+                    <button className="primary-button" type="button" onClick={() => void saveBookList()} disabled={isBookListBusy}>
+                      {isBookListBusy ? "Saving..." : "Save book list"}
+                    </button>
+                  </div>
+                </div>
+                <p className="status-line" role="status">{bookListMessage}</p>
+                <div className="book-list-table">
+                  <div className="book-list-header" aria-hidden="true">
+                    <span>Title</span>
+                    <span>Author</span>
+                    <span>Rating</span>
+                    <span>Action</span>
+                  </div>
+                  {bookListEntries.length ? bookListEntries.map((entry) => (
+                    <div className="book-list-row" key={entry.id}>
+                      <label>
+                        <span>Title</span>
+                        <input value={entry.title} onChange={(event) => updateBookListEntry(entry.id, { title: event.target.value })} />
+                      </label>
+                      <label>
+                        <span>Author</span>
+                        <input value={entry.author} onChange={(event) => updateBookListEntry(entry.id, { author: event.target.value })} />
+                      </label>
+                      <label>
+                        <span>Student rating</span>
+                        <select value={entry.rating} onChange={(event) => updateBookListEntry(entry.id, { rating: Number(event.target.value) })}>
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <option key={rating} value={rating}>{rating} star{rating === 1 ? "" : "s"}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button className="text-button" type="button" onClick={() => deleteBookListEntry(entry.id)}>Delete</button>
+                    </div>
+                  )) : <p className="muted">No completed books added yet.</p>}
+                </div>
+              </section>
             </section>
             ) : null}
           </section>
 
-          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" ? (
+          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" && activeTab !== "reports" ? (
           <aside className="side-column">
             {activeTab === "quarter" || activeTab === "tools" ? (
             <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
@@ -4269,7 +4506,7 @@ export default function Home() {
             </section>
             ) : null}
 
-            {activeTab === "reports" || activeTab === "tools" ? (
+            {activeTab === "tools" ? (
             <section className="panel" id="skills-panel">
               <div className="section-head">
                 <div>

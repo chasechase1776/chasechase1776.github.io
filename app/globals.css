@@ -1672,6 +1672,60 @@ details.skill-group[open] summary {
   background: var(--green-soft);
 }
 
+.report-bucket-grid,
+.report-list,
+.book-list-table {
+  display: grid;
+  gap: 10px;
+}
+
+.report-bucket-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.report-bucket-card,
+.book-list-panel {
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 12px;
+}
+
+.report-list-row,
+.book-list-header,
+.book-list-row {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+}
+
+.report-list-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-top: 1px solid var(--soft-line);
+  padding-top: 10px;
+}
+
+.report-list-row span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.book-list-panel {
+  margin-top: 16px;
+}
+
+.book-list-header,
+.book-list-row {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 150px auto;
+}
+
+.book-list-header {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .subject-tally,
 .coverage-list {
   display: grid;
@@ -1928,6 +1982,9 @@ details.skill-group[open] summary {
     .allocation-panel-head,
     .unit-study-allocation-row,
     .parsed-allocation-controls,
+    .report-bucket-grid,
+    .book-list-header,
+    .book-list-row,
     .skill-rating-row,
     .portfolio-grid,
     .annual-section-hub,
