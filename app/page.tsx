@@ -664,6 +664,10 @@ export default function Home() {
 
   const selectedPortfolioNode = portfolioNodes.find((node) => node.key === selectedPortfolioKey);
   const activeWorkspace = workspaceTabs.find((tab) => tab.key === activeTab) ?? workspaceTabs[0];
+  const hasGeneratedWeeklySkills = weeklyData.skillsTouchedThisWeek.length > 0;
+  const weeklySkillRows = hasGeneratedWeeklySkills
+    ? weeklyData.skillsTouchedThisWeek
+    : ["Language Arts: Reading", "Math: Measurement and Money", "Science: Uses Tools and Models"];
 
   return (
     <main className="mockup-shell">
@@ -1057,17 +1061,24 @@ export default function Home() {
               <section className="weekly-subsection">
                 <div className="section-head">
                   <div>
-                    <p className="eyebrow">Skills Touched This Week</p>
-                    <h2>Rate weekly skill progress</h2>
+                    <p className="eyebrow">{hasGeneratedWeeklySkills ? "Skills Touched This Week" : "Example Skill Rows"}</p>
+                    <h2>{hasGeneratedWeeklySkills ? "Rate weekly skill progress" : "Suggested skills until weekly records feed this section"}</h2>
+                    {!hasGeneratedWeeklySkills ? (
+                      <p className="panel-note">These rows are examples. Real weekly skill suggestions will appear here after activity records feed the skill model.</p>
+                    ) : null}
                   </div>
-                  <span className="tag">Parent rating overrides AI suggestion</span>
+                  <span className="tag">{hasGeneratedWeeklySkills ? "Parent rating overrides AI suggestion" : "Examples only"}</span>
                 </div>
                 <div className="skill-rating-list">
-                  {(weeklyData.skillsTouchedThisWeek.length ? weeklyData.skillsTouchedThisWeek : ["Language Arts: Reading", "Math: Measurement and Money", "Science: Uses Tools and Models"]).map((skill, index) => (
+                  {weeklySkillRows.map((skill, index) => (
                     <article className="skill-rating-row" key={skill}>
                       <div>
                         <strong>{skill}</strong>
-                        <p className="skill-evidence">Evidence comes from approved activities and attached proof for this week.</p>
+                        <p className="skill-evidence">
+                          {hasGeneratedWeeklySkills
+                            ? "Evidence comes from approved activities and attached proof for this week."
+                            : "Example only until approved activities are mapped to real weekly skill suggestions."}
+                        </p>
                       </div>
                       <div className="rating-buttons" aria-label={`${skill} rating`}>
                         {weeklyRatings.map((rating) => (
