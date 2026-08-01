@@ -203,6 +203,12 @@ type UnitPlanRow = {
   status: UnitPlanStatus;
 };
 
+type UnitStudyAllocation = {
+  id: string;
+  subject: string;
+  minutes: number;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -231,6 +237,23 @@ const extracurricularOptions = [
   "Communication",
   "Mind Games",
   "Other"
+];
+
+const unitStudySubjectOptions = [
+  "Language Arts",
+  "Math",
+  "Finance",
+  "Economics",
+  "Science",
+  "Social Studies",
+  "US History",
+  "Government",
+  "Foreign Language",
+  "Independent Reading",
+  "Extracurricular",
+  "Visual Arts",
+  "Technology & STEM",
+  "Unit Study"
 ];
 
 const legalCoverage = [
@@ -773,8 +796,8 @@ function parsedLegalTagsForType(activityType: string, text = "") {
   if (/(spell|word study|phonics)/.test(combined)) tags.add("Spelling");
   if (/(grammar|sentence|writing|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
   if (/(math|measure|money|finance|budget|saving|spending|count|fraction|logic|problem)/.test(combined)) tags.add("Mathematics");
-  if (/(citizen|service|community|group|club|team|leadership|communication|social|extracurricular)/.test(combined)) tags.add("Good Citizenship");
-  if (/(visual|art|draw|journal|presentation|field|model|photo|stem|tech|performing|science|experiment|observe)/.test(combined)) tags.add("Visual Curriculum");
+  if (/(citizen|service|community|group|club|team|leadership|communication|social|extracurricular|government|suffrage|vote|rights|history|american)/.test(combined)) tags.add("Good Citizenship");
+  if (/(visual|art|draw|journal|presentation|field|model|photo|photograph|stem|tech|performing|science|experiment|observe|physics|architect|construction|building)/.test(combined)) tags.add("Visual Curriculum");
   return Array.from(tags);
 }
 
@@ -800,7 +823,10 @@ function parsedSkillsForType(activityType: string, text = "") {
   if (/(measure|money|fraction|count|budget|saving|spending|finance)/.test(combined)) ["Measurement and Money", "Money Recognition and Counting", "Saving and Goal Setting", "Spending and Decision-Making"].forEach(add);
   if (/(logic|puzzle|strategy|mind game|chess)/.test(combined)) ["Logic", "Strategic Thinking"].forEach(add);
   if (/(problem|solve|solution|challenge|reason)/.test(combined)) ["Problem-Solving", "Problem-Solving and Application"].forEach(add);
-  if (/(observe|science|experiment|model|tool|draw|label|nature)/.test(combined)) ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World"].forEach(add);
+  if (/(observe|science|experiment|model|tool|draw|label|nature|physics|structure|building|construction|force|motion|architect)/.test(combined)) ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World", "Force, Motion & Energy"].forEach(add);
+  if (/(history|american|early 1900|1900s|timeline|frank lloyd wright|wright)/.test(combined)) ["US History", "Culture"].forEach(add);
+  if (/(government|suffrage|vote|law|rights|civic)/.test(combined)) ["Government", "Citizenship"].forEach(add);
+  if (/(economic|transportation|industry|trade|market|labor)/.test(combined)) ["Economics"].forEach(add);
   if (/(service|community|citizen|club|team|leadership)/.test(combined)) ["Citizenship", "Service", "Teamwork", "Leadership"].forEach(add);
   if (/(art|perform|visual|music|creative)/.test(combined)) ["Creative Expression", "Visual Curriculum"].forEach(add);
   if (/(tech|stem|code|computer|build)/.test(combined)) ["Technical Skills", "Critical Thinking for Problem Solving"].forEach(add);
@@ -809,17 +835,62 @@ function parsedSkillsForType(activityType: string, text = "") {
   return Array.from(skills).filter((skill) => Object.values(skillTaxonomy).some((subjectSkills) => subjectSkills.includes(skill)));
 }
 
+function splitMinutesAcrossSubjects(subjects: string[], minutes: number) {
+  const total = Math.max(1, minutes || 25);
+  const uniqueSubjects = Array.from(new Set(subjects)).filter(Boolean);
+  if (!uniqueSubjects.length) return [{ subject: "Unit Study", minutes: total }];
+  const baseMinutes = Math.floor(total / uniqueSubjects.length);
+  let usedMinutes = 0;
+  return uniqueSubjects.map((subject, index) => {
+    const allocationMinutes = index === uniqueSubjects.length - 1 ? total - usedMinutes : baseMinutes;
+    usedMinutes += allocationMinutes;
+    return { subject, minutes: allocationMinutes };
+  });
+}
+
+function inferUnitStudyAllocations(text: string, minutes: number) {
+  const combined = text.toLowerCase();
+  const subjects: string[] = [];
+  const addSubject = (subject: string) => {
+    if (!subjects.includes(subject)) subjects.push(subject);
+  };
+
+  if (/(read|book|story|chapter|author|literature|narrat|frank lloyd wright|wright)/.test(combined)) addSubject("Language Arts");
+  if (/(physics|science|structure|building|construction|force|motion|stand|frame|model|experiment)/.test(combined)) addSubject("Science");
+  if (/(math|measure|geometry|fraction|angle|count|calculate|number)/.test(combined)) addSubject("Math");
+  if (/(finance|money|budget|cost|earn|save|spend|price)/.test(combined)) addSubject("Finance");
+  if (/(economic|transportation|industry|trade|market|work|labor)/.test(combined)) addSubject("Economics");
+  if (/(history|american|early 1900|1900s|timeline|frank lloyd wright|wright)/.test(combined)) addSubject("US History");
+  if (/(government|suffrage|vote|law|rights|citizen|civic)/.test(combined)) addSubject("Government");
+  if (/(map|geography|community|culture|society)/.test(combined)) addSubject("Social Studies");
+  if (/(draw|photo|photograph|visual|art|design)/.test(combined)) addSubject("Visual Arts");
+  if (/(technology|tech|stem|engineer|tool)/.test(combined)) addSubject("Technology & STEM");
+
+  return splitMinutesAcrossSubjects(subjects, minutes);
+}
+
+function allocationSubjectForSkill(skill: string) {
+  if (skill === "US History" || skill === "Government" || skill === "Economics") return skill;
+  const match = Object.entries(skillTaxonomy).find(([, skills]) => skills.includes(skill));
+  return match?.[0] ?? "Unit Study";
+}
+
 function mockDrafts(activityType: string, minutes: number, draftTitle: string, narrationText: string, extracurricularSelections: string[]): DraftCard[] {
   const primarySubject = parsedSubjectForType(activityType);
   const primaryMinutes = minutes || 25;
   const parseText = `${draftTitle} ${narrationText} ${extracurricularSelections.join(" ")}`;
+  const subjectAllocations =
+    activityType === "Unit Study"
+      ? inferUnitStudyAllocations(parseText, primaryMinutes)
+      : [{ subject: primarySubject, minutes: primaryMinutes }];
+
   return [
     {
       id: "draft-primary",
       title: draftTitle,
       minutes: primaryMinutes,
       status: "needs_approval",
-      subjectAllocations: [{ subject: primarySubject, minutes: primaryMinutes }],
+      subjectAllocations,
       crossSubjects: [],
       legalTags: parsedLegalTagsForType(activityType, parseText),
       skills: parsedSkillsForType(activityType, parseText)
@@ -927,6 +998,9 @@ export default function Home() {
   const [narration, setNarration] = useState(defaultNarrationForType("Language Arts"));
   const [foreignLanguage, setForeignLanguage] = useState("Spanish");
   const [selectedExtracurriculars, setSelectedExtracurriculars] = useState<string[]>([]);
+  const [unitStudyAllocations, setUnitStudyAllocations] = useState<UnitStudyAllocation[]>([
+    { id: "unit-study-allocation-default", subject: "Unit Study", minutes: 25 }
+  ]);
   const [entryDraftsByType, setEntryDraftsByType] = useState<Record<string, { title: string; narration: string; minutes: number }>>({
     "Language Arts": {
       title: "",
@@ -1027,6 +1101,24 @@ export default function Home() {
   const [finalizedAnnualPlanSections, setFinalizedAnnualPlanSections] = useState<AnnualPlanSectionId[]>([]);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
+  const activeAnnualUnitTitle = useMemo(
+    () => unitPlanRows.find((row) => row.status === "active")?.title.trim() || unitPlanRows[0]?.title.trim() || "Construction",
+    [unitPlanRows]
+  );
+  const unitStudyAllocationTotal = useMemo(
+    () => unitStudyAllocations.reduce((sum, allocation) => sum + (Number.isFinite(allocation.minutes) ? allocation.minutes : 0), 0),
+    [unitStudyAllocations]
+  );
+  const unitStudyAllocationIsBalanced = selectedType !== "Unit Study" || unitStudyAllocationTotal === actualMinutes;
+  const activitySubjectAllocations = useMemo(
+    () =>
+      selectedType === "Unit Study"
+        ? unitStudyAllocations
+            .filter((allocation) => allocation.subject.trim() && allocation.minutes > 0)
+            .map((allocation) => ({ subject: allocation.subject.trim(), minutes: allocation.minutes }))
+        : [{ subject: primarySubject, minutes: actualMinutes }],
+    [actualMinutes, primarySubject, selectedType, unitStudyAllocations]
+  );
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
   const savedMinutesForSelectedDate = useMemo(
     () => savedActivities.reduce((sum, activity) => sum + activity.actualMinutes, 0),
@@ -1048,11 +1140,17 @@ export default function Home() {
     [narration, schoolYear, selectedDate, selectedType, student, unitStudy]
   );
 
-  const canSaveApproved = Boolean(student && schoolYear && unitStudy && selectedDate && selectedType && narration.trim() && actualMinutes > 0);
+  const canSaveApproved = Boolean(student && schoolYear && unitStudy && selectedDate && selectedType && narration.trim() && actualMinutes > 0 && unitStudyAllocationIsBalanced);
 
   useEffect(() => {
     setLegalTags(legalTagSuggestions(selectedType, inferSubject(selectedType)));
   }, [selectedType]);
+
+  useEffect(() => {
+    if (activeAnnualUnitTitle && unitStudy !== activeAnnualUnitTitle) {
+      setUnitStudy(activeAnnualUnitTitle);
+    }
+  }, [activeAnnualUnitTitle, unitStudy]);
 
   const loadSavedActivities = useCallback(async (date: string) => {
     setIsLoadingRecords(true);
@@ -1139,12 +1237,70 @@ export default function Home() {
     );
   }
 
+  function setActualMinutesForEntry(minutes: number) {
+    const nextMinutes = Math.max(0, minutes);
+    setActualMinutes(nextMinutes);
+    if (selectedType === "Unit Study" && unitStudyAllocations.length === 1 && unitStudyAllocations[0]?.subject === "Unit Study") {
+      setUnitStudyAllocations((current) => current.map((allocation) => ({ ...allocation, minutes: nextMinutes })));
+    }
+  }
+
+  function unitStudyRowsFromAllocations(allocations: { subject: string; minutes: number }[]) {
+    return allocations.map((allocation, index) => ({
+      id: `unit-study-allocation-${Date.now()}-${index}`,
+      subject: allocation.subject,
+      minutes: allocation.minutes
+    }));
+  }
+
+  function addUnitStudyAllocation() {
+    setUnitStudyAllocations((current) => [
+      ...current,
+      { id: `unit-study-allocation-${Date.now()}-${current.length}`, subject: "Science", minutes: 0 }
+    ]);
+    setStatus("Subject row added. Adjust minutes so the Unit Study split equals the actual minutes.");
+  }
+
+  function updateUnitStudyAllocation(id: string, patch: Partial<Omit<UnitStudyAllocation, "id">>) {
+    setUnitStudyAllocations((current) =>
+      current.map((allocation) =>
+        allocation.id === id
+          ? {
+              ...allocation,
+              ...patch,
+              minutes: patch.minutes === undefined ? allocation.minutes : Math.max(0, patch.minutes)
+            }
+          : allocation
+      )
+    );
+  }
+
+  function removeUnitStudyAllocation(id: string) {
+    setUnitStudyAllocations((current) => {
+      if (current.length === 1) return current;
+      return current.filter((allocation) => allocation.id !== id);
+    });
+    setStatus("Subject row removed. Confirm the remaining minutes still match the Unit Study total.");
+  }
+
+  function balanceLastUnitStudyAllocation() {
+    setUnitStudyAllocations((current) => {
+      if (!current.length) return current;
+      const usedBeforeLast = current.slice(0, -1).reduce((sum, allocation) => sum + allocation.minutes, 0);
+      return current.map((allocation, index) =>
+        index === current.length - 1 ? { ...allocation, minutes: Math.max(0, actualMinutes - usedBeforeLast) } : allocation
+      );
+    });
+    setStatus("Last subject row balanced to the remaining Unit Study minutes.");
+  }
+
   function defaultActivityTitle() {
     const formattedDate = formatUsDate(selectedDate);
     if (selectedType === "Foreign Language") return `${foreignLanguage || "Spanish"} - Foreign Language - ${formattedDate}`;
     if (selectedType === "Extracurricular" && selectedExtracurriculars.length) {
       return `${selectedExtracurriculars.join(", ")} - Extracurricular - ${formattedDate}`;
     }
+    if (selectedType === "Unit Study") return `${unitStudy || activeAnnualUnitTitle} - Unit Study - ${formattedDate}`;
     return `${selectedType} - ${formattedDate}`;
   }
 
@@ -1161,7 +1317,7 @@ export default function Home() {
       officialHomeschoolStartDate: officialStartDate,
       unitTitle: unitStudy,
       parentApproved,
-      subjectAllocations: [{ subject: primarySubject, minutes: actualMinutes }],
+      subjectAllocations: activitySubjectAllocations,
       legalTags,
       skills: [],
       artifactIds: uploadedArtifacts.map((artifact) => artifact.id),
@@ -1175,7 +1331,11 @@ export default function Home() {
       return;
     }
     if (!canSaveApproved) {
-      setStatus("Approved save requires student, school year, unit, date, type, narration, and actual minutes.");
+      setStatus(
+        selectedType === "Unit Study" && !unitStudyAllocationIsBalanced
+          ? `Unit Study subject minutes must equal ${actualMinutes} before saving. Current split totals ${unitStudyAllocationTotal}.`
+          : "Approved save requires student, school year, unit, date, type, narration, and actual minutes."
+      );
       return;
     }
 
@@ -1279,7 +1439,10 @@ export default function Home() {
   function parseWithAi() {
     const drafts = mockDrafts(selectedType, actualMinutes, title.trim() || defaultActivityTitle(), narration, selectedExtracurriculars);
     setDraftCards(drafts);
-    setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
+    if (selectedType === "Unit Study" && drafts[0]) {
+      setUnitStudyAllocations(unitStudyRowsFromAllocations(drafts[0].subjectAllocations));
+    }
+    setStatus("Mock AI parse complete. Review the editable cards below before saving.");
   }
 
   function updateDraftCard(id: string, patch: Partial<DraftCard>) {
@@ -1288,18 +1451,27 @@ export default function Home() {
 
   function toggleDraftSkill(id: string, skill: string) {
     setDraftCards((current) =>
-      current.map((draft) =>
-        draft.id === id
-          ? {
-              ...draft,
-              skills: draft.skills.includes(skill)
-                ? draft.skills.filter((item) => item !== skill)
-                : [...draft.skills, skill]
-            }
-          : draft
-      )
+      current.map((draft) => {
+        if (draft.id !== id) return draft;
+        const isRemoving = draft.skills.includes(skill);
+        const nextSkills = isRemoving ? draft.skills.filter((item) => item !== skill) : [...draft.skills, skill];
+        const allocationSubject = allocationSubjectForSkill(skill);
+        const nextSubjectAllocations =
+          selectedType === "Unit Study" && !isRemoving && !draft.subjectAllocations.some((allocation) => allocation.subject === allocationSubject)
+            ? [...draft.subjectAllocations, { subject: allocationSubject, minutes: 0 }]
+            : draft.subjectAllocations;
+        return {
+          ...draft,
+          skills: nextSkills,
+          subjectAllocations: nextSubjectAllocations
+        };
+      })
     );
-    setStatus("Skill tags updated for parsed card.");
+    setStatus(
+      selectedType === "Unit Study"
+        ? "Skill tags updated. New Unit Study subject rows start at 0 minutes so you can assign the correct split."
+        : "Skill tags updated for parsed card."
+    );
   }
 
   function toggleDraftLegalTag(id: string, tag: string) {
@@ -1343,6 +1515,38 @@ export default function Home() {
       })
     );
     setStatus("Parsed card time changed. Review allocation before approval.");
+  }
+
+  function updateDraftSubjectAllocation(cardId: string, allocationIndex: number, patch: Partial<{ subject: string; minutes: number }>) {
+    setDraftCards((current) =>
+      current.map((draft) => {
+        if (draft.id !== cardId) return draft;
+        const subjectAllocations = draft.subjectAllocations.map((allocation, index) =>
+          index === allocationIndex
+            ? {
+                ...allocation,
+                ...patch,
+                minutes: patch.minutes === undefined ? allocation.minutes : Math.max(0, patch.minutes)
+              }
+            : allocation
+        );
+        const minutes = subjectAllocations.reduce((sum, allocation) => sum + allocation.minutes, 0);
+        return { ...draft, subjectAllocations, minutes };
+      })
+    );
+    setStatus("Parsed card subject minutes updated. Approve the card to apply the split to Step 2.");
+  }
+
+  function removeDraftSubjectAllocation(cardId: string, allocationIndex: number) {
+    setDraftCards((current) =>
+      current.map((draft) => {
+        if (draft.id !== cardId || draft.subjectAllocations.length === 1) return draft;
+        const subjectAllocations = draft.subjectAllocations.filter((_, index) => index !== allocationIndex);
+        const minutes = subjectAllocations.reduce((sum, allocation) => sum + allocation.minutes, 0);
+        return { ...draft, subjectAllocations, minutes };
+      })
+    );
+    setStatus("Parsed card subject row removed. Review minutes before approving.");
   }
 
   function addDraftCrossSubject(id: string) {
@@ -1424,8 +1628,16 @@ export default function Home() {
   }
 
   function approveDraftCard(id: string) {
-    setDraftCards((current) => current.map((draft) => (draft.id === id ? { ...draft, status: "approved" } : draft)));
-    setStatus("Parsed card approved for parent review. Use Save Approved when the daily record is ready to become permanent.");
+    const draft = draftCards.find((item) => item.id === id);
+    if (selectedType === "Unit Study" && draft) {
+      setUnitStudyAllocations(unitStudyRowsFromAllocations(draft.subjectAllocations));
+    }
+    setDraftCards((current) => current.map((item) => (item.id === id ? { ...item, status: "approved" } : item)));
+    setStatus(
+      selectedType === "Unit Study"
+        ? "Parsed card approved and its subject split was applied to Step 2. Use Save Approved when the daily record is ready."
+        : "Parsed card approved for parent review. Use Save Approved when the daily record is ready to become permanent."
+    );
   }
 
   function updateWeeklyData<K extends keyof WeeklyReviewData>(key: K, value: WeeklyReviewData[K]) {
@@ -1523,7 +1735,16 @@ export default function Home() {
   }
 
   function updateUnitPlanRow<K extends keyof UnitPlanRow>(id: string, key: K, value: UnitPlanRow[K]) {
-    setUnitPlanRows((current) => current.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+    setUnitPlanRows((current) => {
+      if (key === "status" && value === "active") {
+        return current.map((item) => {
+          if (item.id === id) return { ...item, status: "active" };
+          if (item.status === "active") return { ...item, status: "upcoming" };
+          return item;
+        });
+      }
+      return current.map((item) => (item.id === id ? { ...item, [key]: value } : item));
+    });
   }
 
   function moveUnitPlanRowTo(id: string, position: number) {
@@ -2134,9 +2355,20 @@ export default function Home() {
 
           <p className="tree-title">Unit Studies</p>
           <ul className="tree">
-            <li><button className="tree-button is-context" type="button" onClick={() => setActiveTab("daily")}>Construction <span>Active</span></button></li>
-            <li><button className="tree-button" type="button" onClick={() => setActiveTab("daily")}>Off the Land <span>Planned</span></button></li>
-            <li><button className="tree-button" type="button" onClick={() => setActiveTab("daily")}>Community Helpers <span>Planned</span></button></li>
+            {unitPlanRows.slice(0, 6).map((row) => (
+              <li key={row.id}>
+                <button
+                  className={row.status === "active" ? "tree-button is-context" : "tree-button"}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(row.status === "active" ? "daily" : "annual-plan");
+                    if (row.status === "active") setUnitStudy(row.title);
+                  }}
+                >
+                  {row.title} <span>{row.status}</span>
+                </button>
+              </li>
+            ))}
           </ul>
 
           <p className="tree-title">Workspace</p>
@@ -2170,7 +2402,7 @@ export default function Home() {
               </select>
             </label>
             <label><span>Official homeschool start</span><input type="date" value={officialStartDate} onChange={(event) => setOfficialStartDate(event.target.value)} /></label>
-            <label><span>Unit study</span><input value={unitStudy} onChange={(event) => setUnitStudy(event.target.value)} /></label>
+            <label><span>Active unit study</span><input value={unitStudy} readOnly title="Set the active unit in Annual Plan, Section 4." /></label>
           </div>
         </section>
 
@@ -2239,7 +2471,7 @@ export default function Home() {
                 </label>
                 <label>
                   <span>Actual minutes</span>
-                  <input type="number" min="1" value={actualMinutes} onChange={(event) => setActualMinutes(Number(event.target.value))} />
+                  <input type="number" min="1" value={actualMinutes} onChange={(event) => setActualMinutesForEntry(Number(event.target.value))} />
                 </label>
               </div>
               {selectedType === "Foreign Language" ? (
@@ -2267,9 +2499,66 @@ export default function Home() {
                   </div>
                 </div>
               ) : null}
+              {selectedType === "Unit Study" ? (
+                <div className="activity-detail-panel unit-study-allocation-panel">
+                  <div className="allocation-panel-head">
+                    <div>
+                      <span className="field-label">Subject time split</span>
+                      <p className="muted">Split the Unit Study total into subjects without double-counting time.</p>
+                    </div>
+                    <span className={unitStudyAllocationIsBalanced ? "tag good" : "tag review"}>
+                      {unitStudyAllocationTotal}/{actualMinutes || 0} min
+                    </span>
+                  </div>
+                  <datalist id="unit-study-subject-options">
+                    {unitStudySubjectOptions.map((subject) => (
+                      <option key={subject} value={subject} />
+                    ))}
+                  </datalist>
+                  <div className="unit-study-allocation-list">
+                    {unitStudyAllocations.map((allocation) => (
+                      <div className="unit-study-allocation-row" key={allocation.id}>
+                        <label>
+                          <span>Subject or tag area</span>
+                          <input
+                            list="unit-study-subject-options"
+                            value={allocation.subject}
+                            onChange={(event) => updateUnitStudyAllocation(allocation.id, { subject: event.target.value })}
+                          />
+                        </label>
+                        <label>
+                          <span>Minutes</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={allocation.minutes}
+                            onChange={(event) => updateUnitStudyAllocation(allocation.id, { minutes: Number(event.target.value) })}
+                          />
+                        </label>
+                        <button className="text-button" type="button" onClick={() => removeUnitStudyAllocation(allocation.id)} disabled={unitStudyAllocations.length === 1}>
+                          Delete
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button" onClick={addUnitStudyAllocation}>Add subject</button>
+                    <button className="secondary-button" type="button" onClick={balanceLastUnitStudyAllocation}>Balance last row</button>
+                  </div>
+                  {!unitStudyAllocationIsBalanced ? (
+                    <p className="status-line warning">Save Approved turns back on when the subject split equals the Unit Study actual minutes.</p>
+                  ) : null}
+                </div>
+              ) : null}
               <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
               <div className="quick-summary-row">
-                <span className="tag good">{primarySubject}: {actualMinutes || 0} min</span>
+                {selectedType === "Unit Study" ? (
+                  activitySubjectAllocations.map((allocation) => (
+                    <span className="tag good" key={`${allocation.subject}-${allocation.minutes}`}>{allocation.subject}: {allocation.minutes} min</span>
+                  ))
+                ) : (
+                  <span className="tag good">{primarySubject}: {actualMinutes || 0} min</span>
+                )}
                 {selectedType === "Foreign Language" ? <span className="tag">{foreignLanguage || "Spanish"}</span> : null}
                 {selectedType === "Extracurricular" && selectedExtracurriculars.length ? <span className="tag">{selectedExtracurriculars.join(", ")}</span> : null}
                 <span className="tag">Legal tags suggested</span>
@@ -2455,12 +2744,12 @@ export default function Home() {
                         </div>
                       </details>
                       <div className="subject-allocation-bars" aria-label={`${draft.title} subject time allocations`}>
-                        {draft.subjectAllocations.map((allocation) => {
+                        {draft.subjectAllocations.map((allocation, allocationIndex) => {
                           const rawPercent = (allocation.minutes / dailyInstructionMinutesForBars) * 100;
                           const percent = Math.min(100, Math.max(3, Math.round(rawPercent)));
                           const displayedPercent = Math.round(rawPercent * 10) / 10;
                           return (
-                            <div className="allocation-bar-row" key={`${draft.id}-${allocation.subject}`}>
+                            <div className="allocation-bar-row" key={`${draft.id}-${allocation.subject}-${allocationIndex}`}>
                               <div>
                                 <strong>{allocation.subject}</strong>
                                 <span>{allocation.minutes} min of {dailyInstructionMinutesForBars} min day ({displayedPercent}%)</span>
@@ -2468,6 +2757,35 @@ export default function Home() {
                               <div className="allocation-track">
                                 <span style={{ width: `${percent}%` }} />
                               </div>
+                              {selectedType === "Unit Study" ? (
+                                <div className="parsed-allocation-controls">
+                                  <label>
+                                    <span>Subject</span>
+                                    <input
+                                      list="unit-study-subject-options"
+                                      value={allocation.subject}
+                                      onChange={(event) => updateDraftSubjectAllocation(draft.id, allocationIndex, { subject: event.target.value })}
+                                    />
+                                  </label>
+                                  <label>
+                                    <span>Minutes</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={allocation.minutes}
+                                      onChange={(event) => updateDraftSubjectAllocation(draft.id, allocationIndex, { minutes: Number(event.target.value) })}
+                                    />
+                                  </label>
+                                  <button
+                                    className="text-button"
+                                    type="button"
+                                    onClick={() => removeDraftSubjectAllocation(draft.id, allocationIndex)}
+                                    disabled={draft.subjectAllocations.length === 1}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              ) : null}
                             </div>
                           );
                         })}

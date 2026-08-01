@@ -464,6 +464,43 @@ textarea {
   padding: 10px;
 }
 
+.unit-study-allocation-panel {
+  gap: 12px;
+}
+
+.allocation-panel-head,
+.unit-study-allocation-row,
+.parsed-allocation-controls {
+  display: grid;
+  gap: 10px;
+  align-items: end;
+}
+
+.allocation-panel-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.unit-study-allocation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.unit-study-allocation-row,
+.parsed-allocation-controls {
+  grid-template-columns: minmax(180px, 1fr) 110px auto;
+}
+
+.parsed-allocation-controls {
+  border-top: 1px dashed var(--soft-line);
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.status-line.warning {
+  color: #7a4a00;
+}
+
 .field-label {
   color: var(--muted);
   font-size: 0.78rem;
@@ -1853,6 +1890,9 @@ details.skill-group[open] summary {
     .weekly-section-hub,
     .chart-layout,
     .bar-chart-row,
+    .allocation-panel-head,
+    .unit-study-allocation-row,
+    .parsed-allocation-controls,
     .skill-rating-row,
     .portfolio-grid,
     .annual-section-hub,
