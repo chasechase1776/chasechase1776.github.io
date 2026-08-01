@@ -862,6 +862,102 @@ details.skill-group[open] summary {
   padding: 10px;
 }
 
+.weekly-review-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.weekly-date-grid,
+.review-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.coverage-summary-grid,
+.weekly-notes-grid,
+.skill-rating-list,
+.portfolio-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.coverage-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.weekly-notes-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.record-link,
+.portfolio-card {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 10px;
+}
+
+.record-link span,
+.skill-evidence {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.weekly-subsection {
+  border-top: 1px solid var(--soft-line);
+  padding-top: 16px;
+}
+
+.skill-rating-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.2fr) minmax(180px, 0.7fr);
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
+.rating-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rating-button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rating-button.is-selected,
+.rating-button:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.portfolio-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.portfolio-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.portfolio-card.is-selected {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
 .subject-tally,
 .coverage-list {
   display: grid;
@@ -1108,6 +1204,12 @@ details.skill-group[open] summary {
     .upload-proof-box,
     .allocation-panel,
     .file-explorer,
+    .weekly-date-grid,
+    .review-form-grid,
+    .coverage-summary-grid,
+    .weekly-notes-grid,
+    .skill-rating-row,
+    .portfolio-grid,
   .records-grid,
   .review-metrics,
   .alert-grid,

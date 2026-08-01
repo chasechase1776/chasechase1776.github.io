@@ -24,8 +24,12 @@ function safeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "-") || "artifact";
 }
 
+function storedFileName(name: string) {
+  return `${Date.now()}-${randomUUID()}-${safeFileName(name)}`;
+}
+
 function storageFileName(file: File) {
-  return `${Date.now()}-${randomUUID()}-${safeFileName(file.name)}`;
+  return storedFileName(file.name);
 }
 
 async function saveLocalUploadedFile(file: File): Promise<SavedFile> {
@@ -61,9 +65,13 @@ function supabaseStorageConfig() {
 
 async function saveSupabaseUploadedFile(file: File): Promise<SavedFile> {
   const bytes = Buffer.from(await file.arrayBuffer());
+  return saveSupabaseBuffer(bytes, file.name, file.type || "application/octet-stream");
+}
+
+async function saveSupabaseBuffer(bytes: Buffer, originalName: string, mimeType: string): Promise<SavedFile> {
   const { bucket, prefix, serviceRoleKey, supabaseUrl } = supabaseStorageConfig();
 
-  const fileName = storageFileName(file);
+  const fileName = storedFileName(originalName);
   const storagePath = `${prefix.replace(/^\/+|\/+$/g, "")}/${fileName}`;
   const uploadUrl = `${supabaseUrl.replace(/\/+$/g, "")}/storage/v1/object/${encodeURIComponent(bucket)}/${storagePath
     .split("/")
@@ -74,10 +82,10 @@ async function saveSupabaseUploadedFile(file: File): Promise<SavedFile> {
     headers: {
       apikey: serviceRoleKey,
       Authorization: `Bearer ${serviceRoleKey}`,
-      "Content-Type": file.type || "application/octet-stream",
+      "Content-Type": mimeType,
       "x-upsert": "false"
     },
-    body: bytes
+    body: new Uint8Array(bytes)
   });
 
   if (!response.ok) {
@@ -87,10 +95,27 @@ async function saveSupabaseUploadedFile(file: File): Promise<SavedFile> {
 
   return {
     fileName,
-    originalName: file.name,
-    mimeType: file.type || "application/octet-stream",
+    originalName,
+    mimeType,
     sizeBytes: bytes.length,
     storagePath: `supabase://${bucket}/${storagePath}`
+  };
+}
+
+async function saveLocalBuffer(bytes: Buffer, originalName: string, mimeType: string): Promise<SavedFile> {
+  const root = uploadRoot();
+  await mkdir(root, { recursive: true });
+
+  const fileName = storedFileName(originalName);
+  const storagePath = path.join(root, fileName);
+  await writeFile(storagePath, bytes);
+
+  return {
+    fileName,
+    originalName,
+    mimeType,
+    sizeBytes: bytes.length,
+    storagePath
   };
 }
 
@@ -100,4 +125,12 @@ export async function saveUploadedFile(file: File) {
   }
 
   return saveLocalUploadedFile(file);
+}
+
+export async function saveGeneratedFile(bytes: Buffer, originalName: string, mimeType: string) {
+  if (envValue("STORAGE_PROVIDER") === "supabase") {
+    return saveSupabaseBuffer(bytes, originalName, mimeType);
+  }
+
+  return saveLocalBuffer(bytes, originalName, mimeType);
 }

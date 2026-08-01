@@ -65,6 +65,27 @@ type DraftCard = {
   skills: string[];
 };
 
+type WeeklyReviewData = {
+  totalApprovedLearningTime: number;
+  activitiesLogged: number;
+  daysLogged: number;
+  artifactsSaved: number;
+  activitiesNeedingReview?: number;
+  subjectTimeSummary: Record<string, number>;
+  legalCoverageSummary: string[];
+  skillsTouchedThisWeek: string[];
+  parentWeeklySummary: string;
+  overallWeeklyRating: string;
+  portfolioSelections: string[];
+  nextWeekFocus: string;
+  studentFavorite: string;
+  studentHardest: string;
+  studentProudest: string;
+  studentQuestion: string;
+  studentRating: string;
+  studentDictation: string;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -91,6 +112,14 @@ const legalCoverage = [
 ];
 
 const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
+const weeklyRatings = ["Not Observed", "Introduced", "Developing", "Practicing", "Proficient", "Mastery"];
+const studentRatings = [
+  "I am just starting",
+  "I am getting better",
+  "I can do this with help",
+  "I can do this by myself",
+  "I can teach or explain this"
+];
 
 const workspaceTabs: WorkspaceTab[] = [
   {
@@ -148,6 +177,19 @@ function todayIso() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
   return new Date(now.getTime() - offset * 60000).toISOString().slice(0, 10);
+}
+
+function mondayForIsoDate(value: string) {
+  const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() - day + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function addDaysIso(value: string, days: number) {
+  const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function inferSubject(activityType: string) {
@@ -227,6 +269,31 @@ export default function Home() {
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
+  const [weeklyReviewId, setWeeklyReviewId] = useState("");
+  const [weeklyStartDate, setWeeklyStartDate] = useState(mondayForIsoDate(todayIso()));
+  const [weeklyStatus, setWeeklyStatus] = useState<"draft" | "finalized" | "amended">("draft");
+  const [weeklyData, setWeeklyData] = useState<WeeklyReviewData>({
+    totalApprovedLearningTime: 0,
+    activitiesLogged: 0,
+    daysLogged: 0,
+    artifactsSaved: 0,
+    activitiesNeedingReview: 0,
+    subjectTimeSummary: {},
+    legalCoverageSummary: [],
+    skillsTouchedThisWeek: [],
+    parentWeeklySummary: "",
+    overallWeeklyRating: "Not Observed",
+    portfolioSelections: [],
+    nextWeekFocus: "",
+    studentFavorite: "",
+    studentHardest: "",
+    studentProudest: "",
+    studentQuestion: "",
+    studentRating: "I can do this with help",
+    studentDictation: ""
+  });
+  const [weeklyStatusMessage, setWeeklyStatusMessage] = useState("Waiting to generate a draft review from approved activity logs.");
+  const [isWeeklyBusy, setIsWeeklyBusy] = useState(false);
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
@@ -423,6 +490,104 @@ export default function Home() {
     const drafts = mockDrafts(selectedType);
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
+  }
+
+  function updateWeeklyData<K extends keyof WeeklyReviewData>(key: K, value: WeeklyReviewData[K]) {
+    setWeeklyData((current) => ({ ...current, [key]: value }));
+  }
+
+  async function generateWeeklyReview() {
+    setIsWeeklyBusy(true);
+    setWeeklyStatusMessage("Generating weekly review draft from approved logs...");
+    try {
+      const response = await fetch("/api/reviews/weekly/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schoolYearLabel: schoolYear, weekStartDate: weeklyStartDate, recordStatus: schoolYearStatus })
+      });
+      const data = await response.json().catch(() => ({ error: "Weekly review generation failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Weekly review generation failed.");
+      setWeeklyReviewId(data.review.id);
+      setWeeklyStatus(data.review.status);
+      setWeeklyData((current) => ({
+        ...current,
+        ...data.data,
+        activitiesNeedingReview: data.data.activitiesNeedingReview ?? 0,
+        parentWeeklySummary:
+          data.data.parentWeeklySummary ||
+          "Draft generated from approved logs. Add the parent summary before finalizing this weekly review.",
+        nextWeekFocus: data.data.nextWeekFocus || "Add the next focus after reviewing subject coverage and portfolio highlights.",
+        studentFavorite: current.studentFavorite || "Building the frame",
+        studentHardest: current.studentHardest || "Reading the tape measure",
+        studentProudest: current.studentProudest || "Story Weaver narration",
+        studentQuestion: current.studentQuestion || "How do builders make corners square?",
+        studentRating: current.studentRating || "I can do this with help",
+        studentDictation: current.studentDictation || "I liked using the tools and explaining what I made."
+      }));
+      setWeeklyStatusMessage("Draft generated from approved daily logs. Review, edit, save, finalize, or compile a PDF.");
+    } catch (error) {
+      setWeeklyStatusMessage(error instanceof Error ? error.message : "Weekly review generation failed.");
+    } finally {
+      setIsWeeklyBusy(false);
+    }
+  }
+
+  async function saveWeeklyReview(statusValue: "draft" | "finalized" | "amended") {
+    if (!weeklyReviewId) {
+      setWeeklyStatusMessage("Generate the weekly review before saving.");
+      return;
+    }
+
+    setIsWeeklyBusy(true);
+    setWeeklyStatusMessage(statusValue === "finalized" ? "Finalizing weekly review..." : "Saving weekly review draft...");
+    try {
+      const response = await fetch("/api/reviews/weekly", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: weeklyReviewId, status: statusValue, data: weeklyData, recordStatus: schoolYearStatus })
+      });
+      const data = await response.json().catch(() => ({ error: "Weekly review save failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Weekly review save failed.");
+      setWeeklyStatus(data.review.status);
+      setWeeklyStatusMessage(
+        statusValue === "finalized"
+          ? "Weekly review finalized. You can now compile the PDF into the Portfolio."
+          : "Weekly review draft saved."
+      );
+    } catch (error) {
+      setWeeklyStatusMessage(error instanceof Error ? error.message : "Weekly review save failed.");
+    } finally {
+      setIsWeeklyBusy(false);
+    }
+  }
+
+  async function compileWeeklyPdf() {
+    if (!weeklyReviewId) {
+      setWeeklyStatusMessage("Generate and save the weekly review before compiling a PDF.");
+      return;
+    }
+
+    setIsWeeklyBusy(true);
+    setWeeklyStatusMessage("Compiling weekly review PDF and saving it to Portfolio...");
+    try {
+      if (weeklyStatus !== "finalized") {
+        await saveWeeklyReview("finalized");
+      }
+      const response = await fetch("/api/reviews/weekly/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: weeklyReviewId })
+      });
+      const data = await response.json().catch(() => ({ error: "Weekly PDF generation failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Weekly PDF generation failed.");
+      await loadPortfolio();
+      setWeeklyStatus("finalized");
+      setWeeklyStatusMessage(`${data.artifact.originalName} was saved to the Portfolio.`);
+    } catch (error) {
+      setWeeklyStatusMessage(error instanceof Error ? error.message : "Weekly PDF generation failed.");
+    } finally {
+      setIsWeeklyBusy(false);
+    }
   }
 
   const subjectTallies = useMemo(() => {
@@ -787,6 +952,149 @@ export default function Home() {
               </>
             ) : null}
 
+            {activeTab === "weekly" ? (
+            <section className="panel weekly-review-panel" id="weekly-review">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Weekly Reviews</p>
+                  <h2>Guided weekly review form</h2>
+                  <p className="panel-note">Generated from approved daily logs for the selected Monday-Sunday week. You can edit everything before saving, finalizing, or compiling the PDF.</p>
+                </div>
+              </div>
+
+              <div className="primary-action-row">
+                <button className="secondary-button" type="button" onClick={() => void generateWeeklyReview()} disabled={isWeeklyBusy}>Generate from Logs</button>
+                <button className="secondary-button" type="button" onClick={() => void saveWeeklyReview("draft")} disabled={isWeeklyBusy || !weeklyReviewId}>Save Draft</button>
+                <button className="primary-button" type="button" onClick={() => void saveWeeklyReview("finalized")} disabled={isWeeklyBusy || !weeklyReviewId}>Finalize Weekly Review</button>
+                <button className="primary-button" type="button" onClick={() => void compileWeeklyPdf()} disabled={isWeeklyBusy || !weeklyReviewId}>Compile PDF to Portfolio</button>
+              </div>
+
+              <p className="status-line" role="status">{weeklyStatusMessage}</p>
+
+              <div className="quick-entry-grid weekly-date-grid">
+                <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>
+                <label><span>School year</span><input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} /></label>
+                <label><span>Week start date</span><input type="date" value={weeklyStartDate} onChange={(event) => setWeeklyStartDate(event.target.value)} /></label>
+                <label><span>Week end date</span><input type="date" value={addDaysIso(weeklyStartDate, 6)} readOnly /></label>
+                <label><span>Primary unit study</span><input value={unitStudy} onChange={(event) => setUnitStudy(event.target.value)} /></label>
+                <label>
+                  <span>Status</span>
+                  <select value={weeklyStatus} onChange={(event) => setWeeklyStatus(event.target.value as "draft" | "finalized" | "amended")}>
+                    <option>draft</option>
+                    <option>finalized</option>
+                    <option>amended</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Overall weekly rating</span>
+                  <select value={weeklyData.overallWeeklyRating} onChange={(event) => updateWeeklyData("overallWeeklyRating", event.target.value)}>
+                    {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <div className="review-metrics" aria-label="Weekly review generated metrics">
+                <div className="review-metric"><span>Total approved time</span><strong>{formatMinutes(weeklyData.totalApprovedLearningTime)}</strong></div>
+                <div className="review-metric"><span>Activities logged</span><strong>{weeklyData.activitiesLogged}</strong></div>
+                <div className="review-metric"><span>Days logged</span><strong>{weeklyData.daysLogged}</strong></div>
+                <div className="review-metric"><span>Artifacts saved</span><strong>{weeklyData.artifactsSaved}</strong></div>
+                <div className="review-metric"><span>Needs review</span><strong>{weeklyData.activitiesNeedingReview ?? 0}</strong></div>
+              </div>
+
+              <div className="coverage-summary-grid">
+                <div className="record-link"><strong>Subject time summary</strong><span>{Object.entries(weeklyData.subjectTimeSummary).length ? Object.entries(weeklyData.subjectTimeSummary).map(([subject, minutes]) => `${subject} ${formatMinutes(minutes)}`).join("; ") : "Generate from logs to populate subject allocations."}</span></div>
+                <div className="record-link"><strong>Texas legal coverage</strong><span>{weeklyData.legalCoverageSummary.length ? weeklyData.legalCoverageSummary.join(", ") : "Generate from logs to populate legal tags."}</span></div>
+                <div className="record-link"><strong>Portfolio save target</strong><span>Portfolio / weekly-review-{weeklyStartDate}.pdf</span></div>
+              </div>
+
+              <div className="weekly-notes-grid">
+                <label>
+                  <span>Parent weekly summary</span>
+                  <textarea value={weeklyData.parentWeeklySummary} onChange={(event) => updateWeeklyData("parentWeeklySummary", event.target.value)} />
+                </label>
+                <label>
+                  <span>Next week focus</span>
+                  <textarea value={weeklyData.nextWeekFocus} onChange={(event) => updateWeeklyData("nextWeekFocus", event.target.value)} />
+                </label>
+              </div>
+
+              <details className="skill-group" open>
+                <summary><span>Student reflection</span><span>separate from parent ratings</span></summary>
+                <div className="review-form-grid">
+                  <label><span>Favorite activity this week</span><input value={weeklyData.studentFavorite} onChange={(event) => updateWeeklyData("studentFavorite", event.target.value)} /></label>
+                  <label><span>Hardest activity this week</span><input value={weeklyData.studentHardest} onChange={(event) => updateWeeklyData("studentHardest", event.target.value)} /></label>
+                  <label><span>Proudest work this week</span><input value={weeklyData.studentProudest} onChange={(event) => updateWeeklyData("studentProudest", event.target.value)} /></label>
+                  <label><span>Question or curiosity</span><input value={weeklyData.studentQuestion} onChange={(event) => updateWeeklyData("studentQuestion", event.target.value)} /></label>
+                  <label>
+                    <span>Student self-rating</span>
+                    <select value={weeklyData.studentRating} onChange={(event) => updateWeeklyData("studentRating", event.target.value)}>
+                      {studentRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                    </select>
+                  </label>
+                  <label><span>Dictated reflection</span><textarea value={weeklyData.studentDictation} onChange={(event) => updateWeeklyData("studentDictation", event.target.value)} /></label>
+                </div>
+              </details>
+
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Skills Touched This Week</p>
+                    <h2>Rate weekly skill progress</h2>
+                  </div>
+                  <span className="tag">Parent rating overrides AI suggestion</span>
+                </div>
+                <div className="skill-rating-list">
+                  {(weeklyData.skillsTouchedThisWeek.length ? weeklyData.skillsTouchedThisWeek : ["Language Arts: Reading", "Math: Measurement and Money", "Science: Uses Tools and Models"]).map((skill, index) => (
+                    <article className="skill-rating-row" key={skill}>
+                      <div>
+                        <strong>{skill}</strong>
+                        <p className="skill-evidence">Evidence comes from approved activities and attached proof for this week.</p>
+                      </div>
+                      <div className="rating-buttons" aria-label={`${skill} rating`}>
+                        {weeklyRatings.map((rating) => (
+                          <button className={index === 1 && rating === "Developing" ? "rating-button is-selected" : rating === "Practicing" && index !== 1 ? "rating-button is-selected" : "rating-button"} type="button" key={`${skill}-${rating}`}>
+                            {rating}
+                          </button>
+                        ))}
+                      </div>
+                      <label><span>Parent note</span><input placeholder="Add a weekly skill note." /></label>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Portfolio</p>
+                    <h2>Choose 2-5 weekly highlights</h2>
+                  </div>
+                  <span className="tag">{weeklyData.portfolioSelections.length} selected</span>
+                </div>
+                <div className="portfolio-grid">
+                  {portfolioArtifacts.slice(0, 8).map((artifact) => (
+                    <label className={weeklyData.portfolioSelections.includes(artifact.id) ? "portfolio-card is-selected" : "portfolio-card"} key={artifact.id}>
+                      <input
+                        checked={weeklyData.portfolioSelections.includes(artifact.id)}
+                        type="checkbox"
+                        onChange={(event) =>
+                          updateWeeklyData(
+                            "portfolioSelections",
+                            event.target.checked
+                              ? [...weeklyData.portfolioSelections, artifact.id]
+                              : weeklyData.portfolioSelections.filter((id) => id !== artifact.id)
+                          )
+                        }
+                      />
+                      <span><strong>{artifact.originalName}</strong><br />{artifact.activity?.title ?? "Portfolio artifact"}</span>
+                    </label>
+                  ))}
+                  {portfolioArtifacts.length === 0 ? <p className="muted">Upload proof files before selecting weekly portfolio highlights.</p> : null}
+                </div>
+              </section>
+            </section>
+            ) : null}
+
             {activeTab === "portfolio" ? (
             <section className="panel portfolio-panel" id="portfolio">
               <div className="section-head">
@@ -853,7 +1161,7 @@ export default function Home() {
             ) : null}
           </section>
 
-          {activeTab !== "daily" && activeTab !== "portfolio" ? (
+          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" ? (
           <aside className="side-column">
             {activeTab === "quarter" || activeTab === "tools" ? (
             <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
@@ -868,7 +1176,7 @@ export default function Home() {
             </section>
             ) : null}
 
-            {activeTab === "weekly" || activeTab === "tools" ? (
+            {activeTab === "tools" ? (
             <section className="panel" id="weekly-tally">
               <p className="eyebrow">This week</p>
               <h2>Weekly subject time tally</h2>
