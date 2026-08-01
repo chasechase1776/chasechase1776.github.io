@@ -187,12 +187,19 @@ async function buildAnnualPlanPdf(input: z.infer<typeof annualPlanPdfSchema>, ev
 
   drawLine("Section 1: Big Picture Framework", { heading: true });
   drawWrapped(`Primary Theme: ${input.bigPicture.primaryTheme}`, 12);
+  drawGap();
   drawWrapped(`Central Question: ${input.bigPicture.centralQuestion}`, 12);
+  drawGap();
   drawWrapped(`Thinking Progression: ${input.bigPicture.thinkingProgression}`, 12);
+  drawGap();
   drawWrapped(`Writing Progression: ${input.bigPicture.writingProgression}`, 12);
+  drawGap();
   drawWrapped(`Presentation Progression: ${input.bigPicture.presentationProgression}`, 12);
+  drawGap();
   drawWrapped(`Annual Project Cycle: ${input.bigPicture.annualProjectCycle}`, 12);
+  drawGap();
   drawWrapped(`Year-Long Journals: ${input.bigPicture.yearLongJournals}`, 12);
+  drawGap();
   drawWrapped(`Spiral Curriculum Summary: ${input.bigPicture.spiralCurriculumSummary}`, 12);
   drawGap(10);
 
