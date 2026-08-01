@@ -37,10 +37,22 @@ const unitRowSchema = z.object({
   status: z.string()
 });
 
+const bigPictureSchema = z.object({
+  primaryTheme: z.string().default(""),
+  centralQuestion: z.string().default(""),
+  thinkingProgression: z.string().default(""),
+  writingProgression: z.string().default(""),
+  presentationProgression: z.string().default(""),
+  annualProjectCycle: z.string().default(""),
+  yearLongJournals: z.string().default(""),
+  spiralCurriculumSummary: z.string().default("")
+});
+
 const annualPlanPdfSchema = z.object({
   student: z.string().default("Bennett"),
   schoolYear: z.string().default("2026-2027"),
   status: z.string().default("active"),
+  bigPicture: bigPictureSchema.default({}),
   curriculumSpines: z.array(cardSchema).default([]),
   weeklyRhythmDays: z.array(cardSchema).default([]),
   unitPlanRows: z.array(unitRowSchema).default([]),
@@ -161,6 +173,11 @@ async function buildAnnualPlanPdf(input: z.infer<typeof annualPlanPdfSchema>, ev
     wrapLine(line).forEach((wrapped) => drawLine(wrapped, { indent }));
   };
 
+  const drawGap = (height = 8) => {
+    ensureSpace(height);
+    y -= height;
+  };
+
   drawCentered(`${input.student} - ${input.schoolYear}`, y, 12);
   y -= 18;
   drawCentered("Annual Plan", y, 12, bold);
@@ -168,14 +185,27 @@ async function buildAnnualPlanPdf(input: z.infer<typeof annualPlanPdfSchema>, ev
   drawCentered(`Status: ${input.status}`, y, 12);
   y -= 36;
 
+  drawLine("Section 1: Big Picture Framework", { heading: true });
+  drawWrapped(`Primary Theme: ${input.bigPicture.primaryTheme}`, 12);
+  drawWrapped(`Central Question: ${input.bigPicture.centralQuestion}`, 12);
+  drawWrapped(`Thinking Progression: ${input.bigPicture.thinkingProgression}`, 12);
+  drawWrapped(`Writing Progression: ${input.bigPicture.writingProgression}`, 12);
+  drawWrapped(`Presentation Progression: ${input.bigPicture.presentationProgression}`, 12);
+  drawWrapped(`Annual Project Cycle: ${input.bigPicture.annualProjectCycle}`, 12);
+  drawWrapped(`Year-Long Journals: ${input.bigPicture.yearLongJournals}`, 12);
+  drawWrapped(`Spiral Curriculum Summary: ${input.bigPicture.spiralCurriculumSummary}`, 12);
+  drawGap(10);
+
   drawLine("Section 2: Curriculum Spines", { heading: true });
   input.curriculumSpines.forEach((card) => {
     drawWrapped(`${card.title}: ${card.narrative}`, 12);
+    drawGap();
   });
 
   drawLine("Section 3: Weekly Rhythm", { heading: true });
   input.weeklyRhythmDays.forEach((card) => {
     drawWrapped(`${card.title}: ${card.narrative}`, 12);
+    drawGap();
   });
 
   drawLine("Section 4: Unit Studies", { heading: true });
@@ -183,11 +213,13 @@ async function buildAnnualPlanPdf(input: z.infer<typeof annualPlanPdfSchema>, ev
     drawWrapped(`${index + 1}. ${row.title} (${row.weeks} weeks, ${row.status}) - ${row.guidingQuestion}`, 12);
     drawWrapped(`Competency: ${row.primaryCompetency}; Format: ${row.formatType}; Rhythm: ${row.weeklyRhythmOverride}`, 24);
     drawWrapped(`Field trip/application: ${row.fieldTrip}; Final Friday: ${row.finalFridayCapstone}`, 24);
+    drawGap();
   });
 
   drawLine("Section 6: Journals and Portfolios", { heading: true });
   input.journalPortfolioCards.forEach((card) => {
     drawWrapped(`${card.title}: ${card.narrative}`, 12);
+    drawGap();
   });
 
   drawLine("Section 7: Annual Records", { heading: true });
@@ -199,6 +231,7 @@ async function buildAnnualPlanPdf(input: z.infer<typeof annualPlanPdfSchema>, ev
         : "Attached documents: none",
       24
     );
+    drawGap();
   });
 
   if (evidenceFiles.length) {

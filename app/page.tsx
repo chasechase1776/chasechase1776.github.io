@@ -160,6 +160,17 @@ type AnnualRecordCard = {
   attachments: UploadedArtifact[];
 };
 
+type AnnualPlanBigPicture = {
+  primaryTheme: string;
+  centralQuestion: string;
+  thinkingProgression: string;
+  writingProgression: string;
+  presentationProgression: string;
+  annualProjectCycle: string;
+  yearLongJournals: string;
+  spiralCurriculumSummary: string;
+};
+
 type AnnualPlanSectionId = "section-1" | "section-2" | "section-3" | "section-4" | "section-5" | "section-6" | "section-7" | "section-8";
 
 type UnitPlanStatus = "active" | "upcoming" | "planned" | "complete" | "skipped";
@@ -346,6 +357,18 @@ const initialAnnualRecordCards: AnnualRecordCard[] = [
     attachments: []
   }
 ];
+
+const initialAnnualPlanBigPicture: AnnualPlanBigPicture = {
+  primaryTheme: "Me and My Community",
+  centralQuestion: "How do people live together?",
+  thinkingProgression: "Observe",
+  writingProgression: "Weekly Narrations",
+  presentationProgression: "Tell us what you learned",
+  annualProjectCycle: "Weekly project and presentation cycles culminating in unit capstones and 1+ year-end projects.",
+  yearLongJournals: "Observation Journal; Unit Lap Books",
+  spiralCurriculumSummary:
+    "This is a spiral curriculum. Core skills in literacy, mathematics, finance, observation, writing, project work, and presentation are practiced repeatedly across changing thematic unit studies. Each unit provides a new context for applying the same core skills at a deeper level."
+};
 
 const unitFormatOptions = ["Harbor & Sprout Template", "Open-and-Go Published Unit", "Minimal Structure / Parent-Designed"];
 const weeklyRhythmOverrideOptions = ["Use full rhythm", "None", "Light overlay", "Use Thursday heavily", "Finance daily", "Cooking Friday", "Context Wednesday focus", "Meaning Thursday focus", "Creating Friday capstone"];
@@ -770,6 +793,7 @@ export default function Home() {
   const [annualPlanStatus, setAnnualPlanStatus] = useState<"draft" | "active" | "finalized" | "archived">("active");
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
   const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Waiting for generated snapshots. Database records remain the source of truth.");
+  const [annualPlanBigPicture, setAnnualPlanBigPicture] = useState<AnnualPlanBigPicture>(initialAnnualPlanBigPicture);
   const [curriculumSpines, setCurriculumSpines] = useState<CurriculumSpine[]>(initialCurriculumSpines);
   const [editingSpineId, setEditingSpineId] = useState<string | null>(null);
   const [weeklyRhythmDays, setWeeklyRhythmDays] = useState<WeeklyRhythmDay[]>(initialWeeklyRhythmDays);
@@ -989,6 +1013,10 @@ export default function Home() {
     const section = annualPlanSections.find((item) => item.id === id);
     setFinalizedAnnualPlanSections((current) => (current.includes(id) ? current : [...current, id]));
     setAnnualPlanMessage(`${section?.summary ?? "Annual Plan section"} finalized. Its landing button is now green.`);
+  }
+
+  function updateAnnualPlanBigPicture<K extends keyof AnnualPlanBigPicture>(key: K, value: AnnualPlanBigPicture[K]) {
+    setAnnualPlanBigPicture((current) => ({ ...current, [key]: value }));
   }
 
   function updateCurriculumSpine(id: string, key: "title" | "narrative", value: string) {
@@ -1216,6 +1244,7 @@ export default function Home() {
           student,
           schoolYear,
           status: annualPlanStatus,
+          bigPicture: annualPlanBigPicture,
           curriculumSpines,
           weeklyRhythmDays,
           unitPlanRows,
@@ -1226,6 +1255,7 @@ export default function Home() {
       const data = await response.json().catch(() => ({ error: "Annual Plan PDF generation failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Annual Plan PDF generation failed.");
       setLastAnnualPlanPdfArtifact(data.artifact);
+      window.open(`/api/artifacts/${data.artifact.id}/download`, "_blank", "noopener,noreferrer");
       setAnnualPlanMessage(`${data.artifact.originalName} was generated with Section 7 attachments and saved to the Portfolio.`);
     } catch (error) {
       setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan PDF generation failed.");
@@ -2291,14 +2321,14 @@ export default function Home() {
                   <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-1")}>Finalize</button>
                 </div>
                 <div className="review-form-grid">
-                  <label><span>Primary Theme</span><input defaultValue="Me and My Community" /></label>
-                  <label><span>Central Question</span><input defaultValue="How do people live together?" /></label>
-                  <label><span>Thinking Progression</span><input defaultValue="Observe" /></label>
-                  <label><span>Writing Progression</span><input defaultValue="Weekly Narrations" /></label>
-                  <label><span>Presentation Progression</span><input defaultValue="Tell us what you learned" /></label>
-                  <label><span>Annual Project Cycle</span><textarea defaultValue="Weekly project and presentation cycles culminating in unit capstones and 1+ year-end projects." /></label>
-                  <label><span>Year-Long Journals</span><textarea defaultValue="Observation Journal; Unit Lap Books" /></label>
-                  <label><span>Spiral Curriculum Summary</span><textarea defaultValue="This is a spiral curriculum. Core skills in literacy, mathematics, finance, observation, writing, project work, and presentation are practiced repeatedly across changing thematic unit studies. Each unit provides a new context for applying the same core skills at a deeper level." /></label>
+                  <label><span>Primary Theme</span><input value={annualPlanBigPicture.primaryTheme} onChange={(event) => updateAnnualPlanBigPicture("primaryTheme", event.target.value)} /></label>
+                  <label><span>Central Question</span><input value={annualPlanBigPicture.centralQuestion} onChange={(event) => updateAnnualPlanBigPicture("centralQuestion", event.target.value)} /></label>
+                  <label><span>Thinking Progression</span><input value={annualPlanBigPicture.thinkingProgression} onChange={(event) => updateAnnualPlanBigPicture("thinkingProgression", event.target.value)} /></label>
+                  <label><span>Writing Progression</span><input value={annualPlanBigPicture.writingProgression} onChange={(event) => updateAnnualPlanBigPicture("writingProgression", event.target.value)} /></label>
+                  <label><span>Presentation Progression</span><input value={annualPlanBigPicture.presentationProgression} onChange={(event) => updateAnnualPlanBigPicture("presentationProgression", event.target.value)} /></label>
+                  <label><span>Annual Project Cycle</span><textarea value={annualPlanBigPicture.annualProjectCycle} onChange={(event) => updateAnnualPlanBigPicture("annualProjectCycle", event.target.value)} /></label>
+                  <label><span>Year-Long Journals</span><textarea value={annualPlanBigPicture.yearLongJournals} onChange={(event) => updateAnnualPlanBigPicture("yearLongJournals", event.target.value)} /></label>
+                  <label><span>Spiral Curriculum Summary</span><textarea value={annualPlanBigPicture.spiralCurriculumSummary} onChange={(event) => updateAnnualPlanBigPicture("spiralCurriculumSummary", event.target.value)} /></label>
                 </div>
               </section>
               ) : null}
