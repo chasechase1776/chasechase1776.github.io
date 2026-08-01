@@ -36,6 +36,14 @@ function stringifySummary(value: unknown) {
   return String(value);
 }
 
+function subjectSummaryEntries(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>)
+    .map(([subject, minutes]) => [subject, Number(minutes)] as const)
+    .filter(([, minutes]) => Number.isFinite(minutes) && minutes > 0)
+    .sort(([, left], [, right]) => right - left);
+}
+
 function selectedIds(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
@@ -60,12 +68,22 @@ function wrapLine(value: string, width = 92) {
   return lines.length ? lines : [""];
 }
 
-async function buildQuarterPdf(lines: string[], header: { studentYear: string; label: string; dates: string }) {
+async function buildQuarterPdf(lines: string[], header: { studentYear: string; label: string; dates: string; subjectTimeSummary: unknown }) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const margin = 48;
   const lineHeight = 14;
+  const chartColors = [
+    rgb(0.12, 0.48, 0.55),
+    rgb(0.25, 0.49, 0.13),
+    rgb(0.54, 0.35, 0),
+    rgb(0.37, 0.35, 0.64),
+    rgb(0.7, 0.36, 0.27),
+    rgb(0.18, 0.37, 0.56),
+    rgb(0.43, 0.35, 0.48),
+    rgb(0.31, 0.47, 0.18)
+  ];
   let page = pdf.addPage([612, 792]);
   let y = 744;
   let pageNumber = 1;
@@ -113,11 +131,70 @@ async function buildQuarterPdf(lines: string[], header: { studentYear: string; l
     y -= heading ? lineHeight + 4 : lineHeight;
   };
 
+  const drawSubjectCharts = (summary: unknown) => {
+    const entries = subjectSummaryEntries(summary);
+    const total = entries.reduce((sum, [, minutes]) => sum + minutes, 0);
+    ensureSpace(entries.length ? 230 : 50);
+    drawLine("Subject Time Charts", true);
+
+    if (!entries.length || total <= 0) {
+      drawLine("Generate the review from approved logs to populate the subject time bar and pie charts.");
+      return;
+    }
+
+    const chartTop = y;
+    const barX = margin;
+    const trackX = barX + 120;
+    const trackWidth = 130;
+    const rowHeight = 20;
+
+    entries.slice(0, 8).forEach(([subject, minutes], index) => {
+      const rowY = chartTop - index * rowHeight;
+      const percent = minutes / total;
+      const color = chartColors[index % chartColors.length];
+      page.drawText(pdfText(subject), { x: barX, y: rowY, size: 8, font: bold, color: rgb(0.12, 0.16, 0.2) });
+      page.drawText(`${minutes}m (${Math.round(percent * 100)}%)`, { x: barX, y: rowY - 10, size: 7, font: regular, color: rgb(0.35, 0.41, 0.45) });
+      page.drawRectangle({ x: trackX, y: rowY - 1, width: trackWidth, height: 8, color: rgb(0.93, 0.96, 0.97), borderColor: rgb(0.78, 0.86, 0.89), borderWidth: 0.5 });
+      page.drawRectangle({ x: trackX, y: rowY - 1, width: Math.max(4, trackWidth * percent), height: 8, color });
+    });
+
+    const centerX = margin + 390;
+    const centerY = chartTop - 50;
+    const radius = 48;
+    let startAngle = -90;
+    entries.slice(0, 8).forEach(([, minutes], index) => {
+      const sweep = (minutes / total) * 360;
+      const points = [`M ${centerX} ${centerY}`];
+      const steps = Math.max(3, Math.ceil(sweep / 18));
+      for (let step = 0; step <= steps; step += 1) {
+        const angle = (startAngle + (sweep * step) / steps) * (Math.PI / 180);
+        points.push(`L ${centerX + Math.cos(angle) * radius} ${centerY + Math.sin(angle) * radius}`);
+      }
+      points.push("Z");
+      page.drawSvgPath(points.join(" "), { color: chartColors[index % chartColors.length] });
+      startAngle += sweep;
+    });
+    page.drawCircle({ x: centerX, y: centerY, size: radius, borderColor: rgb(0.78, 0.86, 0.89), borderWidth: 0.5 });
+
+    entries.slice(0, 8).forEach(([subject, minutes], index) => {
+      const legendY = chartTop - 116 - index * 12;
+      page.drawRectangle({ x: margin + 320, y: legendY, width: 7, height: 7, color: chartColors[index % chartColors.length] });
+      page.drawText(pdfText(`${subject} ${Math.round((minutes / total) * 100)}%`), { x: margin + 332, y: legendY - 1, size: 7, font: regular, color: rgb(0.35, 0.41, 0.45) });
+    });
+
+    y = Math.min(chartTop - entries.slice(0, 8).length * rowHeight, chartTop - 126 - entries.slice(0, 8).length * 12);
+    y -= 16;
+    drawLine("Cross-subject graph: cross-subject links are not yet stored in saved records, so this report does not double-count them.");
+    y -= 6;
+  };
+
   drawCentered(header.studentYear, 12);
   drawCentered("Quarter Review", 12, bold);
   drawCentered(header.label, 12, bold);
   drawCentered(header.dates, 12, bold);
   y -= 18;
+
+  drawSubjectCharts(header.subjectTimeSummary);
 
   for (const line of lines) {
     drawLine(line, ["Generated Metrics", "Coverage Summary", "Skill Trends", "Student Reflection", "Parent Reflection", "Portfolio", "Units"].includes(line));
@@ -186,7 +263,8 @@ async function pdfBufferForQuarterReview(review: {
   return buildQuarterPdf(lines.flatMap((line) => wrapLine(line)), {
     studentYear: `${review.schoolYear.student.name} - ${review.schoolYear.label}`,
     label: review.label,
-    dates: `${dateDisplay(review.quarterStartDate)} to ${dateDisplay(review.quarterEndDate)}`
+    dates: `${dateDisplay(review.quarterStartDate)} to ${dateDisplay(review.quarterEndDate)}`,
+    subjectTimeSummary: data.subjectTimeSummary
   });
 }
 
