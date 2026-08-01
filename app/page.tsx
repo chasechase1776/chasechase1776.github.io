@@ -147,6 +147,12 @@ type WeeklyRhythmDay = {
   narrative: string;
 };
 
+type JournalPortfolioCard = {
+  id: string;
+  title: string;
+  narrative: string;
+};
+
 type UnitPlanStatus = "active" | "upcoming" | "planned" | "complete" | "skipped";
 
 type UnitPlanRow = {
@@ -262,6 +268,34 @@ const initialWeeklyRhythmDays: WeeklyRhythmDay[] = [
     id: "final-friday-summary",
     title: "Final Friday Summary",
     narrative: "Unit capstone: present the final project, explain learning, and select proof-of-learning artifacts."
+  }
+];
+
+const initialJournalPortfolioCards: JournalPortfolioCard[] = [
+  {
+    id: "observation-journal",
+    title: "Observation Journal",
+    narrative: "Daily or near-daily - nature observations, drawings, labels, questions, and pattern tracking."
+  },
+  {
+    id: "unit-lap-books",
+    title: "Unit Lap Books",
+    narrative: "Each unit - organize narrations, maps, minibooks, vocabulary, and project artifacts."
+  },
+  {
+    id: "writing-portfolio",
+    title: "Writing Portfolio",
+    narrative: "Weekly - keep prompts, narrations, edited work, and final Friday writing."
+  },
+  {
+    id: "project-portfolio",
+    title: "Project Portfolio",
+    narrative: "Weekly/unit - preserve photos, plans, presentation notes, and finished products."
+  },
+  {
+    id: "adventure-guide",
+    title: "Adventure Guide",
+    narrative: "Year-end - binder of outdoor field-study tools, safety, maps, recipes, and nature pages."
   }
 ];
 
@@ -680,6 +714,8 @@ export default function Home() {
   const [weeklyRhythmDays, setWeeklyRhythmDays] = useState<WeeklyRhythmDay[]>(initialWeeklyRhythmDays);
   const [editingRhythmDayId, setEditingRhythmDayId] = useState<string | null>(null);
   const [unitPlanRows, setUnitPlanRows] = useState<UnitPlanRow[]>(initialUnitPlanRows);
+  const [journalPortfolioCards, setJournalPortfolioCards] = useState<JournalPortfolioCard[]>(initialJournalPortfolioCards);
+  const [editingJournalPortfolioId, setEditingJournalPortfolioId] = useState<string | null>(null);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -988,6 +1024,39 @@ export default function Home() {
 
   function deleteUnitPlanRow(id: string) {
     setUnitPlanRows((current) => current.filter((item) => item.id !== id));
+  }
+
+  function updateJournalPortfolioCard(id: string, key: "title" | "narrative", value: string) {
+    setJournalPortfolioCards((current) => current.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+  }
+
+  function addJournalPortfolioCard() {
+    const id = `journal-portfolio-${Date.now()}`;
+    setJournalPortfolioCards((current) => [
+      ...current,
+      {
+        id,
+        title: "New Journal or Portfolio",
+        narrative: "Describe what belongs here, how often it should be updated, and what evidence it should contain."
+      }
+    ]);
+    setEditingJournalPortfolioId(id);
+  }
+
+  function deleteJournalPortfolioCard(id: string) {
+    setJournalPortfolioCards((current) => current.filter((item) => item.id !== id));
+    setEditingJournalPortfolioId((current) => (current === id ? null : current));
+  }
+
+  function moveJournalPortfolioCard(id: string, direction: -1 | 1) {
+    setJournalPortfolioCards((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const copy = [...current];
+      [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
+      return copy;
+    });
   }
 
   function handleQuarterStartChange(value: string) {
@@ -2218,13 +2287,45 @@ export default function Home() {
               </section>
 
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 6</p><h2>Journals and Portfolios</h2></div></div>
-                <div className="records-grid">
-                  <div className="record-link"><strong>Observation Journal</strong><span>Daily or near-daily - nature observations, drawings, labels, questions, and pattern tracking.</span></div>
-                  <div className="record-link"><strong>Unit Lap Books</strong><span>Each unit - organize narrations, maps, minibooks, vocabulary, and project artifacts.</span></div>
-                  <div className="record-link"><strong>Writing Portfolio</strong><span>Weekly - keep prompts, narrations, edited work, and final Friday writing.</span></div>
-                  <div className="record-link"><strong>Project Portfolio</strong><span>Weekly/unit - preserve photos, plans, presentation notes, and finished products.</span></div>
-                  <div className="record-link"><strong>Adventure Guide</strong><span>Year-end - binder of outdoor field-study tools, safety, maps, recipes, and nature pages.</span></div>
+                <div className="section-head">
+                  <div><p className="eyebrow">Section 6</p><h2>Journals and Portfolios</h2></div>
+                  <button className="secondary-button" type="button" onClick={addJournalPortfolioCard}>Add card</button>
+                </div>
+                <div className="records-grid editable-card-grid">
+                  {journalPortfolioCards.map((card, index) => (
+                    <article className="record-link editable-spine-card" key={card.id}>
+                      <div className="finished-card-row">
+                        <div className="editable-card-preview">
+                          <strong>{card.title || "Untitled journal or portfolio"}</strong>
+                          <span>{card.narrative || "Add the purpose, update rhythm, and expected contents for this card."}</span>
+                        </div>
+                        <div className="card-control-row">
+                          <button className="secondary-button" type="button" onClick={() => moveJournalPortfolioCard(card.id, -1)} disabled={index === 0}>Move up</button>
+                          <button className="secondary-button" type="button" onClick={() => moveJournalPortfolioCard(card.id, 1)} disabled={index === journalPortfolioCards.length - 1}>Move down</button>
+                          <button className="secondary-button" type="button" onClick={() => setEditingJournalPortfolioId((current) => (current === card.id ? null : card.id))}>
+                            {editingJournalPortfolioId === card.id ? "Collapse" : "Edit"}
+                          </button>
+                          <button className="text-button" type="button" onClick={() => deleteJournalPortfolioCard(card.id)} disabled={journalPortfolioCards.length === 1}>Delete</button>
+                        </div>
+                      </div>
+                      {editingJournalPortfolioId === card.id ? (
+                        <div className="spine-edit-fields">
+                          <label>
+                            <span>Bold title</span>
+                            <input value={card.title} onChange={(event) => updateJournalPortfolioCard(card.id, "title", event.target.value)} />
+                          </label>
+                          <label>
+                            <span>Description</span>
+                            <textarea value={card.narrative} onChange={(event) => updateJournalPortfolioCard(card.id, "narrative", event.target.value)} />
+                          </label>
+                          <div className="card-control-row">
+                            <button className="primary-button" type="button" onClick={() => setEditingJournalPortfolioId(null)}>Save</button>
+                            <button className="secondary-button" type="button" onClick={() => setEditingJournalPortfolioId(null)}>Collapse</button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
                 </div>
               </section>
 
