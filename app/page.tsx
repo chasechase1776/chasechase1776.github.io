@@ -141,6 +141,12 @@ type CurriculumSpine = {
   narrative: string;
 };
 
+type WeeklyRhythmDay = {
+  id: string;
+  title: string;
+  narrative: string;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -206,6 +212,39 @@ const initialCurriculumSpines: CurriculumSpine[] = [
     id: "physical-activity",
     title: "Daily Physical Activity / Education",
     narrative: "Daily - movement, coordination, outdoor play, strength, stamina, health habits, and physical development."
+  }
+];
+
+const initialWeeklyRhythmDays: WeeklyRhythmDay[] = [
+  {
+    id: "question-monday",
+    title: "Question Monday",
+    narrative: "Introduce weekly question, science topic, writing topic, and project direction. Evidence: discussion note, first sketch, prompt draft."
+  },
+  {
+    id: "exploration-tuesday",
+    title: "Exploration Tuesday",
+    narrative: "Hands-on exploration, nature, music, observation, experimentation, and continued core work. Evidence: journal page, photo, experiment note."
+  },
+  {
+    id: "context-wednesday",
+    title: "Context Wednesday",
+    narrative: "History, geography, maps, biographies, timelines, unit reading, and continued core work. Evidence: map, timeline, narration."
+  },
+  {
+    id: "meaning-thursday",
+    title: "Meaning Thursday",
+    narrative: "Citizenship, philosophy, emotional intelligence, responsibility, service, communication, social studies, and project work. Evidence: reflection, discussion note."
+  },
+  {
+    id: "creating-friday",
+    title: "Creating Friday",
+    narrative: "Finalize writing, present, complete project, art, science experiment, portfolio artifact, reflection, optional notable person review or Thinker Toy."
+  },
+  {
+    id: "final-friday-summary",
+    title: "Final Friday Summary",
+    narrative: "Unit capstone: present the final project, explain learning, and select proof-of-learning artifacts."
   }
 ];
 
@@ -446,6 +485,8 @@ export default function Home() {
   const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Waiting for generated snapshots. Database records remain the source of truth.");
   const [curriculumSpines, setCurriculumSpines] = useState<CurriculumSpine[]>(initialCurriculumSpines);
   const [editingSpineId, setEditingSpineId] = useState<string | null>(null);
+  const [weeklyRhythmDays, setWeeklyRhythmDays] = useState<WeeklyRhythmDay[]>(initialWeeklyRhythmDays);
+  const [editingRhythmDayId, setEditingRhythmDayId] = useState<string | null>(null);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -674,6 +715,39 @@ export default function Home() {
 
   function moveCurriculumSpine(id: string, direction: -1 | 1) {
     setCurriculumSpines((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const copy = [...current];
+      [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
+      return copy;
+    });
+  }
+
+  function updateWeeklyRhythmDay(id: string, key: "title" | "narrative", value: string) {
+    setWeeklyRhythmDays((current) => current.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+  }
+
+  function addWeeklyRhythmDay() {
+    const id = `weekly-rhythm-${Date.now()}`;
+    setWeeklyRhythmDays((current) => [
+      ...current,
+      {
+        id,
+        title: "New Rhythm Day",
+        narrative: "Describe the day, expected learning pattern, and evidence to keep."
+      }
+    ]);
+    setEditingRhythmDayId(id);
+  }
+
+  function deleteWeeklyRhythmDay(id: string) {
+    setWeeklyRhythmDays((current) => current.filter((item) => item.id !== id));
+    setEditingRhythmDayId((current) => (current === id ? null : current));
+  }
+
+  function moveWeeklyRhythmDay(id: string, direction: -1 | 1) {
+    setWeeklyRhythmDays((current) => {
       const index = current.findIndex((item) => item.id === id);
       const nextIndex = index + direction;
       if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
@@ -1776,15 +1850,49 @@ export default function Home() {
               </section>
 
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 3</p><h2>Weekly Rhythm</h2></div><span className="tag">Flexible planning scaffold</span></div>
+                <div className="section-head">
+                  <div><p className="eyebrow">Section 3</p><h2>Weekly Rhythm</h2></div>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button" onClick={addWeeklyRhythmDay}>Add day card</button>
+                    <span className="tag">Flexible planning scaffold</span>
+                  </div>
+                </div>
                 <p className="panel-note">Each week includes a writing prompt developed throughout the week and finalized on Friday. Friday is the weekly culmination point; at the end of a unit, Final Friday becomes a larger unit capstone.</p>
-                <div className="records-grid">
-                  <div className="record-link"><strong>Question Monday</strong><span>Introduce weekly question, science topic, writing topic, and project direction. Evidence: discussion note, first sketch, prompt draft.</span></div>
-                  <div className="record-link"><strong>Exploration Tuesday</strong><span>Hands-on exploration, nature, music, observation, experimentation, and continued core work. Evidence: journal page, photo, experiment note.</span></div>
-                  <div className="record-link"><strong>Context Wednesday</strong><span>History, geography, maps, biographies, timelines, unit reading, and continued core work. Evidence: map, timeline, narration.</span></div>
-                  <div className="record-link"><strong>Meaning Thursday</strong><span>Citizenship, philosophy, emotional intelligence, responsibility, service, communication, social studies, and project work. Evidence: reflection, discussion note.</span></div>
-                  <div className="record-link"><strong>Creating Friday</strong><span>Finalize writing, present, complete project, art, science experiment, portfolio artifact, reflection, optional notable person review or Thinker Toy.</span></div>
-                  <div className="record-link"><strong>Final Friday Summary</strong><span>Unit capstone: present the final project, explain learning, and select proof-of-learning artifacts.</span></div>
+                <div className="records-grid editable-card-grid">
+                  {weeklyRhythmDays.map((day, index) => (
+                    <article className="record-link editable-spine-card" key={day.id}>
+                      <div className="finished-card-row">
+                        <div className="editable-card-preview">
+                          <strong>{day.title || "Untitled rhythm day"}</strong>
+                          <span>{day.narrative || "Add the rhythm, expected learning pattern, and evidence for this day."}</span>
+                        </div>
+                        <div className="card-control-row">
+                          <button className="secondary-button" type="button" onClick={() => moveWeeklyRhythmDay(day.id, -1)} disabled={index === 0}>Move up</button>
+                          <button className="secondary-button" type="button" onClick={() => moveWeeklyRhythmDay(day.id, 1)} disabled={index === weeklyRhythmDays.length - 1}>Move down</button>
+                          <button className="secondary-button" type="button" onClick={() => setEditingRhythmDayId((current) => (current === day.id ? null : day.id))}>
+                            {editingRhythmDayId === day.id ? "Collapse" : "Edit"}
+                          </button>
+                          <button className="text-button" type="button" onClick={() => deleteWeeklyRhythmDay(day.id)} disabled={weeklyRhythmDays.length === 1}>Delete</button>
+                        </div>
+                      </div>
+                      {editingRhythmDayId === day.id ? (
+                        <div className="spine-edit-fields">
+                          <label>
+                            <span>Bold title</span>
+                            <input value={day.title} onChange={(event) => updateWeeklyRhythmDay(day.id, "title", event.target.value)} />
+                          </label>
+                          <label>
+                            <span>Description</span>
+                            <textarea value={day.narrative} onChange={(event) => updateWeeklyRhythmDay(day.id, "narrative", event.target.value)} />
+                          </label>
+                          <div className="card-control-row">
+                            <button className="primary-button" type="button" onClick={() => setEditingRhythmDayId(null)}>Save</button>
+                            <button className="secondary-button" type="button" onClick={() => setEditingRhythmDayId(null)}>Collapse</button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
                 </div>
               </section>
 
