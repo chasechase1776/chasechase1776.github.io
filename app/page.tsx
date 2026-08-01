@@ -765,7 +765,7 @@ function formatUsDate(value: string) {
 
 function defaultNarrationForType(activityType: string) {
   if (activityType === "Language Arts") {
-    return "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and helped measure boards for the Construction unit.";
+    return "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and gave an oral narration.";
   }
   if (activityType === "Math") {
     return "Today we practiced math using a short problem set and talked through the steps out loud.";
@@ -809,6 +809,24 @@ function parsedSubjectForType(activityType: string) {
 function parsedLegalTagsForType(activityType: string, text = "") {
   const combined = `${activityType} ${text}`.toLowerCase();
   const tags = new Set<string>(["Bona Fide Instruction"]);
+  const primarySubject = parsedSubjectForType(activityType);
+  const allowsBroadTags = subjectSplitActivityTypes.includes(activityType);
+
+  if (!allowsBroadTags) {
+    if (primarySubject === "Language Arts" || primarySubject === "Independent Reading") tags.add("Reading");
+    if (primarySubject === "Language Arts" && /(spell|word study|phonics)/.test(combined)) tags.add("Spelling");
+    if (primarySubject === "Language Arts" && /(grammar|sentence|writing|write|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
+    if (primarySubject === "Math" || primarySubject === "Finance") tags.add("Mathematics");
+    if (primarySubject === "Science") tags.add("Visual Curriculum");
+    if (primarySubject === "Foreign Language") {
+      tags.add("Reading");
+      tags.add("Visual Curriculum");
+    }
+    if (primarySubject === "Social Studies") tags.add("Good Citizenship");
+    if (primarySubject === "Extracurricular") tags.add("Good Citizenship");
+    return Array.from(tags);
+  }
+
   if (/(read|book|story|literature|language|vocabulary|spanish|foreign)/.test(combined)) tags.add("Reading");
   if (/(spell|word study|phonics)/.test(combined)) tags.add("Spelling");
   if (/(grammar|sentence|writing|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
@@ -818,11 +836,19 @@ function parsedLegalTagsForType(activityType: string, text = "") {
   return Array.from(tags);
 }
 
+function skillSubjectForName(skill: string) {
+  return Object.entries(skillTaxonomy).find(([, skills]) => skills.includes(skill))?.[0] ?? null;
+}
+
 function parsedSkillsForType(activityType: string, text = "") {
   const combined = `${activityType} ${text}`.toLowerCase();
   const primarySubject = parsedSubjectForType(activityType);
   const skills = new Set<string>();
-  const add = (skill: string) => skills.add(skill);
+  const allowsBroadSkills = subjectSplitActivityTypes.includes(activityType);
+  const add = (skill: string) => {
+    const skillSubject = skillSubjectForName(skill);
+    if (allowsBroadSkills || skillSubject === primarySubject) skills.add(skill);
+  };
 
   if (primarySubject === "Language Arts") ["Reading", "Fluency", "Editing"].forEach(add);
   if (primarySubject === "Math") ["Measurement and Money", "Mathematical Communication"].forEach(add);
