@@ -930,6 +930,61 @@ details.skill-group[open] summary {
   padding-top: 16px;
 }
 
+.annual-plan-panel,
+.plan-section {
+  display: grid;
+  gap: 14px;
+}
+
+.plan-section {
+  border-top: 1px solid var(--soft-line);
+  padding-top: 16px;
+}
+
+.plan-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.plan-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+.plan-table th,
+.plan-table td {
+  border-bottom: 1px solid var(--soft-line);
+  padding: 9px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.plan-table th {
+  background: #f2f6f7;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.mini-tabs,
+.snapshot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.utility-button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-strong);
+  padding: 6px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .skill-rating-row {
   display: grid;
   grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.2fr) minmax(180px, 0.7fr);
