@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 const bookEntrySchema = z.object({
   title: z.string().min(1),
   author: z.string().default(""),
+  completedDate: z.string().default(""),
   rating: z.number().int().min(1).max(5)
 });
 
@@ -14,6 +15,16 @@ const bookListSaveSchema = z.object({
   schoolYearStatus: z.string().default("trial"),
   entries: z.array(bookEntrySchema)
 });
+
+function formatBookEntry(entry: { id: string; title: string; author: string; rating: number; completedAt: Date | null }) {
+  return {
+    id: entry.id,
+    title: entry.title,
+    author: entry.author,
+    rating: entry.rating,
+    completedDate: entry.completedAt ? entry.completedAt.toISOString().slice(0, 10) : ""
+  };
+}
 
 async function schoolYearFor(studentName: string, schoolYearLabel: string, schoolYearStatus = "trial") {
   const student = await prisma.student.upsert({
@@ -52,7 +63,7 @@ export async function GET(request: Request) {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
   });
 
-  return NextResponse.json({ entries });
+  return NextResponse.json({ entries: entries.map(formatBookEntry) });
 }
 
 export async function POST(request: Request) {
@@ -71,6 +82,7 @@ export async function POST(request: Request) {
           data: input.entries.map((entry, index) => ({
             title: entry.title,
             author: entry.author,
+            completedAt: entry.completedDate ? new Date(`${entry.completedDate}T00:00:00.000Z`) : null,
             rating: entry.rating,
             sortOrder: index,
             schoolYearId: schoolYear.id
@@ -85,7 +97,7 @@ export async function POST(request: Request) {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
     });
 
-    return NextResponse.json({ entries });
+    return NextResponse.json({ entries: entries.map(formatBookEntry) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Book list save failed.";
     return NextResponse.json({ error: message }, { status: 500 });

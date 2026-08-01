@@ -49,6 +49,7 @@ type BookListEntry = {
   id: string;
   title: string;
   author: string;
+  completedDate: string;
   rating: number;
 };
 
@@ -1395,8 +1396,8 @@ export default function Home() {
 
   function addBookListEntry() {
     setBookListEntries((current) => [
-      ...current,
-      { id: `book-${Date.now()}`, title: "", author: "", rating: 5 }
+      { id: `book-${Date.now()}`, title: "", author: "", completedDate: todayIso(), rating: 5 },
+      ...current
     ]);
     setBookListMessage("Book row added. Save the book list when finished.");
   }
@@ -1425,6 +1426,7 @@ export default function Home() {
             .map((entry) => ({
               title: entry.title.trim(),
               author: entry.author.trim(),
+              completedDate: entry.completedDate,
               rating: entry.rating
             }))
         })
@@ -4437,6 +4439,7 @@ export default function Home() {
                   <div className="book-list-header" aria-hidden="true">
                     <span>Title</span>
                     <span>Author</span>
+                    <span>Date completed</span>
                     <span>Rating</span>
                     <span>Action</span>
                   </div>
@@ -4449,6 +4452,10 @@ export default function Home() {
                       <label>
                         <span>Author</span>
                         <input value={entry.author} onChange={(event) => updateBookListEntry(entry.id, { author: event.target.value })} />
+                      </label>
+                      <label>
+                        <span>Date completed</span>
+                        <input type="date" value={entry.completedDate} onChange={(event) => updateBookListEntry(entry.id, { completedDate: event.target.value })} />
                       </label>
                       <label>
                         <span>Student rating</span>

@@ -141,6 +141,7 @@ model BookListEntry {
   title        String
   author       String
   rating       Int
+  completedAt  DateTime?
   sortOrder    Int        @default(0)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
