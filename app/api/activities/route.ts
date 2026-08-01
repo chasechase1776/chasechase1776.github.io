@@ -20,7 +20,8 @@ const activitySchema = z.object({
   subjectAllocations: z.array(z.object({ subject: z.string().min(1), minutes: z.number().int().nonnegative() })).default([]),
   legalTags: z.array(z.string().min(1)).default([]),
   skills: z.array(z.object({ subject: z.string().min(1), name: z.string().min(1) })).default([]),
-  artifactIds: z.array(z.string()).default([])
+  artifactIds: z.array(z.string()).default([]),
+  replaceApprovedActivityIds: z.array(z.string()).default([])
 });
 
 export async function GET(request: Request) {
@@ -102,6 +103,19 @@ export async function POST(request: Request) {
     const legalTagLabels = input.legalTags.length ? input.legalTags : suggestLegalTags(input.activityType, subjects.map((item) => item.subject));
     const recordStatus =
       input.recordStatus ?? defaultRecordStatus(dateOnly, input.officialHomeschoolStartDate, input.schoolYearStatus);
+
+    if (input.parentApproved && input.replaceApprovedActivityIds.length > 0) {
+      await prisma.activity.deleteMany({
+        where: {
+          id: { in: input.replaceApprovedActivityIds },
+          studentId: student.id,
+          schoolYearId: schoolYear.id,
+          date: new Date(`${dateOnly}T00:00:00.000Z`),
+          activityType: input.activityType,
+          parentApproved: true
+        }
+      });
+    }
 
     const activity = await prisma.activity.create({
       data: {

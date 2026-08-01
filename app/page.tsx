@@ -824,6 +824,7 @@ export default function Home() {
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
   const [uploadedArtifacts, setUploadedArtifacts] = useState<UploadedArtifact[]>([]);
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
+  const [duplicateApprovedActivities, setDuplicateApprovedActivities] = useState<SavedActivity[]>([]);
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
@@ -1032,7 +1033,7 @@ export default function Home() {
     return `${selectedType} - ${formattedDate}`;
   }
 
-  function activityPayload(parentApproved: boolean) {
+  function activityPayload(parentApproved: boolean, replaceApprovedActivityIds: string[] = []) {
     return {
       title: title.trim() || defaultActivityTitle(),
       date: selectedDate,
@@ -1048,11 +1049,32 @@ export default function Home() {
       subjectAllocations: [{ subject: primarySubject, minutes: actualMinutes }],
       legalTags,
       skills: [],
-      artifactIds: uploadedArtifacts.map((artifact) => artifact.id)
+      artifactIds: uploadedArtifacts.map((artifact) => artifact.id),
+      replaceApprovedActivityIds
     };
   }
 
-  async function saveActivity(parentApproved: boolean) {
+  function requestApprovedSave() {
+    if (!narration.trim()) {
+      setStatus("Narration is required before saving an approved activity.");
+      return;
+    }
+    if (!canSaveApproved) {
+      setStatus("Approved save requires student, school year, unit, date, type, narration, and actual minutes.");
+      return;
+    }
+
+    const matchingApproved = savedActivities.filter((activity) => activity.activityType === selectedType && activity.parentApproved);
+    if (matchingApproved.length > 0) {
+      setDuplicateApprovedActivities(matchingApproved);
+      setStatus(`There is already an approved ${selectedType} record for ${formatUsDate(selectedDate)}. Choose whether to replace it or add another.`);
+      return;
+    }
+
+    void saveActivity(true, []);
+  }
+
+  async function saveActivity(parentApproved: boolean, replaceApprovedActivityIds: string[] = []) {
     if (!narration.trim()) {
       setStatus("Narration is required before saving a draft or approved activity.");
       return;
@@ -1068,15 +1090,18 @@ export default function Home() {
       const response = await fetch("/api/activities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(activityPayload(parentApproved))
+        body: JSON.stringify(activityPayload(parentApproved, replaceApprovedActivityIds))
       });
       const data = await response.json().catch(() => ({ error: "Activity save failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Activity save failed.");
       await loadSavedActivities(selectedDate);
       await loadPortfolio();
+      setDuplicateApprovedActivities([]);
       setStatus(
-        parentApproved
-          ? `Approved activity saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show green for ${selectedDate}.`
+        parentApproved && replaceApprovedActivityIds.length > 0
+          ? `Approved activity replaced ${replaceApprovedActivityIds.length} previous ${selectedType} record${replaceApprovedActivityIds.length === 1 ? "" : "s"} for ${formatUsDate(selectedDate)}.`
+          : parentApproved
+          ? `Approved activity saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show green for ${formatUsDate(selectedDate)}.`
           : `Draft saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show yellow for ${selectedDate} unless an approved record also exists.`
       );
       setUploadedArtifacts([]);
@@ -1088,7 +1113,7 @@ export default function Home() {
   }
 
   function saveDraft() {
-    void saveActivity(false);
+    void saveActivity(false, []);
   }
 
   function clearEntry() {
@@ -2136,10 +2161,45 @@ export default function Home() {
                 <button className="secondary-button" type="button" onClick={saveDraft} disabled={isSaving || !narration.trim()}>Save as Draft</button>
                 <button className="secondary-button" type="button" onClick={clearEntry}>Clear</button>
                 <button className="primary-button" type="button" disabled={!canParse} onClick={parseWithAi}>Parse with AI</button>
-                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={() => void saveActivity(true)}>Save Approved</button>
+                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={requestApprovedSave}>Save Approved</button>
               </div>
               <p className="status-line" role="status">{status}</p>
             </section>
+
+            {duplicateApprovedActivities.length ? (
+              <div className="modal-backdrop" role="presentation">
+                <section className="decision-modal" role="dialog" aria-modal="true" aria-labelledby="duplicate-save-title">
+                  <div>
+                    <p className="eyebrow">Duplicate approved record</p>
+                    <h2 id="duplicate-save-title">Save another {selectedType} record?</h2>
+                    <p>
+                      {formatUsDate(selectedDate)} already has {duplicateApprovedActivities.length} approved {selectedType} record{duplicateApprovedActivities.length === 1 ? "" : "s"} totaling{" "}
+                      {duplicateApprovedActivities.reduce((sum, activity) => sum + activity.actualMinutes, 0)} minutes.
+                    </p>
+                  </div>
+                  <div className="duplicate-record-list">
+                    {duplicateApprovedActivities.map((activity) => (
+                      <div key={activity.id}>
+                        <strong>{activity.title}</strong>
+                        <span>{activity.actualMinutes} min</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="modal-actions">
+                    <button className="secondary-button" type="button" onClick={() => setDuplicateApprovedActivities([])} disabled={isSaving}>Cancel</button>
+                    <button className="secondary-button" type="button" onClick={() => void saveActivity(true, [])} disabled={isSaving}>Add to Existing</button>
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() => void saveActivity(true, duplicateApprovedActivities.map((activity) => activity.id))}
+                      disabled={isSaving}
+                    >
+                      Replace Existing
+                    </button>
+                  </div>
+                </section>
+              </div>
+            ) : null}
 
             {showDetails ? (
               <>
