@@ -445,6 +445,7 @@ export default function Home() {
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
   const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Waiting for generated snapshots. Database records remain the source of truth.");
   const [curriculumSpines, setCurriculumSpines] = useState<CurriculumSpine[]>(initialCurriculumSpines);
+  const [editingSpineId, setEditingSpineId] = useState<string | null>(null);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -654,18 +655,21 @@ export default function Home() {
   }
 
   function addCurriculumSpine() {
+    const id = `curriculum-spine-${Date.now()}`;
     setCurriculumSpines((current) => [
       ...current,
       {
-        id: `curriculum-spine-${Date.now()}`,
+        id,
         title: "New Curriculum Spine",
         narrative: "Describe the recurring expectation, schedule, curriculum resource, skills practiced, and evidence to keep."
       }
     ]);
+    setEditingSpineId(id);
   }
 
   function deleteCurriculumSpine(id: string) {
     setCurriculumSpines((current) => current.filter((item) => item.id !== id));
+    setEditingSpineId((current) => (current === id ? null : current));
   }
 
   function moveCurriculumSpine(id: string, direction: -1 | 1) {
@@ -1736,23 +1740,36 @@ export default function Home() {
                 <div className="records-grid editable-card-grid">
                   {curriculumSpines.map((spine, index) => (
                     <article className="record-link editable-spine-card" key={spine.id}>
-                      <label>
-                        <span>Bold title</span>
-                        <input value={spine.title} onChange={(event) => updateCurriculumSpine(spine.id, "title", event.target.value)} />
-                      </label>
-                      <label>
-                        <span>Narrative text</span>
-                        <textarea value={spine.narrative} onChange={(event) => updateCurriculumSpine(spine.id, "narrative", event.target.value)} />
-                      </label>
-                      <div className="editable-card-preview">
-                        <strong>{spine.title || "Untitled spine"}</strong>
-                        <span>{spine.narrative || "Add the narrative for this recurring curriculum spine."}</span>
+                      <div className="finished-card-row">
+                        <div className="editable-card-preview">
+                          <strong>{spine.title || "Untitled spine"}</strong>
+                          <span>{spine.narrative || "Add the narrative for this recurring curriculum spine."}</span>
+                        </div>
+                        <div className="card-control-row">
+                          <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, -1)} disabled={index === 0}>Move up</button>
+                          <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, 1)} disabled={index === curriculumSpines.length - 1}>Move down</button>
+                          <button className="secondary-button" type="button" onClick={() => setEditingSpineId((current) => (current === spine.id ? null : spine.id))}>
+                            {editingSpineId === spine.id ? "Collapse" : "Edit"}
+                          </button>
+                          <button className="text-button" type="button" onClick={() => deleteCurriculumSpine(spine.id)} disabled={curriculumSpines.length === 1}>Delete</button>
+                        </div>
                       </div>
-                      <div className="card-control-row">
-                        <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, -1)} disabled={index === 0}>Move up</button>
-                        <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, 1)} disabled={index === curriculumSpines.length - 1}>Move down</button>
-                        <button className="text-button" type="button" onClick={() => deleteCurriculumSpine(spine.id)} disabled={curriculumSpines.length === 1}>Delete</button>
-                      </div>
+                      {editingSpineId === spine.id ? (
+                        <div className="spine-edit-fields">
+                          <label>
+                            <span>Bold title</span>
+                            <input value={spine.title} onChange={(event) => updateCurriculumSpine(spine.id, "title", event.target.value)} />
+                          </label>
+                          <label>
+                            <span>Narrative text</span>
+                            <textarea value={spine.narrative} onChange={(event) => updateCurriculumSpine(spine.id, "narrative", event.target.value)} />
+                          </label>
+                          <div className="card-control-row">
+                            <button className="primary-button" type="button" onClick={() => setEditingSpineId(null)}>Save</button>
+                            <button className="secondary-button" type="button" onClick={() => setEditingSpineId(null)}>Collapse</button>
+                          </div>
+                        </div>
+                      ) : null}
                     </article>
                   ))}
                 </div>

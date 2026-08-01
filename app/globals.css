@@ -987,10 +987,12 @@ details.skill-group[open] summary {
 
 .editable-card-grid {
   align-items: stretch;
+  grid-template-columns: 1fr;
 }
 
 .editable-spine-card {
   align-content: start;
+  gap: 12px;
 }
 
 .editable-spine-card textarea {
@@ -1000,9 +1002,7 @@ details.skill-group[open] summary {
 .editable-card-preview {
   display: grid;
   gap: 5px;
-  border-top: 1px solid var(--soft-line);
-  margin-top: 4px;
-  padding-top: 10px;
+  min-width: 0;
 }
 
 .editable-card-preview span {
@@ -1011,11 +1011,25 @@ details.skill-group[open] summary {
   line-height: 1.35;
 }
 
+.finished-card-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
 .card-control-row {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 7px;
-  margin-top: 4px;
+}
+
+.spine-edit-fields {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--soft-line);
+  padding-top: 12px;
 }
 
 .skill-rating-row {
