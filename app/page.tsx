@@ -711,6 +711,12 @@ function dateLabel(value: string) {
   return value.slice(0, 10);
 }
 
+function formatUsDate(value: string) {
+  const [year, month, day] = value.slice(0, 10).split("-");
+  if (!year || !month || !day) return value;
+  return `${month}/${day}/${year}`;
+}
+
 function defaultNarrationForType(activityType: string) {
   if (activityType === "Language Arts") {
     return "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and helped measure boards for the Construction unit.";
@@ -1018,11 +1024,12 @@ export default function Home() {
   }
 
   function defaultActivityTitle() {
-    if (selectedType === "Foreign Language") return `${foreignLanguage || "Spanish"} - Foreign Language - ${selectedDate}`;
+    const formattedDate = formatUsDate(selectedDate);
+    if (selectedType === "Foreign Language") return `${foreignLanguage || "Spanish"} - Foreign Language - ${formattedDate}`;
     if (selectedType === "Extracurricular" && selectedExtracurriculars.length) {
-      return `${selectedExtracurriculars.join(", ")} - Extracurricular - ${selectedDate}`;
+      return `${selectedExtracurriculars.join(", ")} - Extracurricular - ${formattedDate}`;
     }
-    return `${selectedType} - ${selectedDate}`;
+    return `${selectedType} - ${formattedDate}`;
   }
 
   function activityPayload(parentApproved: boolean) {
@@ -2073,7 +2080,7 @@ export default function Home() {
               <div className="quick-entry-grid">
                 <label>
                   <span>Title</span>
-                  <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={`${selectedType} - ${selectedDate}`} />
+                  <input value={title || defaultActivityTitle()} onChange={(event) => setTitle(event.target.value)} />
                 </label>
                 <label>
                   <span>Actual minutes</span>
