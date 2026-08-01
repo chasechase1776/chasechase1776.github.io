@@ -1062,6 +1062,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
   const [activeWeeklySection, setActiveWeeklySection] = useState<WeeklyReviewSection>("summary");
   const [reviewedWeeklySections, setReviewedWeeklySections] = useState<WeeklyReviewSection[]>([]);
+  const [activeQuarterSection, setActiveQuarterSection] = useState<WeeklyReviewSection>("summary");
+  const [reviewedQuarterSections, setReviewedQuarterSections] = useState<WeeklyReviewSection[]>([]);
+  const [activeAnnualReviewSection, setActiveAnnualReviewSection] = useState<WeeklyReviewSection>("summary");
+  const [reviewedAnnualReviewSections, setReviewedAnnualReviewSections] = useState<WeeklyReviewSection[]>([]);
   const [weeklyReviewId, setWeeklyReviewId] = useState("");
   const [weeklyStartDate, setWeeklyStartDate] = useState(mondayForIsoDate(todayIso()));
   const [weeklyStatus, setWeeklyStatus] = useState<"draft" | "finalized" | "amended">("draft");
@@ -1098,6 +1102,7 @@ export default function Home() {
   const [quarterDueDate, setQuarterDueDate] = useState(addDaysIso("2026-07-01", 62));
   const [quarterStatus, setQuarterStatus] = useState<"draft" | "finalized" | "amended">("draft");
   const [quarterStatusMessage, setQuarterStatusMessage] = useState("Waiting to generate a draft quarter review from daily logs and weekly reviews.");
+  const [annualReviewStatusMessage, setAnnualReviewStatusMessage] = useState("Annual Review is ready for school-year closeout review.");
   const [isQuarterBusy, setIsQuarterBusy] = useState(false);
   const [lastQuarterPdfArtifact, setLastQuarterPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [quarterData, setQuarterData] = useState<QuarterReviewData>({
@@ -1695,6 +1700,16 @@ export default function Home() {
   function markWeeklySectionReviewed(section: WeeklyReviewSection) {
     setReviewedWeeklySections((current) => (current.includes(section) ? current : [...current, section]));
     setWeeklyStatusMessage(`${weeklySectionLabels[section]} marked reviewed.`);
+  }
+
+  function markQuarterSectionReviewed(section: WeeklyReviewSection) {
+    setReviewedQuarterSections((current) => (current.includes(section) ? current : [...current, section]));
+    setQuarterStatusMessage(`${weeklySectionLabels[section]} marked reviewed for ${quarterLabel}.`);
+  }
+
+  function markAnnualReviewSectionReviewed(section: WeeklyReviewSection) {
+    setReviewedAnnualReviewSections((current) => (current.includes(section) ? current : [...current, section]));
+    setAnnualReviewStatusMessage(`${weeklySectionLabels[section]} marked reviewed for Annual Review.`);
   }
 
   function updateQuarterData<K extends keyof QuarterReviewData>(key: K, value: QuarterReviewData[K]) {
@@ -2363,6 +2378,9 @@ export default function Home() {
           isExample: true
         }
       ];
+  const annualReviewSkillRows = Object.keys(annualReviewSubjectTimeSummary).length
+    ? Object.keys(annualReviewSubjectTimeSummary).slice(0, 8)
+    : ["Language Arts", "Math", "Science", "Social Studies"];
 
   return (
     <main className="mockup-shell">
@@ -3201,6 +3219,32 @@ export default function Home() {
                 </div>
               ) : null}
 
+              <div className="weekly-section-hub" aria-label="Quarter review sections">
+                {[
+                  ["summary", "Summary Info", "Time, activity counts, legal coverage, charts, and units"],
+                  ["parent", "Parent Ratings", "Quarter rating, improvements, review needs, and priorities"],
+                  ["student", "Student Reflection", "Student notes and self-rating for the quarter"],
+                  ["skills", "Skills Review", "Quarter skill trends and parent notes"],
+                  ["portfolio", "Portfolio", "Quarter highlight selections"]
+                ].map(([key, label, description]) => (
+                  <button
+                    className={[
+                      "weekly-section-button",
+                      activeQuarterSection === key ? "is-active" : "",
+                      reviewedQuarterSections.includes(key as WeeklyReviewSection) ? "is-reviewed" : ""
+                    ].filter(Boolean).join(" ")}
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveQuarterSection(key as WeeklyReviewSection)}
+                  >
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                  </button>
+                ))}
+              </div>
+
+              {activeQuarterSection === "summary" ? (
+              <section className="weekly-subsection is-open">
               <div className="quick-entry-grid weekly-date-grid">
                 <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>
                 <label><span>School year</span><input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} /></label>
@@ -3211,6 +3255,9 @@ export default function Home() {
                     <option>Quarter 2</option>
                     <option>Quarter 3</option>
                     <option>Quarter 4</option>
+                    <option>Vacation</option>
+                    <option>Summer Extension</option>
+                    <option>Winter Extension</option>
                   </select>
                 </label>
                 <label><span>Quarter start date</span><input type="date" value={quarterStartDate} onChange={(event) => handleQuarterStartChange(event.target.value)} /></label>
@@ -3253,7 +3300,28 @@ export default function Home() {
               </div>
               <SubjectTimeCharts summary={quarterData.subjectTimeSummary} emptyText="Generate the quarter review to populate subject time bar and pie charts." />
               <CrossSubjectChartPlaceholder />
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Units</p>
+                    <h2>Active units this timeframe</h2>
+                  </div>
+                </div>
+                <div className="coverage-list">
+                  {quarterData.activeUnits.length ? quarterData.activeUnits.map((item) => (
+                    <div key={item.title}><span>{item.title} - {item.activities} activities</span><strong>{formatMinutes(item.minutes)}</strong></div>
+                  )) : <p className="muted">Generate the review to summarize active unit studies.</p>}
+                </div>
+              </section>
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markQuarterSectionReviewed("summary")} disabled={reviewedQuarterSections.includes("summary")}>
+                  {reviewedQuarterSections.includes("summary") ? "Reviewed" : "Mark Summary Info Reviewed"}
+                </button>
+              </div>
+              </section>
+              ) : null}
 
+              {activeQuarterSection === "skills" ? (
               <section className="weekly-subsection">
                 <div className="section-head">
                   <div>
@@ -3283,11 +3351,18 @@ export default function Home() {
                     </article>
                   ))}
                 </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markQuarterSectionReviewed("skills")} disabled={reviewedQuarterSections.includes("skills")}>
+                    {reviewedQuarterSections.includes("skills") ? "Reviewed" : "Mark Skills Review Reviewed"}
+                  </button>
+                </div>
               </section>
+              ) : null}
 
+              {activeQuarterSection === "student" ? (
               <section className="weekly-subsection">
-                <div className="weekly-notes-grid">
-                  <section aria-labelledby="quarter-student-title">
+                <div className="review-form-grid">
+                  <div aria-labelledby="quarter-student-title">
                     <p className="eyebrow">Student Reflection</p>
                     <h2 id="quarter-student-title">Quarter reflection</h2>
                     <label><span>What did I learn this quarter?</span><textarea value={quarterData.studentLearned} onChange={(event) => updateQuarterData("studentLearned", event.target.value)} /></label>
@@ -3300,8 +3375,20 @@ export default function Home() {
                         {studentRatings.map((rating) => <option key={rating}>{rating}</option>)}
                       </select>
                     </label>
-                  </section>
-                  <section aria-labelledby="quarter-parent-title">
+                  </div>
+                </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markQuarterSectionReviewed("student")} disabled={reviewedQuarterSections.includes("student")}>
+                    {reviewedQuarterSections.includes("student") ? "Reviewed" : "Mark Student Reflection Reviewed"}
+                  </button>
+                </div>
+              </section>
+              ) : null}
+
+              {activeQuarterSection === "parent" ? (
+              <section className="weekly-subsection">
+                <div className="review-form-grid">
+                  <div aria-labelledby="quarter-parent-title">
                     <p className="eyebrow">Parent Reflection</p>
                     <h2 id="quarter-parent-title">Planning direction</h2>
                     <label>
@@ -3313,10 +3400,17 @@ export default function Home() {
                     <label><span>What improved most</span><input value={quarterData.improvedMost} onChange={(event) => updateQuarterData("improvedMost", event.target.value)} /></label>
                     <label><span>What needs review</span><input value={quarterData.needsReview} onChange={(event) => updateQuarterData("needsReview", event.target.value)} /></label>
                     <label><span>Next quarter priorities</span><textarea value={quarterData.nextQuarterPriorities} onChange={(event) => updateQuarterData("nextQuarterPriorities", event.target.value)} /></label>
-                  </section>
+                  </div>
+                </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markQuarterSectionReviewed("parent")} disabled={reviewedQuarterSections.includes("parent")}>
+                    {reviewedQuarterSections.includes("parent") ? "Reviewed" : "Mark Parent Ratings Reviewed"}
+                  </button>
                 </div>
               </section>
+              ) : null}
 
+              {activeQuarterSection === "portfolio" ? (
               <section className="weekly-subsection">
                 <div className="section-head">
                   <div>
@@ -3344,21 +3438,13 @@ export default function Home() {
                     </label>
                   )) : <p className="muted">Generate the quarter review to suggest portfolio highlights from approved activity evidence.</p>}
                 </div>
-              </section>
-
-              <section className="weekly-subsection">
-                <div className="section-head">
-                  <div>
-                    <p className="eyebrow">Units</p>
-                    <h2>Active units this quarter</h2>
-                  </div>
-                </div>
-                <div className="coverage-list">
-                  {quarterData.activeUnits.length ? quarterData.activeUnits.map((item) => (
-                    <div key={item.title}><span>{item.title} - {item.activities} activities</span><strong>{formatMinutes(item.minutes)}</strong></div>
-                  )) : <p className="muted">Generate the quarter review to summarize active unit studies.</p>}
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markQuarterSectionReviewed("portfolio")} disabled={reviewedQuarterSections.includes("portfolio")}>
+                    {reviewedQuarterSections.includes("portfolio") ? "Reviewed" : "Mark Portfolio Reviewed"}
+                  </button>
                 </div>
               </section>
+              ) : null}
             </section>
             ) : null}
 
@@ -3768,7 +3854,7 @@ export default function Home() {
             ) : null}
 
             {activeTab === "annual-review" ? (
-            <section className="panel" id="annual-review">
+            <section className="panel weekly-review-panel" id="annual-review">
               <div className="section-head">
                 <div>
                   <p className="eyebrow">Annual Review</p>
@@ -3776,16 +3862,44 @@ export default function Home() {
                   <p className="panel-note">Annual closeout finalizes the school year, keeps previous records retrievable, and starts the next school year with a fresh quarter cycle.</p>
                 </div>
                 <div className="primary-action-row">
-                  <button className="secondary-button" type="button">Generate Annual Review</button>
-                  <button className="secondary-button" type="button">Save Draft</button>
-                  <button className="primary-button" type="button">Finalize Closeout</button>
+                  <button className="secondary-button" type="button" onClick={() => setAnnualReviewStatusMessage("Annual Review draft prepared from available school-year portfolio-linked records. Full annual generator still needs backend wiring.")}>Generate Annual Review</button>
+                  <button className="secondary-button" type="button" onClick={() => setAnnualReviewStatusMessage("Annual Review draft saved for the school-year closeout workspace.")}>Save Draft</button>
+                  <button className="primary-button" type="button" onClick={() => setAnnualReviewStatusMessage("Annual Review closeout marked finalized in this workspace. Archive export wiring can be added next.")}>Finalize Closeout</button>
                 </div>
               </div>
+              <p className="status-line" role="status">{annualReviewStatusMessage}</p>
+
+              <div className="weekly-section-hub" aria-label="Annual review sections">
+                {[
+                  ["summary", "Summary Info", "School-year time, records, legal coverage, and charts"],
+                  ["parent", "Parent Ratings", "Annual parent reflection and next-year direction"],
+                  ["student", "Student Reflection", "Student year-end reflection and self-rating"],
+                  ["skills", "Skills Review", "Annual skill patterns and parent notes"],
+                  ["portfolio", "Portfolio", "Annual highlight selections and archive targets"]
+                ].map(([key, label, description]) => (
+                  <button
+                    className={[
+                      "weekly-section-button",
+                      activeAnnualReviewSection === key ? "is-active" : "",
+                      reviewedAnnualReviewSections.includes(key as WeeklyReviewSection) ? "is-reviewed" : ""
+                    ].filter(Boolean).join(" ")}
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveAnnualReviewSection(key as WeeklyReviewSection)}
+                  >
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                  </button>
+                ))}
+              </div>
+
+              {activeAnnualReviewSection === "summary" ? (
+              <section className="weekly-subsection is-open">
               <div className="review-metrics">
-                <div className="review-metric"><span>Total time</span><strong>0 min</strong></div>
-                <div className="review-metric"><span>Days with records</span><strong>0</strong></div>
-                <div className="review-metric"><span>Activities</span><strong>0</strong></div>
-                <div className="review-metric"><span>Quarter reviews</span><strong>0</strong></div>
+                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(Object.values(annualReviewSubjectTimeSummary).reduce((sum, minutes) => sum + minutes, 0))}</strong></div>
+                <div className="review-metric"><span>Days with records</span><strong>{new Set(portfolioArtifacts.map((artifact) => artifact.activity?.date).filter(Boolean)).size}</strong></div>
+                <div className="review-metric"><span>Activities</span><strong>{new Set(portfolioArtifacts.map((artifact) => artifact.activity?.id).filter(Boolean)).size}</strong></div>
+                <div className="review-metric"><span>Quarter reviews</span><strong>{quarterStatus === "finalized" ? 1 : 0}</strong></div>
                 <div className="review-metric"><span>Portfolio items</span><strong>{portfolioArtifacts.length}</strong></div>
               </div>
               <div className="coverage-summary-grid">
@@ -3795,15 +3909,119 @@ export default function Home() {
               </div>
               <SubjectTimeCharts summary={annualReviewSubjectTimeSummary} emptyText="Annual Review charts will populate after annual review source data is generated or portfolio-linked activities exist." />
               <CrossSubjectChartPlaceholder />
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markAnnualReviewSectionReviewed("summary")} disabled={reviewedAnnualReviewSections.includes("summary")}>
+                  {reviewedAnnualReviewSections.includes("summary") ? "Reviewed" : "Mark Summary Info Reviewed"}
+                </button>
+              </div>
+              </section>
+              ) : null}
+
+              {activeAnnualReviewSection === "parent" ? (
+              <section className="weekly-subsection">
               <div className="weekly-notes-grid">
                 <label><span>Parent annual reflection</span><textarea defaultValue="Summarize growth, legal coverage, portfolio choices, and next school year recommendations." /></label>
-                <label><span>Student annual reflection</span><textarea defaultValue="What did I learn this year? What am I proud of? What do I want to learn next year?" /></label>
+                <label>
+                  <span>Overall annual rating</span>
+                  <select defaultValue="Practicing">
+                    {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                  </select>
+                </label>
+                <label><span>Next school year direction</span><textarea defaultValue="Name the next-year priorities, review needs, unit themes, and portfolio goals." /></label>
               </div>
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markAnnualReviewSectionReviewed("parent")} disabled={reviewedAnnualReviewSections.includes("parent")}>
+                  {reviewedAnnualReviewSections.includes("parent") ? "Reviewed" : "Mark Parent Ratings Reviewed"}
+                </button>
+              </div>
+              </section>
+              ) : null}
+
+              {activeAnnualReviewSection === "student" ? (
+              <section className="weekly-subsection">
+              <div className="weekly-notes-grid">
+                <label><span>Student annual reflection</span><textarea defaultValue="What did I learn this year? What am I proud of? What do I want to learn next year?" /></label>
+                <label>
+                  <span>Student self-rating</span>
+                  <select defaultValue="I can do this with help">
+                    {studentRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                  </select>
+                </label>
+                <label><span>Favorite year-end memory</span><input defaultValue="" placeholder="Add a year-end highlight." /></label>
+              </div>
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markAnnualReviewSectionReviewed("student")} disabled={reviewedAnnualReviewSections.includes("student")}>
+                  {reviewedAnnualReviewSections.includes("student") ? "Reviewed" : "Mark Student Reflection Reviewed"}
+                </button>
+              </div>
+              </section>
+              ) : null}
+
+              {activeAnnualReviewSection === "skills" ? (
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Skills Review</p>
+                    <h2>Annual skill patterns</h2>
+                  </div>
+                  <span className="tag">Parent final rating overrides suggestions</span>
+                </div>
+                <div className="skill-rating-list">
+                  {annualReviewSkillRows.map((skill) => (
+                    <article className="skill-rating-row" key={skill}>
+                      <div>
+                        <strong>{skill}</strong>
+                        <p className="skill-evidence">Evidence comes from available school-year records and portfolio-linked activities for this annual timeframe.</p>
+                      </div>
+                      <div className="rating-buttons" aria-label={`${skill} annual rating`}>
+                        {weeklyRatings.map((rating) => (
+                          <button className={rating === "Practicing" ? "rating-button is-selected" : "rating-button"} type="button" key={`${skill}-${rating}`}>
+                            {rating}
+                          </button>
+                        ))}
+                      </div>
+                      <label><span>Parent note</span><input placeholder="Add an annual skill note." /></label>
+                    </article>
+                  ))}
+                </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markAnnualReviewSectionReviewed("skills")} disabled={reviewedAnnualReviewSections.includes("skills")}>
+                    {reviewedAnnualReviewSections.includes("skills") ? "Reviewed" : "Mark Skills Review Reviewed"}
+                  </button>
+                </div>
+              </section>
+              ) : null}
+
+              {activeAnnualReviewSection === "portfolio" ? (
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Portfolio</p>
+                    <h2>Annual highlights and archive targets</h2>
+                  </div>
+                  <span className="tag">{portfolioArtifacts.length} available</span>
+                </div>
+                <div className="portfolio-grid">
+                  {portfolioArtifacts.slice(0, 20).map((artifact) => (
+                    <label className="portfolio-card" key={artifact.id}>
+                      <input type="checkbox" />
+                      <span><strong>{artifact.originalName}</strong><br />{artifact.activity?.title ?? "Portfolio artifact"}</span>
+                    </label>
+                  ))}
+                  {portfolioArtifacts.length === 0 ? <p className="muted">Portfolio highlights will appear here after proof files and reports are saved to Portfolio.</p> : null}
+                </div>
               <div className="records-grid">
                 <div className="record-link"><strong>Legal compliance summary</strong><span>Regenerate records/{schoolYear}/legal-summary.md and legal archive PDF.</span></div>
                 <div className="record-link"><strong>Annual portfolio</strong><span>Select final highlights and generate annual portfolio PDF.</span></div>
                 <div className="record-link"><strong>Archive status</strong><span>After closeout, prior school year remains retrievable and new records start in the next year.</span></div>
               </div>
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markAnnualReviewSectionReviewed("portfolio")} disabled={reviewedAnnualReviewSections.includes("portfolio")}>
+                  {reviewedAnnualReviewSections.includes("portfolio") ? "Reviewed" : "Mark Portfolio Reviewed"}
+                </button>
+              </div>
+              </section>
+              ) : null}
             </section>
             ) : null}
 
