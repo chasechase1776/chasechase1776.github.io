@@ -60,9 +60,11 @@ type WorkspaceTab = {
 };
 
 type DraftCard = {
+  id: string;
   title: string;
   minutes: number;
-  subjects: string[];
+  status: "needs_approval" | "approved";
+  subjectAllocations: { subject: string; minutes: number }[];
   legalTags: string[];
   skills: string[];
 };
@@ -690,16 +692,23 @@ function dateLabel(value: string) {
 function mockDrafts(activityType: string): DraftCard[] {
   return [
     {
+      id: "draft-primary",
       title: activityType === "Language Arts" ? "Story Weaver read-aloud and editing" : `${activityType} narration record`,
       minutes: 25,
-      subjects: activityType === "Math" ? ["Math"] : ["Language Arts"],
+      status: "needs_approval",
+      subjectAllocations: activityType === "Math" ? [{ subject: "Math", minutes: 25 }] : [{ subject: "Language Arts", minutes: 25 }],
       legalTags: activityType === "Math" ? ["Mathematics", "Visual Curriculum", "Bona Fide Instruction"] : ["Reading", "Grammar", "Spelling"],
       skills: activityType === "Math" ? ["Measurement and Money", "Mathematical Communication"] : ["Reading", "Fluency", "Editing"]
     },
     {
+      id: "draft-unit-connection",
       title: "Construction unit connection",
       minutes: 20,
-      subjects: ["Science", "Unit Study"],
+      status: "needs_approval",
+      subjectAllocations: [
+        { subject: "Science", minutes: 10 },
+        { subject: "Unit Study", minutes: 10 }
+      ],
       legalTags: ["Visual Curriculum", "Bona Fide Instruction"],
       skills: ["Uses Tools and Models", "Problem-Solving and Application"]
     }
@@ -996,6 +1005,88 @@ export default function Home() {
     const drafts = mockDrafts(selectedType);
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
+  }
+
+  function updateDraftCard(id: string, patch: Partial<DraftCard>) {
+    setDraftCards((current) => current.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft)));
+  }
+
+  function selectDraftTime(id: string) {
+    setDraftCards((current) =>
+      current.map((draft) => {
+        if (draft.id !== id) return draft;
+        const minutes = draft.minutes || actualMinutes || 15;
+        const subject = draft.subjectAllocations[0]?.subject ?? primarySubject;
+        return {
+          ...draft,
+          minutes,
+          subjectAllocations: [{ subject, minutes }]
+        };
+      })
+    );
+    setStatus("Time selected for parsed card. Review allocation before approval.");
+  }
+
+  function cycleDraftAllocation(id: string) {
+    setDraftCards((current) =>
+      current.map((draft) => {
+        if (draft.id !== id) return draft;
+        const subjects = draft.subjectAllocations.map((allocation) => allocation.subject);
+        const minutes = draft.minutes || actualMinutes || 15;
+        if (subjects.length < 2) {
+          const secondSubject = draft.title.toLowerCase().includes("construction") ? "Unit Study" : "Science";
+          const firstMinutes = Math.ceil(minutes / 2);
+          return {
+            ...draft,
+            subjectAllocations: [
+              { subject: subjects[0] ?? primarySubject, minutes: firstMinutes },
+              { subject: secondSubject, minutes: minutes - firstMinutes }
+            ]
+          };
+        }
+        const first = draft.subjectAllocations[0];
+        const rest = draft.subjectAllocations.slice(1);
+        return {
+          ...draft,
+          subjectAllocations: [
+            ...rest,
+            { ...first, minutes: Math.max(0, minutes - rest.reduce((sum, allocation) => sum + allocation.minutes, 0)) }
+          ]
+        };
+      })
+    );
+    setStatus("Subject allocation changed for parsed card.");
+  }
+
+  function mergeDraftCard(id: string) {
+    setDraftCards((current) => {
+      const index = current.findIndex((draft) => draft.id === id);
+      if (index < 0 || current.length < 2) return current;
+      const targetIndex = index === 0 ? 1 : index - 1;
+      const source = current[index];
+      const target = current[targetIndex];
+      const merged: DraftCard = {
+        ...target,
+        title: `${target.title} + ${source.title}`,
+        minutes: target.minutes + source.minutes,
+        status: "needs_approval",
+        subjectAllocations: [...target.subjectAllocations, ...source.subjectAllocations],
+        legalTags: Array.from(new Set([...target.legalTags, ...source.legalTags])),
+        skills: Array.from(new Set([...target.skills, ...source.skills]))
+      };
+      return current.filter((draft) => draft.id !== id).map((draft) => (draft.id === target.id ? merged : draft));
+    });
+    setStatus("Parsed cards merged. Review the combined allocation before approval.");
+  }
+
+  function deleteDraftCard(id: string) {
+    setDraftCards((current) => current.filter((draft) => draft.id !== id));
+    setStatus("Parsed card deleted from AI review summary.");
+  }
+
+  function approveDraftCard(id: string) {
+    setDraftCards((current) => current.map((draft) => (draft.id === id ? { ...draft, status: "approved" } : draft)));
+    setStatus("Parsed card approved for parent review. Use Save Approved when the daily record is ready to become permanent.");
   }
 
   function updateWeeklyData<K extends keyof WeeklyReviewData>(key: K, value: WeeklyReviewData[K]) {
@@ -1889,19 +1980,43 @@ export default function Home() {
                     <h2>Parent approval before save</h2>
                   </div>
                 </div>
-                <div className="records-grid">
+                <div className="parsed-card-grid">
                   {draftCards.map((draft) => (
-                    <article className="activity-card" key={draft.title}>
+                    <article className={draft.status === "approved" ? "activity-card parsed-card is-approved" : "activity-card parsed-card"} key={draft.id}>
                       <div className="card-topline">
-                        <span className="tag review">Needs parent approval</span>
+                        <span className={draft.status === "approved" ? "tag good" : "tag review"}>
+                          {draft.status === "approved" ? "Approved card" : "Needs parent approval"}
+                        </span>
                         <span className="tag">{draft.minutes} min</span>
                       </div>
                       <h3>{draft.title}</h3>
-                      <label><span>Title</span><input defaultValue={draft.title} /></label>
-                      <div className="chip-row">
-                        {draft.subjects.map((subject) => <span key={subject}>{subject}</span>)}
-                        {draft.legalTags.map((tag) => <span key={tag}>{tag}</span>)}
-                        {draft.skills.map((skill) => <span key={skill}>{skill}</span>)}
+                      <label><span>Title</span><input value={draft.title} onChange={(event) => updateDraftCard(draft.id, { title: event.target.value })} /></label>
+                      <div className="parsed-chip-group" aria-label={`${draft.title} parsed skills and legal tags`}>
+                        {draft.skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}
+                        {draft.legalTags.map((tag) => <span className="legal-chip" key={tag}>{tag}</span>)}
+                      </div>
+                      <div className="subject-allocation-bars" aria-label={`${draft.title} subject time allocations`}>
+                        {draft.subjectAllocations.map((allocation) => {
+                          const percent = draft.minutes ? Math.max(8, Math.round((allocation.minutes / draft.minutes) * 100)) : 0;
+                          return (
+                            <div className="allocation-bar-row" key={`${draft.id}-${allocation.subject}`}>
+                              <div>
+                                <strong>{allocation.subject}</strong>
+                                <span>{allocation.minutes} min</span>
+                              </div>
+                              <div className="allocation-track">
+                                <span style={{ width: `${percent}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="parsed-card-actions">
+                        <button className="secondary-button" type="button" onClick={() => selectDraftTime(draft.id)}>Select time</button>
+                        <button className="secondary-button" type="button" onClick={() => mergeDraftCard(draft.id)} disabled={draftCards.length < 2}>Merge</button>
+                        <button className="secondary-button" type="button" onClick={() => cycleDraftAllocation(draft.id)}>Change allocation</button>
+                        <button className="text-button" type="button" onClick={() => deleteDraftCard(draft.id)}>Delete</button>
+                        <button className="primary-button" type="button" onClick={() => approveDraftCard(draft.id)} disabled={draft.status === "approved"}>Approve card</button>
                       </div>
                     </article>
                   ))}
