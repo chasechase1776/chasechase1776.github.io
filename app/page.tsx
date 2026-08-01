@@ -153,6 +153,13 @@ type JournalPortfolioCard = {
   narrative: string;
 };
 
+type AnnualRecordCard = {
+  id: string;
+  title: string;
+  narrative: string;
+  attachments: UploadedArtifact[];
+};
+
 type AnnualPlanSectionId = "section-1" | "section-2" | "section-3" | "section-4" | "section-5" | "section-6" | "section-7" | "section-8";
 
 type UnitPlanStatus = "active" | "upcoming" | "planned" | "complete" | "skipped";
@@ -298,6 +305,45 @@ const initialJournalPortfolioCards: JournalPortfolioCard[] = [
     id: "adventure-guide",
     title: "Adventure Guide",
     narrative: "Year-end - binder of outdoor field-study tools, safety, maps, recipes, and nature pages."
+  }
+];
+
+const initialAnnualRecordCards: AnnualRecordCard[] = [
+  {
+    id: "curriculum-overview",
+    title: "Curriculum overview",
+    narrative: "Core resources and visual curriculum evidence.",
+    attachments: []
+  },
+  {
+    id: "scope-and-sequence",
+    title: "Scope and sequence",
+    narrative: "Expected skills, projects, weekly rhythm, and unit arc.",
+    attachments: []
+  },
+  {
+    id: "legal-notes",
+    title: "Legal notes",
+    narrative: "State context, assurance letters, and compliance notes.",
+    attachments: []
+  },
+  {
+    id: "reading-list",
+    title: "Reading list",
+    narrative: "Planned and completed books for the school year.",
+    attachments: []
+  },
+  {
+    id: "field-trip-plan",
+    title: "Field trip plan",
+    narrative: "Real-world applications connected to units.",
+    attachments: []
+  },
+  {
+    id: "other-school-year-records",
+    title: "Other school-year records",
+    narrative: "Annual plan documents, uploaded files, and notes.",
+    attachments: []
   }
 ];
 
@@ -681,7 +727,9 @@ export default function Home() {
   });
   const [weeklyStatusMessage, setWeeklyStatusMessage] = useState("Waiting to generate a draft review from approved activity logs.");
   const [lastWeeklyPdfArtifact, setLastWeeklyPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
+  const [lastAnnualPlanPdfArtifact, setLastAnnualPlanPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [isWeeklyBusy, setIsWeeklyBusy] = useState(false);
+  const [isAnnualPlanBusy, setIsAnnualPlanBusy] = useState(false);
   const [quarterReviewId, setQuarterReviewId] = useState("");
   const [quarterLabel, setQuarterLabel] = useState("Quarter 1");
   const [quarterStartDate, setQuarterStartDate] = useState("2026-07-01");
@@ -729,6 +777,8 @@ export default function Home() {
   const [unitPlanRows, setUnitPlanRows] = useState<UnitPlanRow[]>(initialUnitPlanRows);
   const [journalPortfolioCards, setJournalPortfolioCards] = useState<JournalPortfolioCard[]>(initialJournalPortfolioCards);
   const [editingJournalPortfolioId, setEditingJournalPortfolioId] = useState<string | null>(null);
+  const [annualRecordCards, setAnnualRecordCards] = useState<AnnualRecordCard[]>(initialAnnualRecordCards);
+  const [editingAnnualRecordId, setEditingAnnualRecordId] = useState<string | null>(null);
   const [activeAnnualPlanSection, setActiveAnnualPlanSection] = useState<AnnualPlanSectionId | null>(null);
   const [finalizedAnnualPlanSections, setFinalizedAnnualPlanSections] = useState<AnnualPlanSectionId[]>([]);
 
@@ -1078,6 +1128,110 @@ export default function Home() {
       [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
       return copy;
     });
+  }
+
+  function updateAnnualRecordCard(id: string, key: "title" | "narrative", value: string) {
+    setAnnualRecordCards((current) => current.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+  }
+
+  function addAnnualRecordCard() {
+    const id = `annual-record-${Date.now()}`;
+    setAnnualRecordCards((current) => [
+      ...current,
+      {
+        id,
+        title: "New Annual Record",
+        narrative: "Describe the annual record, why it matters, and what attached documents should be preserved.",
+        attachments: []
+      }
+    ]);
+    setEditingAnnualRecordId(id);
+  }
+
+  function deleteAnnualRecordCard(id: string) {
+    setAnnualRecordCards((current) => current.filter((item) => item.id !== id));
+    setEditingAnnualRecordId((current) => (current === id ? null : current));
+  }
+
+  function moveAnnualRecordCard(id: string, direction: -1 | 1) {
+    setAnnualRecordCards((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const copy = [...current];
+      [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
+      return copy;
+    });
+  }
+
+  function removeAnnualRecordAttachment(cardId: string, artifactId: string) {
+    setAnnualRecordCards((current) =>
+      current.map((card) =>
+        card.id === cardId
+          ? { ...card, attachments: card.attachments.filter((artifact) => artifact.id !== artifactId) }
+          : card
+      )
+    );
+  }
+
+  async function uploadAnnualRecordAttachment(cardId: string, file: File) {
+    setIsAnnualPlanBusy(true);
+    setAnnualPlanMessage(`Uploading ${file.name} to the selected annual record card...`);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("recordStatus", schoolYearStatus);
+      formData.append("tagsJson", JSON.stringify({ section: "annual_records", schoolYear, student }));
+
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json().catch(() => ({ error: "Annual record upload failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Annual record upload failed.");
+
+      const artifact = data.artifact as UploadedArtifact;
+      setAnnualRecordCards((current) =>
+        current.map((card) =>
+          card.id === cardId ? { ...card, attachments: [...card.attachments, artifact] } : card
+        )
+      );
+      setAnnualPlanMessage(`${file.name} attached to Annual Records. It will be included when you generate the Annual Plan PDF.`);
+    } catch (error) {
+      setAnnualPlanMessage(error instanceof Error ? error.message : "Annual record upload failed.");
+    } finally {
+      setIsAnnualPlanBusy(false);
+    }
+  }
+
+  async function exportAnnualPlanPdf() {
+    setIsAnnualPlanBusy(true);
+    setAnnualPlanMessage("Generating Annual Plan PDF with annual record attachments...");
+    setLastAnnualPlanPdfArtifact(null);
+    try {
+      const response = await fetch("/api/annual-plan/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          student,
+          schoolYear,
+          status: annualPlanStatus,
+          curriculumSpines,
+          weeklyRhythmDays,
+          unitPlanRows,
+          journalPortfolioCards,
+          annualRecordCards
+        })
+      });
+      const data = await response.json().catch(() => ({ error: "Annual Plan PDF generation failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Annual Plan PDF generation failed.");
+      setLastAnnualPlanPdfArtifact(data.artifact);
+      setAnnualPlanMessage(`${data.artifact.originalName} was generated with Section 7 attachments and saved to the Portfolio.`);
+    } catch (error) {
+      setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan PDF generation failed.");
+    } finally {
+      setIsAnnualPlanBusy(false);
+    }
   }
 
   function handleQuarterStartChange(value: string) {
@@ -2092,7 +2246,7 @@ export default function Home() {
                 <div className="primary-action-row">
                   <button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan saved as the intended school-year framework. Daily logs remain the record of what actually happened.", "active")}>Save Plan</button>
                   <button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Export Markdown</button>
-                  <button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Generated Annual Plan PDF including all planning sections and the note that daily logs document reality.")}>Export PDF</button>
+                  <button className="secondary-button" type="button" onClick={() => void exportAnnualPlanPdf()} disabled={isAnnualPlanBusy}>Export PDF</button>
                   <button className="primary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan finalized for the school year. It can still be archived at annual closeout.", "finalized")}>Finalize Plan</button>
                 </div>
               </div>
@@ -2401,24 +2555,81 @@ export default function Home() {
                 <div className="section-head">
                   <div><p className="eyebrow">Section 7</p><h2>Annual Records</h2></div>
                   <div className="primary-action-row">
-                    <button className="secondary-button" type="button">Add school-year file</button>
+                    <button className="secondary-button" type="button" onClick={addAnnualRecordCard}>Add card</button>
                     <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-7")}>Finalize</button>
                   </div>
                 </div>
-                <div className="records-grid">
-                  <div className="record-link"><strong>Curriculum overview</strong><span>Core resources and visual curriculum evidence.</span></div>
-                  <div className="record-link"><strong>Scope and sequence</strong><span>Expected skills, projects, weekly rhythm, and unit arc.</span></div>
-                  <div className="record-link"><strong>Legal notes</strong><span>State context, assurance letters, and compliance notes.</span></div>
-                  <div className="record-link"><strong>Reading list</strong><span>Planned and completed books for the school year.</span></div>
-                  <div className="record-link"><strong>Field trip plan</strong><span>Real-world applications connected to units.</span></div>
-                  <div className="record-link"><strong>Other school-year records</strong><span>Annual plan documents, uploaded files, and notes.</span></div>
+                <div className="records-grid editable-card-grid">
+                  {annualRecordCards.map((card, index) => (
+                    <article className="record-link editable-spine-card" key={card.id}>
+                      <div className="finished-card-row">
+                        <div className="editable-card-preview">
+                          <strong>{card.title || "Untitled annual record"}</strong>
+                          <span>{card.narrative || "Add the purpose and expected documents for this annual record."}</span>
+                          <span>{card.attachments.length ? `${card.attachments.length} attached document${card.attachments.length === 1 ? "" : "s"}` : "No attached documents yet."}</span>
+                        </div>
+                        <div className="card-control-row">
+                          <button className="secondary-button" type="button" onClick={() => moveAnnualRecordCard(card.id, -1)} disabled={index === 0}>Move up</button>
+                          <button className="secondary-button" type="button" onClick={() => moveAnnualRecordCard(card.id, 1)} disabled={index === annualRecordCards.length - 1}>Move down</button>
+                          <button className="secondary-button" type="button" onClick={() => setEditingAnnualRecordId((current) => (current === card.id ? null : card.id))}>
+                            {editingAnnualRecordId === card.id ? "Collapse" : "Edit"}
+                          </button>
+                          <button className="text-button" type="button" onClick={() => deleteAnnualRecordCard(card.id)} disabled={annualRecordCards.length === 1}>Delete</button>
+                        </div>
+                      </div>
+                      {editingAnnualRecordId === card.id ? (
+                        <div className="spine-edit-fields">
+                          <label>
+                            <span>Bold title</span>
+                            <input value={card.title} onChange={(event) => updateAnnualRecordCard(card.id, "title", event.target.value)} />
+                          </label>
+                          <label>
+                            <span>Description</span>
+                            <textarea value={card.narrative} onChange={(event) => updateAnnualRecordCard(card.id, "narrative", event.target.value)} />
+                          </label>
+                          <label className="annual-record-upload">
+                            <span>Attach document</span>
+                            <input
+                              type="file"
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file) void uploadAnnualRecordAttachment(card.id, file);
+                                event.target.value = "";
+                              }}
+                            />
+                          </label>
+                          <div className="uploaded-proof-list" aria-live="polite">
+                            {card.attachments.length ? card.attachments.map((artifact) => (
+                              <div className="uploaded-proof-item" key={artifact.id}>
+                                <span>{artifact.originalName}</span>
+                                <span>{formatBytes(artifact.sizeBytes)}</span>
+                                <button className="text-button" type="button" onClick={() => removeAnnualRecordAttachment(card.id, artifact.id)}>Remove</button>
+                              </div>
+                            )) : <p className="muted">No documents attached to this annual record yet.</p>}
+                          </div>
+                          <div className="card-control-row">
+                            <button className="primary-button" type="button" onClick={() => setEditingAnnualRecordId(null)}>Save</button>
+                            <button className="secondary-button" type="button" onClick={() => setEditingAnnualRecordId(null)}>Collapse</button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
                 </div>
               </section>
               ) : null}
 
               {activeAnnualPlanSection === "section-8" ? (
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 8</p><h2>Annual Plan Exports</h2></div><div className="primary-action-row"><button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Generate Annual Plan Markdown</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Generated Annual Plan PDF including all planning sections and the note that daily logs document reality.")}>Generate Annual Plan PDF</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatus)}>Add to Legal Archive</button><button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-8")}>Finalize</button></div></div>
+                <div className="section-head"><div><p className="eyebrow">Section 8</p><h2>Annual Plan Exports</h2></div><div className="primary-action-row"><button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Generate Annual Plan Markdown</button><button className="secondary-button" type="button" onClick={() => void exportAnnualPlanPdf()} disabled={isAnnualPlanBusy}>Generate Annual Plan PDF</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatus)}>Add to Legal Archive</button><button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-8")}>Finalize</button></div></div>
+                {lastAnnualPlanPdfArtifact ? (
+                  <div className="status-line">
+                    <span>{lastAnnualPlanPdfArtifact.originalName}</span>
+                    <a className="download-link" href={`/api/artifacts/${lastAnnualPlanPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
+                      Open PDF
+                    </a>
+                  </div>
+                ) : null}
                 <div className="coverage-summary-grid">
                   <div className="record-link"><strong>Markdown path</strong><span>records/{schoolYear}/annual-plan.md</span></div>
                   <div className="record-link"><strong>PDF export</strong><span>Includes all Annual Plan sections above.</span></div>
