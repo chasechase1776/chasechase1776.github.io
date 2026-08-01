@@ -135,6 +135,12 @@ type QuarterSkillTrendRow = {
   isExample: boolean;
 };
 
+type CurriculumSpine = {
+  id: string;
+  title: string;
+  narrative: string;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -168,6 +174,39 @@ const studentRatings = [
   "I can do this with help",
   "I can do this by myself",
   "I can teach or explain this"
+];
+
+const initialCurriculumSpines: CurriculumSpine[] = [
+  {
+    id: "literacy-spine",
+    title: "Literacy Spine",
+    narrative: "4x/week - Story Weavers Level 2 - reading, grammar, literature, memory work, phonics, spelling, writing, editing, fluency."
+  },
+  {
+    id: "math-spine",
+    title: "Math Spine",
+    narrative: "4x/week - Saxon Math 2 - number sense, operations, measurement, money, geometry, data, patterns, problem solving."
+  },
+  {
+    id: "finance-spine",
+    title: "Finance Spine",
+    narrative: "4x/week or integrated weekly - Financial Literacy for Kids, Educa Fun, money activity book/game."
+  },
+  {
+    id: "science-journal",
+    title: "Daily Science Journal / Nature Observation",
+    narrative: "Daily or near-daily - observe, draw, label, ask questions, record changes, compare patterns."
+  },
+  {
+    id: "independent-reading",
+    title: "Daily Independent Reading",
+    narrative: "Daily - reading stamina, fluency, independent book engagement, habit formation, and enjoyment of books."
+  },
+  {
+    id: "physical-activity",
+    title: "Daily Physical Activity / Education",
+    narrative: "Daily - movement, coordination, outdoor play, strength, stamina, health habits, and physical development."
+  }
 ];
 
 const workspaceTabs: WorkspaceTab[] = [
@@ -405,6 +444,7 @@ export default function Home() {
   const [annualPlanStatus, setAnnualPlanStatus] = useState<"draft" | "active" | "finalized" | "archived">("active");
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
   const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Waiting for generated snapshots. Database records remain the source of truth.");
+  const [curriculumSpines, setCurriculumSpines] = useState<CurriculumSpine[]>(initialCurriculumSpines);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -607,6 +647,36 @@ export default function Home() {
   function updateAnnualPlan(message: string, statusValue?: "draft" | "active" | "finalized" | "archived") {
     if (statusValue) setAnnualPlanStatus(statusValue);
     setAnnualPlanMessage(message);
+  }
+
+  function updateCurriculumSpine(id: string, key: "title" | "narrative", value: string) {
+    setCurriculumSpines((current) => current.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+  }
+
+  function addCurriculumSpine() {
+    setCurriculumSpines((current) => [
+      ...current,
+      {
+        id: `curriculum-spine-${Date.now()}`,
+        title: "New Curriculum Spine",
+        narrative: "Describe the recurring expectation, schedule, curriculum resource, skills practiced, and evidence to keep."
+      }
+    ]);
+  }
+
+  function deleteCurriculumSpine(id: string) {
+    setCurriculumSpines((current) => current.filter((item) => item.id !== id));
+  }
+
+  function moveCurriculumSpine(id: string, direction: -1 | 1) {
+    setCurriculumSpines((current) => {
+      const index = current.findIndex((item) => item.id === id);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const copy = [...current];
+      [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
+      return copy;
+    });
   }
 
   function handleQuarterStartChange(value: string) {
@@ -1656,14 +1726,35 @@ export default function Home() {
               </section>
 
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 2</p><h2>Daily recurring expectations and curriculum spines</h2></div><span className="tag">Not editable</span></div>
-                <div className="records-grid">
-                  <div className="record-link"><strong>Literacy Spine</strong><span>4x/week - Story Weavers Level 2 - reading, grammar, literature, memory work, phonics, spelling, writing, editing, fluency.</span></div>
-                  <div className="record-link"><strong>Math Spine</strong><span>4x/week - Saxon Math 2 - number sense, operations, measurement, money, geometry, data, patterns, problem solving.</span></div>
-                  <div className="record-link"><strong>Finance Spine</strong><span>4x/week or integrated weekly - Financial Literacy for Kids, Educa Fun, money activity book/game.</span></div>
-                  <div className="record-link"><strong>Daily Science Journal / Nature Observation</strong><span>Daily or near-daily - observe, draw, label, ask questions, record changes, compare patterns.</span></div>
-                  <div className="record-link"><strong>Daily Independent Reading</strong><span>Daily - reading stamina, fluency, independent book engagement, habit formation, and enjoyment of books.</span></div>
-                  <div className="record-link"><strong>Daily Physical Activity / Education</strong><span>Daily - movement, coordination, outdoor play, strength, stamina, health habits, and physical development.</span></div>
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Section 2</p>
+                    <h2>Daily recurring expectations and curriculum spines</h2>
+                  </div>
+                  <button className="secondary-button" type="button" onClick={addCurriculumSpine}>Add box</button>
+                </div>
+                <div className="records-grid editable-card-grid">
+                  {curriculumSpines.map((spine, index) => (
+                    <article className="record-link editable-spine-card" key={spine.id}>
+                      <label>
+                        <span>Bold title</span>
+                        <input value={spine.title} onChange={(event) => updateCurriculumSpine(spine.id, "title", event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Narrative text</span>
+                        <textarea value={spine.narrative} onChange={(event) => updateCurriculumSpine(spine.id, "narrative", event.target.value)} />
+                      </label>
+                      <div className="editable-card-preview">
+                        <strong>{spine.title || "Untitled spine"}</strong>
+                        <span>{spine.narrative || "Add the narrative for this recurring curriculum spine."}</span>
+                      </div>
+                      <div className="card-control-row">
+                        <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, -1)} disabled={index === 0}>Move up</button>
+                        <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, 1)} disabled={index === curriculumSpines.length - 1}>Move down</button>
+                        <button className="text-button" type="button" onClick={() => deleteCurriculumSpine(spine.id)} disabled={curriculumSpines.length === 1}>Delete</button>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               </section>
 

@@ -985,6 +985,39 @@ details.skill-group[open] summary {
   font-weight: 700;
 }
 
+.editable-card-grid {
+  align-items: stretch;
+}
+
+.editable-spine-card {
+  align-content: start;
+}
+
+.editable-spine-card textarea {
+  min-height: 112px;
+}
+
+.editable-card-preview {
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid var(--soft-line);
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.editable-card-preview span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.card-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 4px;
+}
+
 .skill-rating-row {
   display: grid;
   grid-template-columns: minmax(190px, 0.8fr) minmax(260px, 1.2fr) minmax(180px, 0.7fr);
