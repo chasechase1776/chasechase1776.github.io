@@ -32,6 +32,7 @@ model SchoolYear {
   activities                   Activity[]
   weeklyReviews                WeeklyReview[]
   quarterReviews               QuarterReview[]
+  annualPlans                  AnnualPlan[]
   exportSnapshots              ExportSnapshot[]
 
   @@unique([studentId, label])
@@ -132,6 +133,19 @@ model EvidenceArtifact {
   createdAt      DateTime  @default(now())
   activityId     String?
   activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+}
+
+model AnnualPlan {
+  id           String     @id @default(cuid())
+  status       String     @default("active")
+  dataJson     String
+  recordStatus String     @default("trial")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolYearId])
 }
 
 model WeeklyReview {

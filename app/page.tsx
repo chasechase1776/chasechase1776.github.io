@@ -203,6 +203,16 @@ type UnitPlanRow = {
   status: UnitPlanStatus;
 };
 
+type AnnualPlanSaveData = {
+  annualPlanBigPicture: AnnualPlanBigPicture;
+  curriculumSpines: CurriculumSpine[];
+  weeklyRhythmDays: WeeklyRhythmDay[];
+  unitPlanRows: UnitPlanRow[];
+  journalPortfolioCards: JournalPortfolioCard[];
+  annualRecordCards: AnnualRecordCard[];
+  finalizedAnnualPlanSections: AnnualPlanSectionId[];
+};
+
 type UnitStudyAllocation = {
   id: string;
   subject: string;
@@ -1136,6 +1146,8 @@ export default function Home() {
   const [showDetails, setShowDetails] = useState(false);
   const [annualPlanStatus, setAnnualPlanStatus] = useState<"draft" | "active" | "finalized" | "archived">("active");
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
+  const [isAnnualPlanSaving, setIsAnnualPlanSaving] = useState(false);
+  const [isAnnualPlanLoading, setIsAnnualPlanLoading] = useState(false);
   const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Waiting for generated snapshots. Database records remain the source of truth.");
   const [annualPlanBigPicture, setAnnualPlanBigPicture] = useState<AnnualPlanBigPicture>(initialAnnualPlanBigPicture);
   const [curriculumSpines, setCurriculumSpines] = useState<CurriculumSpine[]>(initialCurriculumSpines);
@@ -1721,11 +1733,90 @@ export default function Home() {
     setAnnualPlanMessage(message);
   }
 
+  function annualPlanPayload(finalizedSections = finalizedAnnualPlanSections): AnnualPlanSaveData {
+    return {
+      annualPlanBigPicture,
+      curriculumSpines,
+      weeklyRhythmDays,
+      unitPlanRows,
+      journalPortfolioCards,
+      annualRecordCards,
+      finalizedAnnualPlanSections: finalizedSections
+    };
+  }
+
+  const applyAnnualPlanData = useCallback((data: Partial<AnnualPlanSaveData>) => {
+    if (data.annualPlanBigPicture) setAnnualPlanBigPicture(data.annualPlanBigPicture);
+    if (data.curriculumSpines) setCurriculumSpines(data.curriculumSpines);
+    if (data.weeklyRhythmDays) setWeeklyRhythmDays(data.weeklyRhythmDays);
+    if (data.unitPlanRows) setUnitPlanRows(data.unitPlanRows);
+    if (data.journalPortfolioCards) setJournalPortfolioCards(data.journalPortfolioCards);
+    if (data.annualRecordCards) setAnnualRecordCards(data.annualRecordCards);
+    if (data.finalizedAnnualPlanSections) setFinalizedAnnualPlanSections(data.finalizedAnnualPlanSections);
+  }, []);
+
+  async function saveAnnualPlan(statusValue = annualPlanStatus, message = "Annual Plan saved.", finalizedSections = finalizedAnnualPlanSections) {
+    setIsAnnualPlanSaving(true);
+    try {
+      const response = await fetch("/api/annual-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          officialHomeschoolStartDate: officialStartDate,
+          status: statusValue,
+          recordStatus: schoolYearStatus,
+          data: annualPlanPayload(finalizedSections)
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Annual Plan save failed.");
+      setAnnualPlanStatus(data.plan.status);
+      setAnnualPlanMessage(message);
+    } catch (error) {
+      setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan save failed.");
+    } finally {
+      setIsAnnualPlanSaving(false);
+    }
+  }
+
   function finalizeAnnualPlanSection(id: AnnualPlanSectionId) {
     const section = annualPlanSections.find((item) => item.id === id);
-    setFinalizedAnnualPlanSections((current) => (current.includes(id) ? current : [...current, id]));
-    setAnnualPlanMessage(`${section?.summary ?? "Annual Plan section"} finalized. Its landing button is now green.`);
+    const nextSections = finalizedAnnualPlanSections.includes(id) ? finalizedAnnualPlanSections : [...finalizedAnnualPlanSections, id];
+    setFinalizedAnnualPlanSections(nextSections);
+    void saveAnnualPlan(annualPlanStatus, `${section?.summary ?? "Annual Plan section"} finalized and saved. Its landing button is now green.`, nextSections);
   }
+
+  useEffect(() => {
+    if (!student || !schoolYear) return;
+    let isCurrent = true;
+
+    async function loadSavedAnnualPlan() {
+      setIsAnnualPlanLoading(true);
+      try {
+        const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear });
+        const response = await fetch(`/api/annual-plan?${params.toString()}`, { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Annual Plan load failed.");
+        if (isCurrent && data.plan) {
+          setAnnualPlanStatus(data.plan.status);
+          applyAnnualPlanData(data.data ?? {});
+          setAnnualPlanMessage(`Loaded saved Annual Plan for ${schoolYear}.`);
+        }
+      } catch (error) {
+        if (isCurrent) setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan load failed.");
+      } finally {
+        if (isCurrent) setIsAnnualPlanLoading(false);
+      }
+    }
+
+    void loadSavedAnnualPlan();
+    return () => {
+      isCurrent = false;
+    };
+  }, [applyAnnualPlanData, schoolYear, student]);
 
   function updateAnnualPlanBigPicture<K extends keyof AnnualPlanBigPicture>(key: K, value: AnnualPlanBigPicture[K]) {
     setAnnualPlanBigPicture((current) => ({ ...current, [key]: value }));
@@ -3457,10 +3548,14 @@ export default function Home() {
                   <p className="panel-note">The Annual Plan documents intent: theme, curriculum spines, weekly rhythm, unit-study arc, journals, capstones, and annual records. Daily logs remain the record of what actually happened.</p>
                 </div>
                 <div className="primary-action-row">
-                  <button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan saved as the intended school-year framework. Daily logs remain the record of what actually happened.", "active")}>Save Plan</button>
+                  <button className="secondary-button" type="button" onClick={() => void saveAnnualPlan("active", "Annual Plan saved. Daily logs remain the record of what actually happened.")} disabled={isAnnualPlanSaving || isAnnualPlanLoading}>
+                    {isAnnualPlanSaving ? "Saving..." : "Save Plan"}
+                  </button>
                   <button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Export Markdown</button>
                   <button className="secondary-button" type="button" onClick={() => void exportAnnualPlanPdf()} disabled={isAnnualPlanBusy}>Export PDF</button>
-                  <button className="primary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan finalized for the school year. It can still be archived at annual closeout.", "finalized")}>Finalize Plan</button>
+                  <button className="primary-button" type="button" onClick={() => void saveAnnualPlan("finalized", "Annual Plan finalized and saved for the school year. It can still be archived at annual closeout.")} disabled={isAnnualPlanSaving || isAnnualPlanLoading}>
+                    Finalize Plan
+                  </button>
                 </div>
               </div>
               <div className="quick-entry-grid weekly-date-grid">
@@ -3477,7 +3572,9 @@ export default function Home() {
                   </select>
                 </label>
               </div>
-              <p className="status-line" role="status">{annualPlanMessage}</p>
+              <p className="status-line" role="status">
+                {isAnnualPlanLoading ? "Loading saved Annual Plan..." : annualPlanMessage}
+              </p>
 
               <div className="annual-section-hub" aria-label="Annual Plan sections">
                 {annualPlanSections.map((section) => {
