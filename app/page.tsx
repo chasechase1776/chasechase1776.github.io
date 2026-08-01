@@ -59,6 +59,8 @@ type WorkspaceTab = {
   description: string;
 };
 
+type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
+
 type DraftCard = {
   id: string;
   title: string;
@@ -817,6 +819,93 @@ function mockDrafts(activityType: string, minutes: number, draftTitle: string, n
   ];
 }
 
+const chartColors = ["#1f7a8c", "#3f7d20", "#8a5a00", "#5f5aa2", "#b35c44", "#2f5f8f", "#6d597a", "#4f772d"];
+
+function subjectTimeEntries(summary: Record<string, number>) {
+  return Object.entries(summary)
+    .filter(([, minutes]) => minutes > 0)
+    .sort(([, leftMinutes], [, rightMinutes]) => rightMinutes - leftMinutes);
+}
+
+function SubjectTimeCharts({ summary, emptyText }: { summary: Record<string, number>; emptyText: string }) {
+  const entries = subjectTimeEntries(summary);
+  const total = entries.reduce((sum, [, minutes]) => sum + minutes, 0);
+  let cursor = 0;
+  const pieSegments = entries.map(([, minutes], index) => {
+    const start = cursor;
+    const end = cursor + (minutes / total) * 100;
+    cursor = end;
+    return `${chartColors[index % chartColors.length]} ${start}% ${end}%`;
+  });
+
+  if (!entries.length || total <= 0) {
+    return (
+      <section className="chart-panel" aria-label="Subject time charts">
+        <p className="muted">{emptyText}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="chart-panel" aria-label="Subject time charts">
+      <div className="section-head compact-head">
+        <div>
+          <p className="eyebrow">Subject Time Charts</p>
+          <h3>Time by activity area</h3>
+        </div>
+        <span className="tag">{formatMinutes(total)} total</span>
+      </div>
+      <div className="chart-layout">
+        <div className="bar-chart" aria-label="Subject time bar chart">
+          {entries.map(([subject, minutes], index) => {
+            const percent = Math.round((minutes / total) * 100);
+            return (
+              <div className="bar-chart-row" key={subject}>
+                <div>
+                  <strong>{subject}</strong>
+                  <span>{formatMinutes(minutes)} - {percent}%</span>
+                </div>
+                <div className="bar-track">
+                  <span style={{ background: chartColors[index % chartColors.length], width: `${Math.max(4, percent)}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="pie-chart-card">
+          <div className="pie-chart" style={{ background: `conic-gradient(${pieSegments.join(", ")})` }} aria-hidden="true" />
+          <div className="pie-legend">
+            {entries.map(([subject, minutes], index) => (
+              <span key={subject}><i style={{ background: chartColors[index % chartColors.length] }} />{subject} {Math.round((minutes / total) * 100)}%</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CrossSubjectChartPlaceholder() {
+  return (
+    <section className="chart-panel cross-subject-chart" aria-label="Cross-subject graph">
+      <div className="section-head compact-head">
+        <div>
+          <p className="eyebrow">Cross-Subject Links</p>
+          <h3>Not double-counted</h3>
+        </div>
+        <span className="tag">0 saved links</span>
+      </div>
+      <div className="bar-chart-row">
+        <div>
+          <strong>Cross-subject tags</strong>
+          <span>Daily parse links are review-only until saved records store them.</span>
+        </div>
+        <div className="bar-track muted-track"><span style={{ width: "0%" }} /></div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [student, setStudent] = useState("Bennett");
   const [schoolYear, setSchoolYear] = useState("2026-2027");
@@ -844,6 +933,7 @@ export default function Home() {
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
+  const [activeWeeklySection, setActiveWeeklySection] = useState<WeeklyReviewSection>("summary");
   const [weeklyReviewId, setWeeklyReviewId] = useState("");
   const [weeklyStartDate, setWeeklyStartDate] = useState(mondayForIsoDate(todayIso()));
   const [weeklyStatus, setWeeklyStatus] = useState<"draft" | "finalized" | "amended">("draft");
@@ -1951,6 +2041,16 @@ export default function Home() {
 
   const selectedPortfolioNode = portfolioNodes.find((node) => node.key === selectedPortfolioKey);
   const activeWorkspace = workspaceTabs.find((tab) => tab.key === activeTab) ?? workspaceTabs[0];
+  const annualReviewSubjectTimeSummary = useMemo(() => {
+    const totals: Record<string, number> = {};
+    portfolioArtifacts.forEach((artifact) => {
+      if (artifact.activity?.schoolYear.label !== schoolYear) return;
+      artifact.activity.allocations.forEach((allocation) => {
+        totals[allocation.subject] = (totals[allocation.subject] ?? 0) + allocation.minutes;
+      });
+    });
+    return totals;
+  }, [portfolioArtifacts, schoolYear]);
   const hasGeneratedWeeklySkills = weeklyData.skillsTouchedThisWeek.length > 0;
   const weeklySkillRows = hasGeneratedWeeklySkills
     ? weeklyData.skillsTouchedThisWeek
@@ -2489,6 +2589,28 @@ export default function Home() {
                 </div>
               ) : null}
 
+              <div className="weekly-section-hub" aria-label="Weekly review sections">
+                {[
+                  ["summary", "Summary Info", "Time, activity counts, legal coverage, and charts"],
+                  ["parent", "Parent Ratings", "Weekly summary, rating, and next-week focus"],
+                  ["student", "Student Reflection", "Student notes, self-rating, and dictation"],
+                  ["skills", "Skills Review", "AI suggestions, ratings, and parent notes"],
+                  ["portfolio", "Portfolio", "Weekly highlight selections"]
+                ].map(([key, label, description]) => (
+                  <button
+                    className={activeWeeklySection === key ? "weekly-section-button is-active" : "weekly-section-button"}
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveWeeklySection(key as WeeklyReviewSection)}
+                  >
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                  </button>
+                ))}
+              </div>
+
+              {activeWeeklySection === "summary" ? (
+              <section className="weekly-subsection is-open">
               <div className="quick-entry-grid weekly-date-grid">
                 <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>
                 <label><span>School year</span><input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} /></label>
@@ -2501,12 +2623,6 @@ export default function Home() {
                     <option>draft</option>
                     <option>finalized</option>
                     <option>amended</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Overall weekly rating</span>
-                  <select value={weeklyData.overallWeeklyRating} onChange={(event) => updateWeeklyData("overallWeeklyRating", event.target.value)}>
-                    {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
                   </select>
                 </label>
               </div>
@@ -2524,7 +2640,13 @@ export default function Home() {
                 <div className="record-link"><strong>Texas legal coverage</strong><span>{weeklyData.legalCoverageSummary.length ? weeklyData.legalCoverageSummary.join(", ") : "Generate from logs to populate legal tags."}</span></div>
                 <div className="record-link"><strong>Portfolio save target</strong><span>Portfolio / weekly-review-{weeklyStartDate}.pdf</span></div>
               </div>
+              <SubjectTimeCharts summary={weeklyData.subjectTimeSummary} emptyText="Generate from logs to populate the weekly subject time bar and pie charts." />
+              <CrossSubjectChartPlaceholder />
+              </section>
+              ) : null}
 
+              {activeWeeklySection === "parent" ? (
+              <section className="weekly-subsection is-open">
               <div className="weekly-notes-grid">
                 <label>
                   <span>Parent weekly summary</span>
@@ -2534,10 +2656,24 @@ export default function Home() {
                   <span>Next week focus</span>
                   <textarea value={weeklyData.nextWeekFocus} onChange={(event) => updateWeeklyData("nextWeekFocus", event.target.value)} />
                 </label>
+                <label>
+                  <span>Overall weekly rating</span>
+                  <select value={weeklyData.overallWeeklyRating} onChange={(event) => updateWeeklyData("overallWeeklyRating", event.target.value)}>
+                    {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                  </select>
+                </label>
               </div>
+              </section>
+              ) : null}
 
-              <details className="skill-group" open>
-                <summary><span>Student reflection</span><span>separate from parent ratings</span></summary>
+              {activeWeeklySection === "student" ? (
+              <section className="weekly-subsection is-open">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Student Reflection</p>
+                    <h2>Student notes and self-rating</h2>
+                  </div>
+                </div>
                 <div className="review-form-grid">
                   <label><span>Favorite activity this week</span><input value={weeklyData.studentFavorite} onChange={(event) => updateWeeklyData("studentFavorite", event.target.value)} /></label>
                   <label><span>Hardest activity this week</span><input value={weeklyData.studentHardest} onChange={(event) => updateWeeklyData("studentHardest", event.target.value)} /></label>
@@ -2551,8 +2687,10 @@ export default function Home() {
                   </label>
                   <label><span>Dictated reflection</span><textarea value={weeklyData.studentDictation} onChange={(event) => updateWeeklyData("studentDictation", event.target.value)} /></label>
                 </div>
-              </details>
+              </section>
+              ) : null}
 
+              {activeWeeklySection === "skills" ? (
               <section className="weekly-subsection">
                 <div className="section-head">
                   <div>
@@ -2587,7 +2725,9 @@ export default function Home() {
                   ))}
                 </div>
               </section>
+              ) : null}
 
+              {activeWeeklySection === "portfolio" ? (
               <section className="weekly-subsection">
                 <div className="section-head">
                   <div>
@@ -2617,6 +2757,7 @@ export default function Home() {
                   {portfolioArtifacts.length === 0 ? <p className="muted">Upload proof files before selecting weekly portfolio highlights.</p> : null}
                 </div>
               </section>
+              ) : null}
             </section>
             ) : null}
 
@@ -2698,6 +2839,8 @@ export default function Home() {
                 <div className="record-link"><strong>Texas legal coverage</strong><span>{quarterData.legalCoverageSummary.length ? quarterData.legalCoverageSummary.join(", ") : "Generate to summarize legal tags."}</span></div>
                 <div className="record-link"><strong>Review scope</strong><span>9-week segment only. Annual review and annual plan are separate workspaces.</span></div>
               </div>
+              <SubjectTimeCharts summary={quarterData.subjectTimeSummary} emptyText="Generate the quarter review to populate subject time bar and pie charts." />
+              <CrossSubjectChartPlaceholder />
 
               <section className="weekly-subsection">
                 <div className="section-head">
@@ -3233,6 +3376,13 @@ export default function Home() {
                 <div className="review-metric"><span>Quarter reviews</span><strong>0</strong></div>
                 <div className="review-metric"><span>Portfolio items</span><strong>{portfolioArtifacts.length}</strong></div>
               </div>
+              <div className="coverage-summary-grid">
+                <div className="record-link"><strong>Subject time summary</strong><span>{Object.entries(annualReviewSubjectTimeSummary).length ? Object.entries(annualReviewSubjectTimeSummary).map(([subject, minutes]) => `${subject} ${formatMinutes(minutes)}`).join("; ") : "Annual Review generator is not built yet. Portfolio-linked records can populate this chart as records accumulate."}</span></div>
+                <div className="record-link"><strong>Cross-subject summary</strong><span>Cross-subject links are shown separately and are not counted as extra instructional time.</span></div>
+                <div className="record-link"><strong>Review scope</strong><span>Full school-year closeout.</span></div>
+              </div>
+              <SubjectTimeCharts summary={annualReviewSubjectTimeSummary} emptyText="Annual Review charts will populate after annual review source data is generated or portfolio-linked activities exist." />
+              <CrossSubjectChartPlaceholder />
               <div className="weekly-notes-grid">
                 <label><span>Parent annual reflection</span><textarea defaultValue="Summarize growth, legal coverage, portfolio choices, and next school year recommendations." /></label>
                 <label><span>Student annual reflection</span><textarea defaultValue="What did I learn this year? What am I proud of? What do I want to learn next year?" /></label>

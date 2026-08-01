@@ -1150,6 +1150,40 @@ details.skill-group[open] summary {
   gap: 16px;
 }
 
+.weekly-section-hub {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.weekly-section-button {
+  display: grid;
+  gap: 5px;
+  min-height: 88px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  color: var(--text);
+  padding: 10px;
+  text-align: left;
+}
+
+.weekly-section-button strong {
+  font-size: 0.92rem;
+}
+
+.weekly-section-button span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.weekly-section-button.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
 .weekly-date-grid,
 .review-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1191,6 +1225,112 @@ details.skill-group[open] summary {
 .weekly-subsection {
   border-top: 1px solid var(--soft-line);
   padding-top: 16px;
+}
+
+.weekly-subsection.is-open {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.chart-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 12px;
+}
+
+.compact-head {
+  margin: 0;
+}
+
+.compact-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(210px, 0.6fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.bar-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.bar-chart-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.32fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.bar-chart-row div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.bar-chart-row span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.bar-track {
+  height: 12px;
+  border: 1px solid #c8dce4;
+  border-radius: 999px;
+  background: #eef4f6;
+  overflow: hidden;
+}
+
+.bar-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.muted-track span {
+  background: var(--soft-line);
+}
+
+.pie-chart-card {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.pie-chart {
+  width: min(170px, 100%);
+  aspect-ratio: 1;
+  border: 1px solid var(--soft-line);
+  border-radius: 50%;
+}
+
+.pie-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+}
+
+.pie-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.pie-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
 }
 
 .annual-plan-panel,
@@ -1688,6 +1828,9 @@ details.skill-group[open] summary {
     .review-form-grid,
     .coverage-summary-grid,
     .weekly-notes-grid,
+    .weekly-section-hub,
+    .chart-layout,
+    .bar-chart-row,
     .skill-rating-row,
     .portfolio-grid,
     .annual-section-hub,
