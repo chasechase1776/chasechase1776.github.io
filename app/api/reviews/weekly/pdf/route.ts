@@ -2,13 +2,19 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { saveGeneratedFile } from "@/lib/storage";
+import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
 const pdfSchema = z.object({
   reviewId: z.string().min(1)
 });
+
+type SelectedPdfImage = {
+  title: string;
+  mimeType: string;
+  bytes: Uint8Array;
+};
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -33,6 +39,15 @@ function stringifySummary(value: unknown) {
   return String(value);
 }
 
+function selectedIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+function pdfText(value: string) {
+  return value.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "?");
+}
+
 function wrapLine(value: string, width = 92) {
   const words = value.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -52,7 +67,7 @@ function wrapLine(value: string, width = 92) {
   return lines.length ? lines : [""];
 }
 
-async function buildPdf(lines: string[]) {
+async function buildPdf(lines: string[], selectedImages: SelectedPdfImage[]) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -72,6 +87,14 @@ async function buildPdf(lines: string[]) {
     });
   };
 
+  const ensureSpace = (requiredHeight: number) => {
+    if (y - requiredHeight >= 64) return;
+    drawFooter();
+    page = pdf.addPage([612, 792]);
+    pageNumber += 1;
+    y = 744;
+  };
+
   for (const line of lines) {
     if (y < 64) {
       drawFooter();
@@ -81,7 +104,7 @@ async function buildPdf(lines: string[]) {
     }
 
     const isHeading = ["Weekly Review", "Generated Metrics", "Coverage Summary", "Parent Notes", "Student Reflection", "Skills and Portfolio"].includes(line);
-    page.drawText(line || " ", {
+    page.drawText(pdfText(line || " "), {
       x: margin,
       y,
       size: isHeading ? 12 : 10,
@@ -89,6 +112,59 @@ async function buildPdf(lines: string[]) {
       color: isHeading ? rgb(0.09, 0.13, 0.17) : rgb(0.12, 0.16, 0.2)
     });
     y -= isHeading ? lineHeight + 4 : lineHeight;
+  }
+
+  if (selectedImages.length) {
+    ensureSpace(42);
+    y -= 8;
+    page.drawText("Selected Image Evidence", {
+      x: margin,
+      y,
+      size: 12,
+      font: bold,
+      color: rgb(0.09, 0.13, 0.17)
+    });
+    y -= 24;
+
+    for (const imageFile of selectedImages) {
+      try {
+        const image = imageFile.mimeType.toLowerCase().includes("png")
+          ? await pdf.embedPng(imageFile.bytes)
+          : await pdf.embedJpg(imageFile.bytes);
+        const maxWidth = 500;
+        const maxHeight = 320;
+        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        ensureSpace(height + 42);
+
+        page.drawText(pdfText(imageFile.title), {
+          x: margin,
+          y,
+          size: 10,
+          font: bold,
+          color: rgb(0.12, 0.16, 0.2)
+        });
+        y -= 16;
+        page.drawImage(image, {
+          x: margin,
+          y: y - height,
+          width,
+          height
+        });
+        y -= height + 22;
+      } catch {
+        ensureSpace(32);
+        page.drawText(pdfText(`Could not embed image: ${imageFile.title}`), {
+          x: margin,
+          y,
+          size: 10,
+          font: regular,
+          color: rgb(0.55, 0.28, 0.24)
+        });
+        y -= lineHeight;
+      }
+    }
   }
 
   drawFooter();
@@ -105,6 +181,31 @@ async function pdfBufferForWeeklyReview(review: {
   schoolYear: { label: string; student: { name: string } };
 }) {
   const data = JSON.parse(review.dataJson) as Record<string, unknown>;
+  const portfolioSelectionIds = selectedIds(data.portfolioSelections);
+  const selectedArtifacts = portfolioSelectionIds.length
+    ? await prisma.evidenceArtifact.findMany({
+        where: { id: { in: portfolioSelectionIds } },
+        orderBy: { createdAt: "desc" }
+      })
+    : [];
+  const selectedArtifactNames = selectedArtifacts.map((artifact) => artifact.originalName);
+  const selectedImages: SelectedPdfImage[] = [];
+  for (const artifact of selectedArtifacts
+    .filter((item) => ["image/jpeg", "image/jpg", "image/png"].includes(item.mimeType.toLowerCase()))
+    .slice(0, 6)) {
+    try {
+      const bytes = await readStoredFile(artifact.storagePath);
+      if (bytes.length) {
+        selectedImages.push({
+          title: artifact.originalName,
+          mimeType: artifact.mimeType,
+          bytes
+        });
+      }
+    } catch {
+      // Keep the report generation working even if one selected evidence file cannot be embedded.
+    }
+  }
   const sourceLines = [
     "Weekly Review",
     `${review.schoolYear.student.name} - ${review.schoolYear.label}`,
@@ -136,10 +237,10 @@ async function pdfBufferForWeeklyReview(review: {
     "",
     "Skills and Portfolio",
     `Skills touched: ${stringifySummary(data.skillsTouchedThisWeek)}`,
-    `Portfolio selections: ${stringifySummary(data.portfolioSelections)}`
+    `Portfolio selections: ${selectedArtifactNames.length ? selectedArtifactNames.join(", ") : stringifySummary(data.portfolioSelections)}`
   ];
 
-  return buildPdf(sourceLines.flatMap((line) => wrapLine(line)));
+  return buildPdf(sourceLines.flatMap((line) => wrapLine(line)), selectedImages);
 }
 
 export async function POST(request: Request) {

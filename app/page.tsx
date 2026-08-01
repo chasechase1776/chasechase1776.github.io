@@ -25,6 +25,8 @@ type UploadedArtifact = {
   sizeBytes: number;
 };
 
+type WeeklyPdfArtifact = UploadedArtifact;
+
 type PortfolioArtifact = UploadedArtifact & {
   storagePath: string;
   recordStatus: string;
@@ -293,6 +295,7 @@ export default function Home() {
     studentDictation: ""
   });
   const [weeklyStatusMessage, setWeeklyStatusMessage] = useState("Waiting to generate a draft review from approved activity logs.");
+  const [lastWeeklyPdfArtifact, setLastWeeklyPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [isWeeklyBusy, setIsWeeklyBusy] = useState(false);
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
@@ -499,6 +502,7 @@ export default function Home() {
   async function generateWeeklyReview() {
     setIsWeeklyBusy(true);
     setWeeklyStatusMessage("Generating weekly review draft from approved logs...");
+    setLastWeeklyPdfArtifact(null);
     try {
       const response = await fetch("/api/reviews/weekly/generate", {
         method: "POST",
@@ -582,7 +586,8 @@ export default function Home() {
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Weekly PDF generation failed.");
       await loadPortfolio();
       setWeeklyStatus("finalized");
-      setWeeklyStatusMessage(`${data.artifact.originalName} was saved to the Portfolio.`);
+      setLastWeeklyPdfArtifact(data.artifact);
+      setWeeklyStatusMessage(`${data.artifact.originalName} was saved to the Portfolio and is ready to open.`);
     } catch (error) {
       setWeeklyStatusMessage(error instanceof Error ? error.message : "Weekly PDF generation failed.");
     } finally {
@@ -970,6 +975,14 @@ export default function Home() {
               </div>
 
               <p className="status-line" role="status">{weeklyStatusMessage}</p>
+              {lastWeeklyPdfArtifact ? (
+                <div className="compiled-report-link">
+                  <span>{lastWeeklyPdfArtifact.originalName}</span>
+                  <a className="download-link" href={`/api/artifacts/${lastWeeklyPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
+                    Open PDF
+                  </a>
+                </div>
+              ) : null}
 
               <div className="quick-entry-grid weekly-date-grid">
                 <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
@@ -63,6 +63,22 @@ function supabaseStorageConfig() {
   return { bucket, prefix, serviceRoleKey, supabaseUrl };
 }
 
+function supabaseStoredObject(storagePath: string) {
+  if (!storagePath.startsWith("supabase://")) return null;
+  const withoutProtocol = storagePath.replace("supabase://", "");
+  const slashIndex = withoutProtocol.indexOf("/");
+  if (slashIndex === -1) return null;
+
+  return {
+    bucket: withoutProtocol.slice(0, slashIndex),
+    objectPath: withoutProtocol.slice(slashIndex + 1)
+  };
+}
+
+function encodedStoragePath(parts: string[]) {
+  return parts.map((part) => encodeURIComponent(part)).join("/");
+}
+
 async function saveSupabaseUploadedFile(file: File): Promise<SavedFile> {
   const bytes = Buffer.from(await file.arrayBuffer());
   return saveSupabaseBuffer(bytes, file.name, file.type || "application/octet-stream");
@@ -73,10 +89,9 @@ async function saveSupabaseBuffer(bytes: Buffer, originalName: string, mimeType:
 
   const fileName = storedFileName(originalName);
   const storagePath = `${prefix.replace(/^\/+|\/+$/g, "")}/${fileName}`;
-  const uploadUrl = `${supabaseUrl.replace(/\/+$/g, "")}/storage/v1/object/${encodeURIComponent(bucket)}/${storagePath
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/")}`;
+  const uploadUrl = `${supabaseUrl.replace(/\/+$/g, "")}/storage/v1/object/${encodeURIComponent(bucket)}/${encodedStoragePath(
+    storagePath.split("/")
+  )}`;
   const response = await fetch(uploadUrl, {
     method: "POST",
     headers: {
@@ -133,4 +148,29 @@ export async function saveGeneratedFile(bytes: Buffer, originalName: string, mim
   }
 
   return saveLocalBuffer(bytes, originalName, mimeType);
+}
+
+export async function readStoredFile(storagePath: string) {
+  const supabaseObject = supabaseStoredObject(storagePath);
+  if (!supabaseObject) {
+    return readFile(storagePath);
+  }
+
+  const { serviceRoleKey, supabaseUrl } = supabaseStorageConfig();
+  const downloadUrl = `${supabaseUrl.replace(/\/+$/g, "")}/storage/v1/object/${encodeURIComponent(
+    supabaseObject.bucket
+  )}/${encodedStoragePath(supabaseObject.objectPath.split("/"))}`;
+  const response = await fetch(downloadUrl, {
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`
+    }
+  });
+
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    throw new Error(`Stored file could not be retrieved${details ? `: ${details}` : "."}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
 }
