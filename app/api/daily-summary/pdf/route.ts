@@ -8,7 +8,7 @@ import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
 export const runtime = "nodejs";
 
 const dailySummaryPdfSchema = z.object({
-  studentName: z.string().min(1).default("Bennett"),
+  studentName: z.string().min(1).default("Bennett C. Claypool"),
   schoolYearLabel: z.string().min(1).default("2026-2027"),
   date: z.string().min(10),
   recordStatus: z.string().default("trial")
@@ -273,7 +273,7 @@ export async function POST(request: Request) {
     const activities = await prisma.activity.findMany({
       where: {
         date: activityDate,
-        student: { name: input.studentName },
+        student: { name: { in: [input.studentName, "Bennett"] } },
         schoolYear: { label: input.schoolYearLabel }
       },
       include: {

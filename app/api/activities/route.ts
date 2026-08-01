@@ -10,7 +10,7 @@ const activitySchema = z.object({
   actualMinutes: z.number().int().positive(),
   activityType: z.string().min(1),
   narration: z.string().min(1),
-  studentName: z.string().min(1).default("Bennett"),
+  studentName: z.string().min(1).default("Bennett C. Claypool"),
   schoolYearLabel: z.string().min(1).default("2026-2027 Trial / Enrichment"),
   schoolYearStatus: z.string().default("trial"),
   officialHomeschoolStartDate: z.string().optional().nullable(),

@@ -78,6 +78,9 @@ type WorkspaceTab = {
 type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
 type PortfolioSection = "proof" | "books";
 
+const DEFAULT_STUDENT_NAME = "Bennett C. Claypool";
+const STUDENT_NAME_STORAGE_KEY = "bennett-homeschool-student-name";
+
 const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   summary: "Summary Info",
   parent: "Parent Ratings",
@@ -746,18 +749,18 @@ const workspaceTabs: WorkspaceTab[] = [
     description: "Use a folder tree and list view to find uploaded proof files, learning artifacts, and Bennett's running book list."
   },
   {
-    key: "legal",
-    label: "Legal Archive",
-    eyebrow: "Legal archive",
-    headline: "Review legal coverage",
-    description: "Keep legal tags visible as distinct record metadata, separate from subjects and skills."
-  },
-  {
     key: "reports",
     label: "Reports",
     eyebrow: "Reports",
     headline: "Browse generated report buckets",
     description: "Keep generated PDFs and legal reports separate from proof-of-learning artifacts."
+  },
+  {
+    key: "legal",
+    label: "Legal Archive",
+    eyebrow: "Legal archive",
+    headline: "Review legal coverage",
+    description: "Keep legal tags visible as distinct record metadata, separate from subjects and skills."
   },
   {
     key: "records",
@@ -1110,7 +1113,11 @@ function CrossSubjectChartPlaceholder() {
 }
 
 export default function Home() {
-  const [student, setStudent] = useState("Bennett");
+  const [student, setStudent] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_STUDENT_NAME;
+    const storedName = window.localStorage.getItem(STUDENT_NAME_STORAGE_KEY);
+    return storedName && storedName !== "Bennett" ? storedName : DEFAULT_STUDENT_NAME;
+  });
   const [schoolYear, setSchoolYear] = useState("2026-2027");
   const [schoolYearStatus, setSchoolYearStatus] = useState("trial");
   const [officialStartDate, setOfficialStartDate] = useState("2027-05-01");
@@ -1336,6 +1343,10 @@ export default function Home() {
   useEffect(() => {
     void loadSavedActivities(selectedDate);
   }, [loadSavedActivities, selectedDate]);
+
+  useEffect(() => {
+    if (student.trim()) window.localStorage.setItem(STUDENT_NAME_STORAGE_KEY, student.trim());
+  }, [student]);
 
   useEffect(() => {
     void loadPortfolio();

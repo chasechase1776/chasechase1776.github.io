@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const annualPlanSchema = z.object({
-  studentName: z.string().min(1).default("Bennett"),
+  studentName: z.string().min(1).default("Bennett C. Claypool"),
   schoolYearLabel: z.string().min(1),
   schoolYearStatus: z.string().default("trial"),
   officialHomeschoolStartDate: z.string().optional().nullable(),
@@ -40,7 +40,7 @@ async function upsertSchoolYear(input: z.infer<typeof annualPlanSchema>) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const studentName = searchParams.get("studentName") || "Bennett";
+  const studentName = searchParams.get("studentName") || "Bennett C. Claypool";
   const schoolYearLabel = searchParams.get("schoolYearLabel");
 
   if (!schoolYearLabel) {
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     where: {
       schoolYear: {
         label: schoolYearLabel,
-        student: { name: studentName }
+        student: { name: { in: [studentName, "Bennett"] } }
       }
     }
   });

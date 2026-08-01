@@ -49,7 +49,7 @@ const bigPictureSchema = z.object({
 });
 
 const annualPlanPdfSchema = z.object({
-  student: z.string().default("Bennett"),
+  student: z.string().default("Bennett C. Claypool"),
   schoolYear: z.string().default("2026-2027"),
   status: z.string().default("active"),
   bigPicture: bigPictureSchema.default({}),
