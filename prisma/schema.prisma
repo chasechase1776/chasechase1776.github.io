@@ -17,57 +17,58 @@ model Student {
 }
 
 model SchoolYear {
-  id                              String         @id @default(cuid())
-  label                           String
-  status                          String         @default("trial")
-  startDate                       DateTime?
-  endDate                         DateTime?
-  officialHomeschoolStartDate     DateTime?
-  includeTrialRecordsInReports    Boolean        @default(false)
-  createdAt                       DateTime       @default(now())
-  updatedAt                       DateTime       @updatedAt
-  studentId                       String
-  student                         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  units                           UnitStudy[]
-  activities                      Activity[]
-  weeklyReviews                   WeeklyReview[]
-  exportSnapshots                 ExportSnapshot[]
+  id                           String           @id @default(cuid())
+  label                        String
+  status                       String           @default("trial")
+  startDate                    DateTime?
+  endDate                      DateTime?
+  officialHomeschoolStartDate  DateTime?
+  includeTrialRecordsInReports Boolean          @default(false)
+  createdAt                    DateTime         @default(now())
+  updatedAt                    DateTime         @updatedAt
+  studentId                    String
+  student                      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  units                        UnitStudy[]
+  activities                   Activity[]
+  weeklyReviews                WeeklyReview[]
+  quarterReviews               QuarterReview[]
+  exportSnapshots              ExportSnapshot[]
 
   @@unique([studentId, label])
 }
 
 model UnitStudy {
-  id            String      @id @default(cuid())
-  title         String
-  status        String      @default("active")
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  schoolYearId  String
-  schoolYear    SchoolYear  @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
-  activities    Activity[]
+  id           String     @id @default(cuid())
+  title        String
+  status       String     @default("active")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  activities   Activity[]
 
   @@unique([schoolYearId, title])
 }
 
 model Activity {
-  id             String                  @id @default(cuid())
+  id             String              @id @default(cuid())
   title          String
   date           DateTime
   actualMinutes  Int
   activityType   String
   narration      String
   notes          String?
-  recordStatus   String                  @default("trial")
-  parentApproved Boolean                 @default(false)
-  reviewStatus   String                  @default("needs_review")
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
+  recordStatus   String              @default("trial")
+  parentApproved Boolean             @default(false)
+  reviewStatus   String              @default("needs_review")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   studentId      String
-  student        Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student        Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   schoolYearId   String
-  schoolYear     SchoolYear              @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  schoolYear     SchoolYear          @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
   unitStudyId    String?
-  unitStudy      UnitStudy?              @relation(fields: [unitStudyId], references: [id], onDelete: SetNull)
+  unitStudy      UnitStudy?          @relation(fields: [unitStudyId], references: [id], onDelete: SetNull)
   allocations    SubjectAllocation[]
   legalTags      ActivityLegalTag[]
   skills         ActivitySkill[]
@@ -119,33 +120,51 @@ model ActivitySkill {
 }
 
 model EvidenceArtifact {
-  id              String    @id @default(cuid())
-  originalName    String
-  fileName        String
-  mimeType        String
-  sizeBytes       Int
-  storagePath     String
-  recordStatus    String    @default("trial")
-  classification  String?
-  tagsJson        String    @default("[]")
-  createdAt       DateTime  @default(now())
-  activityId      String?
-  activity        Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  id             String    @id @default(cuid())
+  originalName   String
+  fileName       String
+  mimeType       String
+  sizeBytes      Int
+  storagePath    String
+  recordStatus   String    @default("trial")
+  classification String?
+  tagsJson       String    @default("[]")
+  createdAt      DateTime  @default(now())
+  activityId     String?
+  activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
 }
 
 model WeeklyReview {
-  id             String     @id @default(cuid())
-  weekStartDate  DateTime
-  weekEndDate    DateTime
-  status         String     @default("draft")
-  dataJson       String
-  recordStatus   String     @default("trial")
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  schoolYearId   String
-  schoolYear     SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  id            String     @id @default(cuid())
+  weekStartDate DateTime
+  weekEndDate   DateTime
+  status        String     @default("draft")
+  dataJson      String
+  recordStatus  String     @default("trial")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  schoolYearId  String
+  schoolYear    SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
 
   @@unique([schoolYearId, weekStartDate])
+}
+
+model QuarterReview {
+  id               String     @id @default(cuid())
+  label            String
+  quarterStartDate DateTime
+  quarterEndDate   DateTime
+  reviewDueDate    DateTime
+  status           String     @default("draft")
+  dataJson         String
+  recordStatus     String     @default("trial")
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  schoolYearId     String
+  schoolYear       SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolYearId, label])
+  @@index([quarterStartDate, quarterEndDate, reviewDueDate, status])
 }
 
 model ExportSnapshot {

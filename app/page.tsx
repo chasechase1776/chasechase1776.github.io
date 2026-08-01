@@ -89,6 +89,44 @@ type WeeklyReviewData = {
   unitStudy?: string;
 };
 
+type QuarterPortfolioCandidate = {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  activityTitle: string;
+  activityDate: string;
+};
+
+type QuarterUnitSummary = {
+  title: string;
+  minutes: number;
+  activities: number;
+  status: string;
+};
+
+type QuarterReviewData = {
+  totalApprovedLearningTime: number;
+  daysWithRecords: number;
+  activitiesLogged: number;
+  weeklyReviewsLogged: number;
+  activitiesNeedingReview: number;
+  subjectTimeSummary: Record<string, number>;
+  legalCoverageSummary: string[];
+  skillsAcrossQuarter: string[];
+  portfolioSelections: string[];
+  portfolioCandidates: QuarterPortfolioCandidate[];
+  activeUnits: QuarterUnitSummary[];
+  studentLearned: string;
+  studentProud: string;
+  studentHard: string;
+  studentNext: string;
+  studentRating: string;
+  overallQuarterRating: string;
+  improvedMost: string;
+  needsReview: string;
+  nextQuarterPriorities: string;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -298,6 +336,35 @@ export default function Home() {
   const [weeklyStatusMessage, setWeeklyStatusMessage] = useState("Waiting to generate a draft review from approved activity logs.");
   const [lastWeeklyPdfArtifact, setLastWeeklyPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [isWeeklyBusy, setIsWeeklyBusy] = useState(false);
+  const [quarterReviewId, setQuarterReviewId] = useState("");
+  const [quarterLabel, setQuarterLabel] = useState("Quarter 1");
+  const [quarterStartDate, setQuarterStartDate] = useState("2026-07-01");
+  const [quarterDueDate, setQuarterDueDate] = useState(addDaysIso("2026-07-01", 62));
+  const [quarterStatus, setQuarterStatus] = useState<"draft" | "finalized" | "amended">("draft");
+  const [quarterStatusMessage, setQuarterStatusMessage] = useState("Waiting to generate a draft quarter review from daily logs and weekly reviews.");
+  const [isQuarterBusy, setIsQuarterBusy] = useState(false);
+  const [quarterData, setQuarterData] = useState<QuarterReviewData>({
+    totalApprovedLearningTime: 0,
+    daysWithRecords: 0,
+    activitiesLogged: 0,
+    weeklyReviewsLogged: 0,
+    activitiesNeedingReview: 0,
+    subjectTimeSummary: {},
+    legalCoverageSummary: [],
+    skillsAcrossQuarter: [],
+    portfolioSelections: [],
+    portfolioCandidates: [],
+    activeUnits: [],
+    studentLearned: "",
+    studentProud: "",
+    studentHard: "",
+    studentNext: "",
+    studentRating: "I can do this with help",
+    overallQuarterRating: "Not Observed",
+    improvedMost: "",
+    needsReview: "",
+    nextQuarterPriorities: ""
+  });
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
@@ -500,6 +567,56 @@ export default function Home() {
     setWeeklyData((current) => ({ ...current, [key]: value }));
   }
 
+  function updateQuarterData<K extends keyof QuarterReviewData>(key: K, value: QuarterReviewData[K]) {
+    setQuarterData((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleQuarterStartChange(value: string) {
+    setQuarterStartDate(value);
+    setQuarterDueDate(addDaysIso(value, 62));
+  }
+
+  function quarterAlertStatus() {
+    if (quarterStatus === "finalized") {
+      return {
+        label: "Complete",
+        title: `${quarterLabel} review finalized`,
+        summary: "The quarter review is finalized. Daily records remain unchanged and retrievable."
+      };
+    }
+
+    const today = todayIso();
+    const due = quarterDueDate.slice(0, 10);
+    const daysUntilDue = Math.round((new Date(`${due}T00:00:00.000Z`).getTime() - new Date(`${today}T00:00:00.000Z`).getTime()) / 86400000);
+
+    if (daysUntilDue < 0) {
+      return {
+        label: "Overdue",
+        title: `${quarterLabel} review overdue`,
+        summary: `${quarterLabel} review is overdue. This alert flags review work only; saved records are not changed.`
+      };
+    }
+    if (daysUntilDue === 0) {
+      return {
+        label: "Due-day reminder",
+        title: `${quarterLabel} review due today`,
+        summary: `${quarterLabel} review is due today. Finalizing changes this alert to complete.`
+      };
+    }
+    if (daysUntilDue <= 3) {
+      return {
+        label: "3-day reminder",
+        title: `${quarterLabel} review due soon`,
+        summary: `${quarterLabel} review is due in ${daysUntilDue} day${daysUntilDue === 1 ? "" : "s"}. Alerts flag review work only.`
+      };
+    }
+    return {
+      label: "No reminder",
+      title: `${quarterLabel} review scheduled`,
+      summary: `${quarterLabel} review is not due within the 3-day reminder window.`
+    };
+  }
+
   async function generateWeeklyReview() {
     setIsWeeklyBusy(true);
     setWeeklyStatusMessage("Generating weekly review draft from approved logs...");
@@ -601,6 +718,80 @@ export default function Home() {
     }
   }
 
+  async function generateQuarterReview() {
+    setIsQuarterBusy(true);
+    setQuarterStatusMessage("Generating quarter review draft from the selected 9-week segment...");
+    try {
+      const response = await fetch("/api/reviews/quarter/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          schoolYearLabel: schoolYear,
+          quarterLabel,
+          quarterStartDate,
+          reviewDueDate: quarterDueDate,
+          recordStatus: schoolYearStatus
+        })
+      });
+      const data = await response.json().catch(() => ({ error: "Quarter review generation failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Quarter review generation failed.");
+      setQuarterReviewId(data.review.id);
+      setQuarterStatus(data.review.status);
+      setQuarterData((current) => ({
+        ...current,
+        ...data.data,
+        studentLearned: data.data.studentLearned || current.studentLearned || "Add the student reflection after reviewing the quarter.",
+        studentProud: data.data.studentProud || current.studentProud,
+        studentHard: data.data.studentHard || current.studentHard,
+        studentNext: data.data.studentNext || current.studentNext,
+        improvedMost: data.data.improvedMost || current.improvedMost,
+        needsReview: data.data.needsReview || current.needsReview,
+        nextQuarterPriorities: data.data.nextQuarterPriorities || current.nextQuarterPriorities
+      }));
+      setQuarterStatusMessage("Draft quarter review generated from daily logs, weekly reviews, legal tags, units, skills, and portfolio evidence.");
+    } catch (error) {
+      setQuarterStatusMessage(error instanceof Error ? error.message : "Quarter review generation failed.");
+    } finally {
+      setIsQuarterBusy(false);
+    }
+  }
+
+  async function saveQuarterReview(statusValue: "draft" | "finalized" | "amended") {
+    if (!quarterReviewId) {
+      setQuarterStatusMessage("Generate the quarter review before saving.");
+      return;
+    }
+
+    setIsQuarterBusy(true);
+    setQuarterStatusMessage(statusValue === "finalized" ? "Finalizing quarter review..." : "Saving quarter review draft...");
+    try {
+      const response = await fetch("/api/reviews/quarter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewId: quarterReviewId,
+          status: statusValue,
+          quarterStartDate,
+          reviewDueDate: quarterDueDate,
+          data: quarterData,
+          recordStatus: schoolYearStatus
+        })
+      });
+      const data = await response.json().catch(() => ({ error: "Quarter review save failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Quarter review save failed.");
+      setQuarterStatus(data.review.status);
+      setQuarterStatusMessage(
+        statusValue === "finalized"
+          ? "Quarter review finalized and saved. Annual review and annual plan remain separate workspaces."
+          : "Quarter review draft saved."
+      );
+    } catch (error) {
+      setQuarterStatusMessage(error instanceof Error ? error.message : "Quarter review save failed.");
+    } finally {
+      setIsQuarterBusy(false);
+    }
+  }
+
   const subjectTallies = useMemo(() => {
     const totals = new Map<string, number>();
     savedActivities
@@ -668,6 +859,7 @@ export default function Home() {
   const weeklySkillRows = hasGeneratedWeeklySkills
     ? weeklyData.skillsTouchedThisWeek
     : ["Language Arts: Reading", "Math: Measurement and Money", "Science: Uses Tools and Models"];
+  const quarterAlert = quarterAlertStatus();
 
   return (
     <main className="mockup-shell">
@@ -691,7 +883,9 @@ export default function Home() {
                     <li key={tab.key}>
                       <button className={activeTab === tab.key ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab(tab.key)}>
                         {tab.label}
-                        {tab.key === "quarter" ? <span className="alert-sidebar-badge">Urgent</span> : null}
+                        {tab.key === "quarter" && quarterAlert.label !== "No reminder" && quarterAlert.label !== "Complete" ? (
+                          <span className="alert-sidebar-badge">{quarterAlert.label}</span>
+                        ) : null}
                       </button>
                     </li>
                   ))}
@@ -1125,6 +1319,179 @@ export default function Home() {
             </section>
             ) : null}
 
+            {activeTab === "quarter" ? (
+            <section className="panel weekly-review-panel" id="quarter-review">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Quarter Reviews</p>
+                  <h2>Instructional quarter checkpoint</h2>
+                  <p className="panel-note">Quarter reviews summarize 9-week segments. Annual Review and Annual Plan will stay separate workspaces.</p>
+                </div>
+                <span className="tag">{quarterAlert.label}</span>
+              </div>
+
+              <div className="primary-action-row">
+                <button className="secondary-button" type="button" onClick={() => void generateQuarterReview()} disabled={isQuarterBusy}>Generate Quarter Review</button>
+                <button className="secondary-button" type="button" onClick={() => void saveQuarterReview("draft")} disabled={isQuarterBusy || !quarterReviewId}>Save Draft</button>
+                <button className="primary-button" type="button" onClick={() => void saveQuarterReview("finalized")} disabled={isQuarterBusy || !quarterReviewId}>Finalize Quarter Review</button>
+              </div>
+
+              <p className="status-line" role="status">{quarterStatusMessage}</p>
+
+              <div className="quick-entry-grid weekly-date-grid">
+                <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>
+                <label><span>School year</span><input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} /></label>
+                <label>
+                  <span>Quarter label</span>
+                  <select value={quarterLabel} onChange={(event) => setQuarterLabel(event.target.value)}>
+                    <option>Quarter 1</option>
+                    <option>Quarter 2</option>
+                    <option>Quarter 3</option>
+                    <option>Quarter 4</option>
+                  </select>
+                </label>
+                <label><span>Quarter start date</span><input type="date" value={quarterStartDate} onChange={(event) => handleQuarterStartChange(event.target.value)} /></label>
+                <label><span>Quarter end date</span><input type="date" value={addDaysIso(quarterStartDate, 62)} readOnly /></label>
+                <label><span>Review due date</span><input type="date" value={quarterDueDate} onChange={(event) => setQuarterDueDate(event.target.value)} /></label>
+                <label>
+                  <span>Status</span>
+                  <select value={quarterStatus} onChange={(event) => setQuarterStatus(event.target.value as "draft" | "finalized" | "amended")}>
+                    <option>draft</option>
+                    <option>finalized</option>
+                    <option>amended</option>
+                  </select>
+                </label>
+                <label><span>Reminder status</span><input value={quarterAlert.label} readOnly /></label>
+              </div>
+
+              <section className="review-alert-card quiet-alert" aria-label="Quarter due status">
+                <div className="alert-head">
+                  <div>
+                    <p className="eyebrow">Quarter review due status</p>
+                    <h2>{quarterAlert.title}</h2>
+                    <p>{quarterAlert.summary}</p>
+                  </div>
+                  <span className="alert-status">{quarterAlert.label}</span>
+                </div>
+              </section>
+
+              <div className="review-metrics" aria-label="Quarter review generated metrics">
+                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(quarterData.totalApprovedLearningTime)}</strong></div>
+                <div className="review-metric"><span>Days with records</span><strong>{quarterData.daysWithRecords}</strong></div>
+                <div className="review-metric"><span>Activities</span><strong>{quarterData.activitiesLogged}</strong></div>
+                <div className="review-metric"><span>Weekly reviews</span><strong>{quarterData.weeklyReviewsLogged}</strong></div>
+                <div className="review-metric"><span>Needs review</span><strong>{quarterData.activitiesNeedingReview}</strong></div>
+              </div>
+
+              <div className="coverage-summary-grid">
+                <div className="record-link"><strong>Subject time summary</strong><span>{Object.entries(quarterData.subjectTimeSummary).length ? Object.entries(quarterData.subjectTimeSummary).map(([subject, minutes]) => `${subject} ${formatMinutes(minutes)}`).join("; ") : "Generate to summarize subject allocations."}</span></div>
+                <div className="record-link"><strong>Texas legal coverage</strong><span>{quarterData.legalCoverageSummary.length ? quarterData.legalCoverageSummary.join(", ") : "Generate to summarize legal tags."}</span></div>
+                <div className="record-link"><strong>Review scope</strong><span>9-week segment only. Annual review and annual plan are separate workspaces.</span></div>
+              </div>
+
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Quarter Skills</p>
+                    <h2>Weekly ratings across the quarter</h2>
+                  </div>
+                  <span className="tag">{quarterData.skillsAcrossQuarter.length} suggested</span>
+                </div>
+                <div className="skill-rating-list">
+                  {(quarterData.skillsAcrossQuarter.length ? quarterData.skillsAcrossQuarter.slice(0, 8) : ["Generate the quarter review to populate real skill suggestions."]).map((skill, index) => (
+                    <article className="skill-rating-row" key={skill}>
+                      <div>
+                        <strong>{skill}</strong>
+                        <p className="skill-evidence">{quarterData.skillsAcrossQuarter.length ? "Suggested from activity skills and weekly review skill ratings." : "No generated quarter skills yet."}</p>
+                      </div>
+                      <div className="rating-buttons" aria-label={`${skill} quarter rating`}>
+                        {weeklyRatings.map((rating) => (
+                          <button className={index === 0 && rating === "Practicing" ? "rating-button is-selected" : "rating-button"} type="button" key={`${skill}-${rating}`}>
+                            {rating}
+                          </button>
+                        ))}
+                      </div>
+                      <label><span>Parent note</span><input placeholder="Add a quarter skill note." /></label>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Quarter Reflection</p>
+                    <h2>Student and parent planning direction</h2>
+                  </div>
+                </div>
+                <div className="review-form-grid">
+                  <label><span>What did I learn this quarter?</span><textarea value={quarterData.studentLearned} onChange={(event) => updateQuarterData("studentLearned", event.target.value)} /></label>
+                  <label><span>What work am I most proud of?</span><input value={quarterData.studentProud} onChange={(event) => updateQuarterData("studentProud", event.target.value)} /></label>
+                  <label><span>What was hard for me?</span><input value={quarterData.studentHard} onChange={(event) => updateQuarterData("studentHard", event.target.value)} /></label>
+                  <label><span>What do I want to learn next?</span><input value={quarterData.studentNext} onChange={(event) => updateQuarterData("studentNext", event.target.value)} /></label>
+                  <label>
+                    <span>Student self-rating</span>
+                    <select value={quarterData.studentRating} onChange={(event) => updateQuarterData("studentRating", event.target.value)}>
+                      {studentRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Overall quarter rating</span>
+                    <select value={quarterData.overallQuarterRating} onChange={(event) => updateQuarterData("overallQuarterRating", event.target.value)}>
+                      {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                    </select>
+                  </label>
+                  <label><span>What improved most</span><input value={quarterData.improvedMost} onChange={(event) => updateQuarterData("improvedMost", event.target.value)} /></label>
+                  <label><span>What needs review</span><input value={quarterData.needsReview} onChange={(event) => updateQuarterData("needsReview", event.target.value)} /></label>
+                  <label><span>Next quarter priorities</span><textarea value={quarterData.nextQuarterPriorities} onChange={(event) => updateQuarterData("nextQuarterPriorities", event.target.value)} /></label>
+                </div>
+              </section>
+
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Portfolio</p>
+                    <h2>Choose 8-15 quarter highlights</h2>
+                  </div>
+                  <span className="tag">{quarterData.portfolioSelections.length} selected</span>
+                </div>
+                <div className="portfolio-grid">
+                  {quarterData.portfolioCandidates.length ? quarterData.portfolioCandidates.slice(0, 15).map((artifact) => (
+                    <label className={quarterData.portfolioSelections.includes(artifact.id) ? "portfolio-card is-selected" : "portfolio-card"} key={artifact.id}>
+                      <input
+                        checked={quarterData.portfolioSelections.includes(artifact.id)}
+                        type="checkbox"
+                        onChange={(event) =>
+                          updateQuarterData(
+                            "portfolioSelections",
+                            event.target.checked
+                              ? [...quarterData.portfolioSelections, artifact.id]
+                              : quarterData.portfolioSelections.filter((id) => id !== artifact.id)
+                          )
+                        }
+                      />
+                      <span><strong>{artifact.originalName}</strong><br />{artifact.activityTitle} - {artifact.activityDate}</span>
+                    </label>
+                  )) : <p className="muted">Generate the quarter review to suggest portfolio highlights from approved activity evidence.</p>}
+                </div>
+              </section>
+
+              <section className="weekly-subsection">
+                <div className="section-head">
+                  <div>
+                    <p className="eyebrow">Units</p>
+                    <h2>Active units this quarter</h2>
+                  </div>
+                </div>
+                <div className="coverage-list">
+                  {quarterData.activeUnits.length ? quarterData.activeUnits.map((item) => (
+                    <div key={item.title}><span>{item.title} - {item.activities} activities</span><strong>{formatMinutes(item.minutes)}</strong></div>
+                  )) : <p className="muted">Generate the quarter review to summarize active unit studies.</p>}
+                </div>
+              </section>
+            </section>
+            ) : null}
+
             {activeTab === "portfolio" ? (
             <section className="panel portfolio-panel" id="portfolio">
               <div className="section-head">
@@ -1198,10 +1565,10 @@ export default function Home() {
               <div className="alert-head">
                 <div>
                   <p className="eyebrow">Quarter review alert</p>
-                  <h2>Quarter 1 review due soon</h2>
-                  <p>Due in 3 days. This flags review work only; daily records are never changed or deleted.</p>
+                  <h2>{quarterAlert.title}</h2>
+                  <p>{quarterAlert.summary}</p>
                 </div>
-                <span className="alert-status">Urgent</span>
+                <span className="alert-status">{quarterAlert.label}</span>
               </div>
             </section>
             ) : null}
