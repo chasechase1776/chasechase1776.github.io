@@ -204,8 +204,23 @@ const activityTypes = [
   "Presentation Cycle",
   "Hands-On Activity",
   "Physical Activity",
+  "Foreign Language",
+  "Independent Reading",
+  "Extracurricular",
   "Field Trip",
   "Group Event"
+];
+
+const extracurricularOptions = [
+  "Sports",
+  "Clubs",
+  "Service",
+  "Performing Arts",
+  "Visual Arts",
+  "Tech & STEM",
+  "Communication",
+  "Mind Games",
+  "Other"
 ];
 
 const legalCoverage = [
@@ -658,6 +673,9 @@ function inferSubject(activityType: string) {
   if (activityType === "Language Arts" || activityType === "Writing Project" || activityType === "Presentation Cycle") return "Language Arts";
   if (activityType === "Math") return "Math";
   if (activityType === "Finance") return "Finance";
+  if (activityType === "Foreign Language") return "Foreign Language";
+  if (activityType === "Independent Reading") return "Independent Reading";
+  if (activityType === "Extracurricular") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
   if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
   return "Unit Study";
@@ -670,8 +688,8 @@ function legalTagSuggestions(activityType: string, subject: string) {
   if (combined.includes("spelling")) tags.add("Spelling");
   if (combined.includes("grammar") || combined.includes("writing")) tags.add("Grammar");
   if (combined.includes("math") || combined.includes("finance") || combined.includes("money")) tags.add("Mathematics");
-  if (combined.includes("citizenship") || combined.includes("social") || combined.includes("group")) tags.add("Good Citizenship");
-  if (combined.includes("visual") || combined.includes("presentation") || combined.includes("journal") || combined.includes("field")) tags.add("Visual Curriculum");
+  if (combined.includes("citizenship") || combined.includes("social") || combined.includes("group") || combined.includes("service") || combined.includes("extracurricular")) tags.add("Good Citizenship");
+  if (combined.includes("visual") || combined.includes("presentation") || combined.includes("journal") || combined.includes("field") || combined.includes("foreign") || combined.includes("language") || combined.includes("arts") || combined.includes("stem")) tags.add("Visual Curriculum");
   return Array.from(tags);
 }
 
@@ -706,6 +724,15 @@ function defaultNarrationForType(activityType: string) {
   if (activityType === "Science Journal") {
     return "Today we observed, drew, labeled, and described changes or patterns in the science journal.";
   }
+  if (activityType === "Foreign Language") {
+    return "Today we practiced Spanish vocabulary, listened for familiar words, and used short spoken phrases.";
+  }
+  if (activityType === "Independent Reading") {
+    return "Today he read independently, talked about what happened in the book, and shared a favorite detail.";
+  }
+  if (activityType === "Extracurricular") {
+    return "Today he participated in an extracurricular activity and practiced cooperation, persistence, and communication.";
+  }
   if (activityType === "Field Trip") {
     return "Today we connected real-world observations to the current unit study and discussed what we noticed.";
   }
@@ -715,6 +742,9 @@ function defaultNarrationForType(activityType: string) {
 function parsedSubjectForType(activityType: string) {
   if (activityType === "Math") return "Math";
   if (activityType === "Finance") return "Finance";
+  if (activityType === "Foreign Language") return "Foreign Language";
+  if (activityType === "Independent Reading") return "Independent Reading";
+  if (activityType === "Extracurricular") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
   if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
   if (activityType === "Unit Study") return "Unit Study";
@@ -725,6 +755,9 @@ function parsedLegalTagsForType(activityType: string) {
   if (activityType === "Math") return ["Mathematics", "Visual Curriculum", "Bona Fide Instruction"];
   if (activityType === "Finance") return ["Mathematics", "Good Citizenship", "Bona Fide Instruction"];
   if (activityType === "Science Journal") return ["Visual Curriculum", "Bona Fide Instruction"];
+  if (activityType === "Foreign Language") return ["Reading", "Visual Curriculum", "Bona Fide Instruction"];
+  if (activityType === "Independent Reading") return ["Reading", "Bona Fide Instruction"];
+  if (activityType === "Extracurricular") return ["Good Citizenship", "Visual Curriculum", "Bona Fide Instruction"];
   return ["Reading", "Grammar", "Spelling"];
 }
 
@@ -732,16 +765,26 @@ function parsedSkillsForType(activityType: string) {
   if (activityType === "Math") return ["Measurement and Money", "Mathematical Communication"];
   if (activityType === "Finance") return ["Earning and Saving", "Spending Choices", "Money Vocabulary"];
   if (activityType === "Science Journal") return ["Observation", "Questioning", "Scientific Drawing"];
+  if (activityType === "Foreign Language") return ["Listening Comprehension", "Speaking Practice", "Vocabulary"];
+  if (activityType === "Independent Reading") return ["Reading Stamina", "Comprehension", "Reader Response"];
+  if (activityType === "Extracurricular") return ["Teamwork", "Discipline and Practice", "Communication"];
   return ["Reading", "Fluency", "Editing"];
 }
 
-function mockDrafts(activityType: string, minutes: number): DraftCard[] {
+function parsedTitleForType(activityType: string, language: string, extracurricularSelections: string[]) {
+  if (activityType === "Language Arts") return "Story Weaver read-aloud and editing";
+  if (activityType === "Foreign Language") return `${language || "Spanish"} practice narration record`;
+  if (activityType === "Extracurricular" && extracurricularSelections.length) return `${extracurricularSelections.join(", ")} extracurricular record`;
+  return `${activityType} narration record`;
+}
+
+function mockDrafts(activityType: string, minutes: number, language: string, extracurricularSelections: string[]): DraftCard[] {
   const primarySubject = parsedSubjectForType(activityType);
   const primaryMinutes = minutes || 25;
   return [
     {
       id: "draft-primary",
-      title: activityType === "Language Arts" ? "Story Weaver read-aloud and editing" : `${activityType} narration record`,
+      title: parsedTitleForType(activityType, language, extracurricularSelections),
       minutes: primaryMinutes,
       status: "needs_approval",
       subjectAllocations: [{ subject: primarySubject, minutes: primaryMinutes }],
@@ -763,6 +806,8 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [actualMinutes, setActualMinutes] = useState(25);
   const [narration, setNarration] = useState(defaultNarrationForType("Language Arts"));
+  const [foreignLanguage, setForeignLanguage] = useState("Spanish");
+  const [selectedExtracurriculars, setSelectedExtracurriculars] = useState<string[]>([]);
   const [entryDraftsByType, setEntryDraftsByType] = useState<Record<string, { title: string; narration: string; minutes: number }>>({
     "Language Arts": {
       title: "",
@@ -966,9 +1011,23 @@ export default function Home() {
     setLegalTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
   }
 
+  function toggleExtracurricularOption(option: string) {
+    setSelectedExtracurriculars((current) =>
+      current.includes(option) ? current.filter((item) => item !== option) : [...current, option]
+    );
+  }
+
+  function defaultActivityTitle() {
+    if (selectedType === "Foreign Language") return `${foreignLanguage || "Spanish"} - Foreign Language - ${selectedDate}`;
+    if (selectedType === "Extracurricular" && selectedExtracurriculars.length) {
+      return `${selectedExtracurriculars.join(", ")} - Extracurricular - ${selectedDate}`;
+    }
+    return `${selectedType} - ${selectedDate}`;
+  }
+
   function activityPayload(parentApproved: boolean) {
     return {
-      title: title.trim() || `${selectedType} - ${selectedDate}`,
+      title: title.trim() || defaultActivityTitle(),
       date: selectedDate,
       actualMinutes,
       activityType: selectedType,
@@ -1071,7 +1130,7 @@ export default function Home() {
   }
 
   function parseWithAi() {
-    const drafts = mockDrafts(selectedType, actualMinutes);
+    const drafts = mockDrafts(selectedType, actualMinutes, foreignLanguage, selectedExtracurriculars);
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
   }
@@ -2021,9 +2080,36 @@ export default function Home() {
                   <input type="number" min="1" value={actualMinutes} onChange={(event) => setActualMinutes(Number(event.target.value))} />
                 </label>
               </div>
+              {selectedType === "Foreign Language" ? (
+                <div className="activity-detail-panel">
+                  <label>
+                    <span>Language</span>
+                    <input value={foreignLanguage} onChange={(event) => setForeignLanguage(event.target.value)} placeholder="Spanish" />
+                  </label>
+                </div>
+              ) : null}
+              {selectedType === "Extracurricular" ? (
+                <div className="activity-detail-panel">
+                  <span className="field-label">Activity areas</span>
+                  <div className="tag-option-grid">
+                    {extracurricularOptions.map((option) => (
+                      <button
+                        className={selectedExtracurriculars.includes(option) ? "tag-button is-active" : "tag-button"}
+                        key={option}
+                        type="button"
+                        onClick={() => toggleExtracurricularOption(option)}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
               <div className="quick-summary-row">
                 <span className="tag good">{primarySubject}: {actualMinutes || 0} min</span>
+                {selectedType === "Foreign Language" ? <span className="tag">{foreignLanguage || "Spanish"}</span> : null}
+                {selectedType === "Extracurricular" && selectedExtracurriculars.length ? <span className="tag">{selectedExtracurriculars.join(", ")}</span> : null}
                 <span className="tag">Legal tags suggested</span>
                 <button className="text-button" type="button" onClick={() => setShowDetails((value) => !value)}>
                   {showDetails ? "Hide full details" : "Show full details"}

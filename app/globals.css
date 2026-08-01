@@ -454,6 +454,22 @@ textarea {
   margin-top: 14px;
 }
 
+.activity-detail-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8fbfc;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

@@ -9,6 +9,9 @@ export const activityTypes = [
   "Presentation Cycle",
   "Hands-On Activity",
   "Physical Activity",
+  "Foreign Language",
+  "Independent Reading",
+  "Extracurricular",
   "Field Trip",
   "Group Event"
 ] as const;
@@ -75,6 +78,31 @@ export const skillTaxonomy: Record<string, string[]> = {
     "Business",
     "Philosophy",
     "Emotional Intelligence"
+  ],
+  "Foreign Language": [
+    "Listening Comprehension",
+    "Speaking Practice",
+    "Vocabulary",
+    "Reading in Target Language",
+    "Writing in Target Language",
+    "Cultural Awareness"
+  ],
+  "Independent Reading": [
+    "Reading Stamina",
+    "Comprehension",
+    "Book Discussion",
+    "Vocabulary from Context",
+    "Reader Response"
+  ],
+  Extracurricular: [
+    "Teamwork",
+    "Discipline and Practice",
+    "Leadership",
+    "Service",
+    "Creative Expression",
+    "Technical Skills",
+    "Communication",
+    "Strategic Thinking"
   ]
 };
 
@@ -86,8 +114,8 @@ export function suggestLegalTags(activityType: string, subjects: string[]) {
   if (combined.includes("spelling")) tags.add("Spelling");
   if (combined.includes("grammar") || combined.includes("writing")) tags.add("Grammar");
   if (combined.includes("math") || combined.includes("finance") || combined.includes("money")) tags.add("Mathematics");
-  if (combined.includes("citizenship") || combined.includes("social") || combined.includes("group")) tags.add("Good Citizenship");
-  if (combined.includes("visual") || combined.includes("presentation") || combined.includes("journal") || combined.includes("field")) tags.add("Visual Curriculum");
+  if (combined.includes("citizenship") || combined.includes("social") || combined.includes("group") || combined.includes("service") || combined.includes("extracurricular")) tags.add("Good Citizenship");
+  if (combined.includes("visual") || combined.includes("presentation") || combined.includes("journal") || combined.includes("field") || combined.includes("foreign") || combined.includes("language") || combined.includes("arts") || combined.includes("stem")) tags.add("Visual Curriculum");
 
   return Array.from(tags);
 }
@@ -102,6 +130,9 @@ export function inferSubject(activityType: string) {
   if (activityType === "Language Arts" || activityType === "Writing Project" || activityType === "Presentation Cycle") return "Language Arts";
   if (activityType === "Math") return "Math";
   if (activityType === "Finance") return "Finance";
+  if (activityType === "Foreign Language") return "Foreign Language";
+  if (activityType === "Independent Reading") return "Independent Reading";
+  if (activityType === "Extracurricular") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
   if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
   return "Unit Study";
