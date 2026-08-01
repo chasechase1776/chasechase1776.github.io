@@ -76,6 +76,7 @@ type WorkspaceTab = {
 };
 
 type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
+type PortfolioSection = "proof" | "books";
 
 const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   summary: "Summary Info",
@@ -1137,6 +1138,7 @@ export default function Home() {
   const [duplicateApprovedActivities, setDuplicateApprovedActivities] = useState<SavedActivity[]>([]);
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
+  const [activePortfolioSection, setActivePortfolioSection] = useState<PortfolioSection | null>(null);
   const [bookListEntries, setBookListEntries] = useState<BookListEntry[]>([]);
   const [bookListMessage, setBookListMessage] = useState("Running book list is ready.");
   const [isBookListBusy, setIsBookListBusy] = useState(false);
@@ -4363,8 +4365,33 @@ export default function Home() {
               <div className="section-head">
                 <div>
                   <p className="eyebrow">Portfolio</p>
+                  <h2>Portfolio workspace</h2>
+                  <p className="panel-note">Choose proof files or Bennett&apos;s book list. Generated reports are grouped in Reports.</p>
+                </div>
+              </div>
+              <div className="weekly-section-hub portfolio-section-hub" aria-label="Portfolio sections">
+                {[
+                  ["proof", "Proof file explorer", "Browse uploaded images, documents, and activity artifacts."],
+                  ["books", "Book list", "Add completed books with author, finish date, and student rating."]
+                ].map(([key, label, description]) => (
+                  <button
+                    className={activePortfolioSection === key ? "weekly-section-button is-active" : "weekly-section-button"}
+                    key={key}
+                    type="button"
+                    onClick={() => setActivePortfolioSection(key as PortfolioSection)}
+                  >
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                  </button>
+                ))}
+              </div>
+              {activePortfolioSection === "proof" ? (
+              <>
+              <div className="section-head compact-head">
+                <div>
+                  <p className="eyebrow">Proof Archive</p>
                   <h2>Proof file explorer</h2>
-                  <p className="panel-note">Portfolio shows proof of learning: uploaded images, documents, and activity artifacts. Generated reports are grouped in Reports.</p>
+                  <p className="panel-note">Portfolio shows proof of learning: uploaded images, documents, and activity artifacts.</p>
                 </div>
                 <button className="secondary-button" type="button" onClick={() => void loadPortfolio()} disabled={isLoadingPortfolio}>
                   {isLoadingPortfolio ? "Loading..." : "Refresh"}
@@ -4420,6 +4447,9 @@ export default function Home() {
                   )}
                 </div>
               </div>
+              </>
+              ) : null}
+              {activePortfolioSection === "books" ? (
               <section className="book-list-panel">
                 <div className="section-head">
                   <div>
@@ -4470,6 +4500,7 @@ export default function Home() {
                   )) : <p className="muted">No completed books added yet.</p>}
                 </div>
               </section>
+              ) : null}
             </section>
             ) : null}
           </section>

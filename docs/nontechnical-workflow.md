@@ -18,13 +18,14 @@ After each meaningful change, Codex should provide:
 
 User-approved implementation changes follow this loop automatically in every project thread:
 
-1. Make the change in the existing app structure.
-2. Run focused checks and the production build when practical.
-3. Commit the completed change.
-4. Push it to GitHub.
-5. Deploy it to the Vercel production project.
-6. Open and smoke-test the live Vercel URL.
-7. Report what changed, the live URL, what was checked, any limitations, and the commit/deployment result.
+1. Ask a short clarification question first when the request would require a large amount of coding, broad workflow changes, a database migration with unclear behavior, a new external service, or a decision that affects multiple workspaces.
+2. Make the change in the existing app structure.
+3. Run focused checks and the production build when practical.
+4. Commit the completed change.
+5. Push it to GitHub.
+6. Deploy it to the Vercel production project.
+7. Open and smoke-test the live Vercel URL.
+8. Report what changed, the live URL, what was checked, any limitations, and the commit/deployment result.
 
 This is the default delivery behavior unless the user asks for a review, planning-only response, local-only work, or explicitly says not to deploy. A failed check or deployment must be reported rather than hidden.
 
@@ -75,6 +76,14 @@ Do not simplify by removing required data. Keep the activity as the source of tr
 ## Verification Checklists
 
 Each feature should include a simple checklist.
+
+Before large feature work, Codex should confirm:
+
+1. Which workspace the feature belongs in.
+2. What the parent should click first.
+3. What information must save permanently.
+4. Whether generated reports belong in Reports or proof artifacts belong in Portfolio.
+5. Whether the change should alter existing records or only affect new records.
 
 Example for activity logging:
 
