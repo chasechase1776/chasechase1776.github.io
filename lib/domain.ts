@@ -77,6 +77,8 @@ export const skillTaxonomy: Record<string, string[]> = {
     "Communication",
     "Business",
     "Philosophy",
+    "Logic",
+    "Problem-Solving",
     "Emotional Intelligence"
   ],
   "Foreign Language": [

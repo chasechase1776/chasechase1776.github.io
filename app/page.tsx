@@ -234,7 +234,6 @@ const legalCoverage = [
 ];
 
 const allLegalTagOptions = legalCoverage.map(([label]) => label);
-const allSkillTagOptions = Array.from(new Set(Object.values(skillTaxonomy).flat())).sort((a, b) => a.localeCompare(b));
 
 const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
 const weeklyRatings = ["Not Observed", "Introduced", "Developing", "Practicing", "Proficient", "Mastery"];
@@ -757,29 +756,53 @@ function parsedSubjectForType(activityType: string) {
   return "Language Arts";
 }
 
-function parsedLegalTagsForType(activityType: string) {
-  if (activityType === "Math") return ["Mathematics", "Visual Curriculum", "Bona Fide Instruction"];
-  if (activityType === "Finance") return ["Mathematics", "Good Citizenship", "Bona Fide Instruction"];
-  if (activityType === "Science Journal") return ["Visual Curriculum", "Bona Fide Instruction"];
-  if (activityType === "Foreign Language") return ["Reading", "Visual Curriculum", "Bona Fide Instruction"];
-  if (activityType === "Independent Reading") return ["Reading", "Bona Fide Instruction"];
-  if (activityType === "Extracurricular") return ["Good Citizenship", "Visual Curriculum", "Bona Fide Instruction"];
-  return ["Reading", "Grammar", "Spelling"];
+function parsedLegalTagsForType(activityType: string, text = "") {
+  const combined = `${activityType} ${text}`.toLowerCase();
+  const tags = new Set<string>(["Bona Fide Instruction"]);
+  if (/(read|book|story|literature|language|vocabulary|spanish|foreign)/.test(combined)) tags.add("Reading");
+  if (/(spell|word study|phonics)/.test(combined)) tags.add("Spelling");
+  if (/(grammar|sentence|writing|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
+  if (/(math|measure|money|finance|budget|saving|spending|count|fraction|logic|problem)/.test(combined)) tags.add("Mathematics");
+  if (/(citizen|service|community|group|club|team|leadership|communication|social|extracurricular)/.test(combined)) tags.add("Good Citizenship");
+  if (/(visual|art|draw|journal|presentation|field|model|photo|stem|tech|performing|science|experiment|observe)/.test(combined)) tags.add("Visual Curriculum");
+  return Array.from(tags);
 }
 
-function parsedSkillsForType(activityType: string) {
-  if (activityType === "Math") return ["Measurement and Money", "Mathematical Communication"];
-  if (activityType === "Finance") return ["Earning and Saving", "Spending Choices", "Money Vocabulary"];
-  if (activityType === "Science Journal") return ["Observation", "Questioning", "Scientific Drawing"];
-  if (activityType === "Foreign Language") return ["Listening Comprehension", "Speaking Practice", "Vocabulary"];
-  if (activityType === "Independent Reading") return ["Reading Stamina", "Comprehension", "Reader Response"];
-  if (activityType === "Extracurricular") return ["Teamwork", "Discipline and Practice", "Communication"];
-  return ["Reading", "Fluency", "Editing"];
+function parsedSkillsForType(activityType: string, text = "") {
+  const combined = `${activityType} ${text}`.toLowerCase();
+  const primarySubject = parsedSubjectForType(activityType);
+  const skills = new Set<string>();
+  const add = (skill: string) => skills.add(skill);
+
+  if (primarySubject === "Language Arts") ["Reading", "Fluency", "Editing"].forEach(add);
+  if (primarySubject === "Math") ["Measurement and Money", "Mathematical Communication"].forEach(add);
+  if (primarySubject === "Finance") ["Earning and Value Creation", "Saving and Goal Setting", "Spending and Decision-Making"].forEach(add);
+  if (primarySubject === "Science") ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World"].forEach(add);
+  if (primarySubject === "Foreign Language") ["Listening Comprehension", "Speaking Practice", "Vocabulary"].forEach(add);
+  if (primarySubject === "Independent Reading") ["Reading Stamina", "Comprehension", "Reader Response"].forEach(add);
+  if (primarySubject === "Extracurricular") ["Teamwork", "Discipline and Practice", "Communication"].forEach(add);
+  if (primarySubject === "Social Studies") ["Citizenship", "Communication"].forEach(add);
+
+  if (/(read|book|story|chapter|literature)/.test(combined)) ["Reading", "Literature", "Reading Stamina", "Comprehension"].forEach(add);
+  if (/(spell|phonics|word)/.test(combined)) add("Spelling");
+  if (/(grammar|sentence|capitalization|punctuation)/.test(combined)) add("Grammar");
+  if (/(write|draft|edit|journal|response)/.test(combined)) ["Writing", "Editing", "Reader Response"].forEach(add);
+  if (/(measure|money|fraction|count|budget|saving|spending|finance)/.test(combined)) ["Measurement and Money", "Money Recognition and Counting", "Saving and Goal Setting", "Spending and Decision-Making"].forEach(add);
+  if (/(logic|puzzle|strategy|mind game|chess)/.test(combined)) ["Logic", "Strategic Thinking"].forEach(add);
+  if (/(problem|solve|solution|challenge|reason)/.test(combined)) ["Problem-Solving", "Problem-Solving and Application"].forEach(add);
+  if (/(observe|science|experiment|model|tool|draw|label|nature)/.test(combined)) ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World"].forEach(add);
+  if (/(service|community|citizen|club|team|leadership)/.test(combined)) ["Citizenship", "Service", "Teamwork", "Leadership"].forEach(add);
+  if (/(art|perform|visual|music|creative)/.test(combined)) ["Creative Expression", "Visual Curriculum"].forEach(add);
+  if (/(tech|stem|code|computer|build)/.test(combined)) ["Technical Skills", "Critical Thinking for Problem Solving"].forEach(add);
+  if (/(spanish|foreign|vocabulary|speak|listen)/.test(combined)) ["Listening Comprehension", "Speaking Practice", "Vocabulary", "Cultural Awareness"].forEach(add);
+
+  return Array.from(skills).filter((skill) => Object.values(skillTaxonomy).some((subjectSkills) => subjectSkills.includes(skill)));
 }
 
-function mockDrafts(activityType: string, minutes: number, draftTitle: string): DraftCard[] {
+function mockDrafts(activityType: string, minutes: number, draftTitle: string, narrationText: string, extracurricularSelections: string[]): DraftCard[] {
   const primarySubject = parsedSubjectForType(activityType);
   const primaryMinutes = minutes || 25;
+  const parseText = `${draftTitle} ${narrationText} ${extracurricularSelections.join(" ")}`;
   return [
     {
       id: "draft-primary",
@@ -788,8 +811,8 @@ function mockDrafts(activityType: string, minutes: number, draftTitle: string): 
       status: "needs_approval",
       subjectAllocations: [{ subject: primarySubject, minutes: primaryMinutes }],
       crossSubjects: [],
-      legalTags: parsedLegalTagsForType(activityType),
-      skills: parsedSkillsForType(activityType)
+      legalTags: parsedLegalTagsForType(activityType, parseText),
+      skills: parsedSkillsForType(activityType, parseText)
     }
   ];
 }
@@ -1155,7 +1178,7 @@ export default function Home() {
   }
 
   function parseWithAi() {
-    const drafts = mockDrafts(selectedType, actualMinutes, title.trim() || defaultActivityTitle());
+    const drafts = mockDrafts(selectedType, actualMinutes, title.trim() || defaultActivityTitle(), narration, selectedExtracurriculars);
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
   }
@@ -2278,16 +2301,26 @@ export default function Home() {
                         <summary>Adjust skill and legal tags</summary>
                         <div className="tag-editor-section">
                           <strong>Skill tags</strong>
-                          <div className="tag-option-grid">
-                            {allSkillTagOptions.map((skill) => (
-                              <button
-                                className={draft.skills.includes(skill) ? "tag-button skill-option is-active" : "tag-button skill-option"}
-                                key={skill}
-                                type="button"
-                                onClick={() => toggleDraftSkill(draft.id, skill)}
-                              >
-                                {skill}
-                              </button>
+                          <div className="skill-tag-subject-list">
+                            {Object.entries(skillTaxonomy).map(([subject, skills]) => (
+                              <details className="skill-tag-subject" key={subject} open={subject === parsedSubjectForType(selectedType)}>
+                                <summary>
+                                  <span>{subject}</span>
+                                  <span>{skills.filter((skill) => draft.skills.includes(skill)).length}/{skills.length}</span>
+                                </summary>
+                                <div className="tag-option-grid">
+                                  {skills.map((skill) => (
+                                    <button
+                                      className={draft.skills.includes(skill) ? "tag-button skill-option is-active" : "tag-button skill-option"}
+                                      key={`${subject}-${skill}`}
+                                      type="button"
+                                      onClick={() => toggleDraftSkill(draft.id, skill)}
+                                    >
+                                      {skill}
+                                    </button>
+                                  ))}
+                                </div>
+                              </details>
                             ))}
                           </div>
                         </div>
