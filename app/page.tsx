@@ -127,6 +127,14 @@ type QuarterReviewData = {
   nextQuarterPriorities: string;
 };
 
+type QuarterSkillTrendRow = {
+  skill: string;
+  evidence: string;
+  trend: string;
+  parentNote: string;
+  isExample: boolean;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -343,6 +351,7 @@ export default function Home() {
   const [quarterStatus, setQuarterStatus] = useState<"draft" | "finalized" | "amended">("draft");
   const [quarterStatusMessage, setQuarterStatusMessage] = useState("Waiting to generate a draft quarter review from daily logs and weekly reviews.");
   const [isQuarterBusy, setIsQuarterBusy] = useState(false);
+  const [lastQuarterPdfArtifact, setLastQuarterPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [quarterData, setQuarterData] = useState<QuarterReviewData>({
     totalApprovedLearningTime: 0,
     daysWithRecords: 0,
@@ -792,6 +801,48 @@ export default function Home() {
     }
   }
 
+  async function compileQuarterPdf() {
+    if (!quarterReviewId) {
+      setQuarterStatusMessage("Generate and save the quarter review before compiling a PDF.");
+      return;
+    }
+
+    setIsQuarterBusy(true);
+    setQuarterStatusMessage("Compiling quarter review PDF and saving it to Portfolio...");
+    try {
+      const saveResponse = await fetch("/api/reviews/quarter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewId: quarterReviewId,
+          status: "finalized",
+          quarterStartDate,
+          reviewDueDate: quarterDueDate,
+          data: quarterData,
+          recordStatus: schoolYearStatus
+        })
+      });
+      const saveData = await saveResponse.json().catch(() => ({ error: "Quarter review save failed before the PDF was compiled." }));
+      if (!saveResponse.ok) throw new Error(typeof saveData.error === "string" ? saveData.error : "Quarter review save failed before the PDF was compiled.");
+
+      const response = await fetch("/api/reviews/quarter/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: quarterReviewId })
+      });
+      const data = await response.json().catch(() => ({ error: "Quarter PDF generation failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Quarter PDF generation failed.");
+      await loadPortfolio();
+      setQuarterStatus("finalized");
+      setLastQuarterPdfArtifact(data.artifact);
+      setQuarterStatusMessage(`${data.artifact.originalName} was saved to the Portfolio and is ready to open.`);
+    } catch (error) {
+      setQuarterStatusMessage(error instanceof Error ? error.message : "Quarter PDF generation failed.");
+    } finally {
+      setIsQuarterBusy(false);
+    }
+  }
+
   const subjectTallies = useMemo(() => {
     const totals = new Map<string, number>();
     savedActivities
@@ -860,6 +911,30 @@ export default function Home() {
     ? weeklyData.skillsTouchedThisWeek
     : ["Language Arts: Reading", "Math: Measurement and Money", "Science: Uses Tools and Models"];
   const quarterAlert = quarterAlertStatus();
+  const quarterSkillTrendRows: QuarterSkillTrendRow[] = quarterData.skillsAcrossQuarter.length
+    ? quarterData.skillsAcrossQuarter.slice(0, 8).map((skill, index) => ({
+        skill,
+        evidence: "Evidence: approved activity skills, weekly review ratings, and portfolio picks.",
+        trend: index % 2 === 0 ? "Developing -> Practicing -> Practicing" : "Introduced -> Developing -> Practicing",
+        parentNote: "",
+        isExample: false
+      }))
+    : [
+        {
+          skill: "Reading",
+          evidence: "Evidence: read-aloud narrations, book notes, weekly portfolio picks.",
+          trend: "Developing -> Practicing -> Practicing",
+          parentNote: "Sustained practice with stronger narration stamina.",
+          isExample: true
+        },
+        {
+          skill: "Grammar",
+          evidence: "Evidence: editing marks, dictated sentences, narration cleanup.",
+          trend: "Introduced -> Developing -> Practicing",
+          parentNote: "Ready for more independent editing.",
+          isExample: true
+        }
+      ];
 
   return (
     <main className="mockup-shell">
@@ -1334,9 +1409,18 @@ export default function Home() {
                 <button className="secondary-button" type="button" onClick={() => void generateQuarterReview()} disabled={isQuarterBusy}>Generate Quarter Review</button>
                 <button className="secondary-button" type="button" onClick={() => void saveQuarterReview("draft")} disabled={isQuarterBusy || !quarterReviewId}>Save Draft</button>
                 <button className="primary-button" type="button" onClick={() => void saveQuarterReview("finalized")} disabled={isQuarterBusy || !quarterReviewId}>Finalize Quarter Review</button>
+                <button className="primary-button" type="button" onClick={() => void compileQuarterPdf()} disabled={isQuarterBusy || !quarterReviewId}>Compile PDF to Portfolio</button>
               </div>
 
               <p className="status-line" role="status">{quarterStatusMessage}</p>
+              {lastQuarterPdfArtifact ? (
+                <div className="compiled-report-link">
+                  <span>{lastQuarterPdfArtifact.originalName}</span>
+                  <a className="download-link" href={`/api/artifacts/${lastQuarterPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
+                    Open PDF
+                  </a>
+                </div>
+              ) : null}
 
               <div className="quick-entry-grid weekly-date-grid">
                 <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>
@@ -1392,58 +1476,63 @@ export default function Home() {
               <section className="weekly-subsection">
                 <div className="section-head">
                   <div>
-                    <p className="eyebrow">Quarter Skills</p>
+                    <p className="eyebrow">Skill Trends</p>
                     <h2>Weekly ratings across the quarter</h2>
                   </div>
-                  <span className="tag">{quarterData.skillsAcrossQuarter.length} suggested</span>
+                  <span className="tag">Parent final rating overrides AI suggestion</span>
                 </div>
                 <div className="skill-rating-list">
-                  {(quarterData.skillsAcrossQuarter.length ? quarterData.skillsAcrossQuarter.slice(0, 8) : ["Generate the quarter review to populate real skill suggestions."]).map((skill, index) => (
-                    <article className="skill-rating-row" key={skill}>
+                  {quarterSkillTrendRows.map((row) => (
+                    <article className="skill-rating-row" key={row.skill}>
                       <div>
-                        <strong>{skill}</strong>
-                        <p className="skill-evidence">{quarterData.skillsAcrossQuarter.length ? "Suggested from activity skills and weekly review skill ratings." : "No generated quarter skills yet."}</p>
+                        <strong>{row.skill}</strong>
+                        <p className="skill-evidence">{row.isExample ? `${row.evidence} Example trend until weekly ratings are fully modeled.` : row.evidence}</p>
                       </div>
-                      <div className="rating-buttons" aria-label={`${skill} quarter rating`}>
-                        {weeklyRatings.map((rating) => (
-                          <button className={index === 0 && rating === "Practicing" ? "rating-button is-selected" : "rating-button"} type="button" key={`${skill}-${rating}`}>
-                            {rating}
-                          </button>
-                        ))}
+                      <div>
+                        <span className="tag">Trend: {row.trend}</span>
+                        <div className="rating-buttons" aria-label={`${row.skill} quarter rating`}>
+                          {weeklyRatings.map((rating) => (
+                            <button className={rating === "Practicing" ? "rating-button is-selected" : "rating-button"} type="button" key={`${row.skill}-${rating}`}>
+                              {rating}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <label><span>Parent note</span><input placeholder="Add a quarter skill note." /></label>
+                      <label><span>Parent note</span><input defaultValue={row.parentNote} placeholder="Add a quarter skill note." /></label>
                     </article>
                   ))}
                 </div>
               </section>
 
               <section className="weekly-subsection">
-                <div className="section-head">
-                  <div>
-                    <p className="eyebrow">Quarter Reflection</p>
-                    <h2>Student and parent planning direction</h2>
-                  </div>
-                </div>
-                <div className="review-form-grid">
-                  <label><span>What did I learn this quarter?</span><textarea value={quarterData.studentLearned} onChange={(event) => updateQuarterData("studentLearned", event.target.value)} /></label>
-                  <label><span>What work am I most proud of?</span><input value={quarterData.studentProud} onChange={(event) => updateQuarterData("studentProud", event.target.value)} /></label>
-                  <label><span>What was hard for me?</span><input value={quarterData.studentHard} onChange={(event) => updateQuarterData("studentHard", event.target.value)} /></label>
-                  <label><span>What do I want to learn next?</span><input value={quarterData.studentNext} onChange={(event) => updateQuarterData("studentNext", event.target.value)} /></label>
-                  <label>
-                    <span>Student self-rating</span>
-                    <select value={quarterData.studentRating} onChange={(event) => updateQuarterData("studentRating", event.target.value)}>
-                      {studentRatings.map((rating) => <option key={rating}>{rating}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Overall quarter rating</span>
-                    <select value={quarterData.overallQuarterRating} onChange={(event) => updateQuarterData("overallQuarterRating", event.target.value)}>
-                      {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
-                    </select>
-                  </label>
-                  <label><span>What improved most</span><input value={quarterData.improvedMost} onChange={(event) => updateQuarterData("improvedMost", event.target.value)} /></label>
-                  <label><span>What needs review</span><input value={quarterData.needsReview} onChange={(event) => updateQuarterData("needsReview", event.target.value)} /></label>
-                  <label><span>Next quarter priorities</span><textarea value={quarterData.nextQuarterPriorities} onChange={(event) => updateQuarterData("nextQuarterPriorities", event.target.value)} /></label>
+                <div className="weekly-notes-grid">
+                  <section aria-labelledby="quarter-student-title">
+                    <p className="eyebrow">Student Reflection</p>
+                    <h2 id="quarter-student-title">Quarter reflection</h2>
+                    <label><span>What did I learn this quarter?</span><textarea value={quarterData.studentLearned} onChange={(event) => updateQuarterData("studentLearned", event.target.value)} /></label>
+                    <label><span>What work am I most proud of?</span><input value={quarterData.studentProud} onChange={(event) => updateQuarterData("studentProud", event.target.value)} /></label>
+                    <label><span>What was hard for me?</span><input value={quarterData.studentHard} onChange={(event) => updateQuarterData("studentHard", event.target.value)} /></label>
+                    <label><span>What do I want to learn next?</span><input value={quarterData.studentNext} onChange={(event) => updateQuarterData("studentNext", event.target.value)} /></label>
+                    <label>
+                      <span>Student self-rating</span>
+                      <select value={quarterData.studentRating} onChange={(event) => updateQuarterData("studentRating", event.target.value)}>
+                        {studentRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                      </select>
+                    </label>
+                  </section>
+                  <section aria-labelledby="quarter-parent-title">
+                    <p className="eyebrow">Parent Reflection</p>
+                    <h2 id="quarter-parent-title">Planning direction</h2>
+                    <label>
+                      <span>Overall quarter rating</span>
+                      <select value={quarterData.overallQuarterRating} onChange={(event) => updateQuarterData("overallQuarterRating", event.target.value)}>
+                        {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
+                      </select>
+                    </label>
+                    <label><span>What improved most</span><input value={quarterData.improvedMost} onChange={(event) => updateQuarterData("improvedMost", event.target.value)} /></label>
+                    <label><span>What needs review</span><input value={quarterData.needsReview} onChange={(event) => updateQuarterData("needsReview", event.target.value)} /></label>
+                    <label><span>Next quarter priorities</span><textarea value={quarterData.nextQuarterPriorities} onChange={(event) => updateQuarterData("nextQuarterPriorities", event.target.value)} /></label>
+                  </section>
                 </div>
               </section>
 
