@@ -49,6 +49,14 @@ type PortfolioNode = {
   level: number;
 };
 
+type WorkspaceTab = {
+  key: "daily" | "weekly" | "quarter" | "portfolio" | "legal" | "reports" | "tools";
+  label: string;
+  eyebrow: string;
+  headline: string;
+  description: string;
+};
+
 type DraftCard = {
   title: string;
   minutes: number;
@@ -83,6 +91,58 @@ const legalCoverage = [
 ];
 
 const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
+
+const workspaceTabs: WorkspaceTab[] = [
+  {
+    key: "daily",
+    label: "Daily Records",
+    eyebrow: "Narration-first daily logging",
+    headline: "Log learning from narration",
+    description: "Pick an activity, add minutes, narrate what happened, then save. Details stay available without crowding the daily workflow."
+  },
+  {
+    key: "weekly",
+    label: "Weekly Reviews",
+    eyebrow: "Weekly review",
+    headline: "Review weekly learning coverage",
+    description: "Check approved learning time by subject before weekly review workflows are expanded."
+  },
+  {
+    key: "quarter",
+    label: "Quarter Reviews",
+    eyebrow: "Quarter review",
+    headline: "Track quarter review readiness",
+    description: "See review alerts and compliance reminders without changing daily records."
+  },
+  {
+    key: "portfolio",
+    label: "Portfolio",
+    eyebrow: "Proof archive",
+    headline: "Browse proof files",
+    description: "Use a folder tree and list view to find uploaded proof files and download them from storage."
+  },
+  {
+    key: "legal",
+    label: "Legal Archive",
+    eyebrow: "Legal archive",
+    headline: "Review legal coverage",
+    description: "Keep legal tags visible as distinct record metadata, separate from subjects and skills."
+  },
+  {
+    key: "reports",
+    label: "Reports",
+    eyebrow: "Reports",
+    headline: "Prepare report sources",
+    description: "Review the skill taxonomy and report source data before report exports are built out."
+  },
+  {
+    key: "tools",
+    label: "Workspace Tools",
+    eyebrow: "Workspace tools",
+    headline: "Coverage and report tools",
+    description: "The supporting panels that used to sit in the right column are grouped here."
+  }
+];
 
 function todayIso() {
   const now = new Date();
@@ -166,6 +226,7 @@ export default function Home() {
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
+  const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
@@ -426,6 +487,7 @@ export default function Home() {
   }, [portfolioArtifacts, selectedPortfolioKey]);
 
   const selectedPortfolioNode = portfolioNodes.find((node) => node.key === selectedPortfolioKey);
+  const activeWorkspace = workspaceTabs.find((tab) => tab.key === activeTab) ?? workspaceTabs[0];
 
   return (
     <main className="mockup-shell">
@@ -439,30 +501,43 @@ export default function Home() {
           <p className="tree-title">School Years</p>
           <ul className="tree">
             <li>
-              <a className="is-active" href="#daily-log">
+              <button className="tree-button is-context" type="button">
                 2026-2027 <span>Trial / Active</span>
-              </a>
+              </button>
               <ul>
-                <li><a href="#daily-log">Daily Records</a></li>
-                <li><a href="#weekly-tally">Weekly Reviews</a></li>
-                <li><a href="#quarter-alert">Quarter Reviews <span className="alert-sidebar-badge">Urgent</span></a></li>
-                <li><a href="#portfolio">Portfolio</a></li>
-                <li><a href="#legal-panel">Legal Archive</a></li>
-                <li><a href="#skills-panel">Reports</a></li>
+                {workspaceTabs
+                  .filter((tab) => tab.key !== "tools")
+                  .map((tab) => (
+                    <li key={tab.key}>
+                      <button className={activeTab === tab.key ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab(tab.key)}>
+                        {tab.label}
+                        {tab.key === "quarter" ? <span className="alert-sidebar-badge">Urgent</span> : null}
+                      </button>
+                    </li>
+                  ))}
               </ul>
             </li>
             <li>
-              <a href="#daily-log">
+              <button className="tree-button" type="button" onClick={() => setActiveTab("daily")}>
                 2027-2028 <span>Planned</span>
-              </a>
+              </button>
             </li>
           </ul>
 
           <p className="tree-title">Unit Studies</p>
           <ul className="tree">
-            <li><a className="is-active" href="#daily-log">Construction <span>Active</span></a></li>
-            <li><a href="#daily-log">Off the Land <span>Planned</span></a></li>
-            <li><a href="#daily-log">Community Helpers <span>Planned</span></a></li>
+            <li><button className="tree-button is-context" type="button" onClick={() => setActiveTab("daily")}>Construction <span>Active</span></button></li>
+            <li><button className="tree-button" type="button" onClick={() => setActiveTab("daily")}>Off the Land <span>Planned</span></button></li>
+            <li><button className="tree-button" type="button" onClick={() => setActiveTab("daily")}>Community Helpers <span>Planned</span></button></li>
+          </ul>
+
+          <p className="tree-title">Workspace</p>
+          <ul className="tree">
+            <li>
+              <button className={activeTab === "tools" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("tools")}>
+                Workspace Tools
+              </button>
+            </li>
           </ul>
         </nav>
       </aside>
@@ -493,31 +568,16 @@ export default function Home() {
 
         <header className="page-header">
           <div>
-            <p className="eyebrow">Narration-first daily logging</p>
-            <h1>Log learning from narration</h1>
-            <p>Quick log first: pick an activity, add minutes, narrate what happened, then save. Details stay available without crowding the daily workflow.</p>
-          </div>
-          <div className="mode-switch" aria-label="Mockup sections">
-            <a href="#daily-log">Daily log</a>
-            <a href="#saved-records">Saved</a>
-            <a href="#portfolio">Portfolio</a>
-            <a href="#weekly-tally">Coverage</a>
+            <p className="eyebrow">{activeWorkspace.eyebrow}</p>
+            <h1>{activeWorkspace.headline}</h1>
+            <p>{activeWorkspace.description}</p>
           </div>
         </header>
 
-        <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
-          <div className="alert-head">
-            <div>
-              <p className="eyebrow">Quarter review alert</p>
-              <h2>Quarter 1 review due soon</h2>
-              <p>Due in 3 days. This flags review work only; daily records are never changed or deleted.</p>
-            </div>
-            <span className="alert-status">Urgent</span>
-          </div>
-        </section>
-
-        <div className="main-grid" id="daily-log">
+        <div className="workspace-view">
           <section className="primary-column">
+            {activeTab === "daily" ? (
+              <>
             <section className="review-alert-card trial-banner">
               <div className="alert-head">
                 <div>
@@ -724,6 +784,10 @@ export default function Home() {
               </div>
             </section>
 
+              </>
+            ) : null}
+
+            {activeTab === "portfolio" ? (
             <section className="panel portfolio-panel" id="portfolio">
               <div className="section-head">
                 <div>
@@ -786,9 +850,25 @@ export default function Home() {
                 </div>
               </div>
             </section>
+            ) : null}
           </section>
 
+          {activeTab !== "daily" && activeTab !== "portfolio" ? (
           <aside className="side-column">
+            {activeTab === "quarter" || activeTab === "tools" ? (
+            <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
+              <div className="alert-head">
+                <div>
+                  <p className="eyebrow">Quarter review alert</p>
+                  <h2>Quarter 1 review due soon</h2>
+                  <p>Due in 3 days. This flags review work only; daily records are never changed or deleted.</p>
+                </div>
+                <span className="alert-status">Urgent</span>
+              </div>
+            </section>
+            ) : null}
+
+            {activeTab === "weekly" || activeTab === "tools" ? (
             <section className="panel" id="weekly-tally">
               <p className="eyebrow">This week</p>
               <h2>Weekly subject time tally</h2>
@@ -798,7 +878,9 @@ export default function Home() {
                 ))}
               </div>
             </section>
+            ) : null}
 
+            {activeTab === "legal" || activeTab === "tools" ? (
             <section className="panel" id="legal-panel">
               <p className="eyebrow">Texas legal coverage</p>
               <h2>Legal coverage panel</h2>
@@ -808,7 +890,9 @@ export default function Home() {
                 ))}
               </div>
             </section>
+            ) : null}
 
+            {activeTab === "reports" || activeTab === "tools" ? (
             <section className="panel" id="skills-panel">
               <div className="section-head">
                 <div>
@@ -828,7 +912,9 @@ export default function Home() {
                 ))}
               </div>
             </section>
+            ) : null}
           </aside>
+          ) : null}
         </div>
       </section>
     </main>

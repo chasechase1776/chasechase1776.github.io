@@ -132,22 +132,31 @@ a {
   margin: 2px 0;
 }
 
-.tree a {
+.tree a,
+.tree-button {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   min-height: 34px;
+  border: 0;
   border-radius: 6px;
+  background: transparent;
+  color: inherit;
   padding: 7px 8px;
   text-align: left;
   text-decoration: none;
 }
 
 .tree a:hover,
+.tree-button:hover,
 .tree .is-active {
   background: var(--accent-soft);
   color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.tree-button.is-context {
   font-weight: 700;
 }
 
@@ -235,10 +244,15 @@ textarea {
 }
 
 .dashboard-grid,
-.main-grid {
+.main-grid,
+.workspace-view {
   display: grid;
   gap: 16px;
   margin-top: 16px;
+}
+
+.workspace-view {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .page-header {
@@ -515,7 +529,7 @@ textarea {
 
 .artifact-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
 
