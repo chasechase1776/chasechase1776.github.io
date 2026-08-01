@@ -1184,6 +1184,22 @@ details.skill-group[open] summary {
   box-shadow: inset 0 0 0 1px var(--blue);
 }
 
+.weekly-section-button.is-reviewed {
+  border-color: var(--green);
+  background: var(--green-soft);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+
+.weekly-section-button.is-reviewed strong,
+.weekly-section-button.is-reviewed span {
+  color: var(--green);
+}
+
+.weekly-section-button.is-active.is-reviewed {
+  border-color: var(--green);
+  background: linear-gradient(0deg, var(--green-soft), var(--green-soft));
+}
+
 .weekly-date-grid,
 .review-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1230,6 +1246,12 @@ details.skill-group[open] summary {
 .weekly-subsection.is-open {
   border-top: 0;
   padding-top: 0;
+}
+
+.section-review-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .chart-panel {

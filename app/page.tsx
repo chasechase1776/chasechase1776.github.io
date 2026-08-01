@@ -61,6 +61,14 @@ type WorkspaceTab = {
 
 type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
 
+const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
+  summary: "Summary Info",
+  parent: "Parent Ratings",
+  student: "Student Reflection",
+  skills: "Skills Review",
+  portfolio: "Portfolio"
+};
+
 type DraftCard = {
   id: string;
   title: string;
@@ -934,6 +942,7 @@ export default function Home() {
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
   const [activeWeeklySection, setActiveWeeklySection] = useState<WeeklyReviewSection>("summary");
+  const [reviewedWeeklySections, setReviewedWeeklySections] = useState<WeeklyReviewSection[]>([]);
   const [weeklyReviewId, setWeeklyReviewId] = useState("");
   const [weeklyStartDate, setWeeklyStartDate] = useState(mondayForIsoDate(todayIso()));
   const [weeklyStatus, setWeeklyStatus] = useState<"draft" | "finalized" | "amended">("draft");
@@ -1421,6 +1430,11 @@ export default function Home() {
 
   function updateWeeklyData<K extends keyof WeeklyReviewData>(key: K, value: WeeklyReviewData[K]) {
     setWeeklyData((current) => ({ ...current, [key]: value }));
+  }
+
+  function markWeeklySectionReviewed(section: WeeklyReviewSection) {
+    setReviewedWeeklySections((current) => (current.includes(section) ? current : [...current, section]));
+    setWeeklyStatusMessage(`${weeklySectionLabels[section]} marked reviewed.`);
   }
 
   function updateQuarterData<K extends keyof QuarterReviewData>(key: K, value: QuarterReviewData[K]) {
@@ -2598,7 +2612,11 @@ export default function Home() {
                   ["portfolio", "Portfolio", "Weekly highlight selections"]
                 ].map(([key, label, description]) => (
                   <button
-                    className={activeWeeklySection === key ? "weekly-section-button is-active" : "weekly-section-button"}
+                    className={[
+                      "weekly-section-button",
+                      activeWeeklySection === key ? "is-active" : "",
+                      reviewedWeeklySections.includes(key as WeeklyReviewSection) ? "is-reviewed" : ""
+                    ].filter(Boolean).join(" ")}
                     key={key}
                     type="button"
                     onClick={() => setActiveWeeklySection(key as WeeklyReviewSection)}
@@ -2642,6 +2660,11 @@ export default function Home() {
               </div>
               <SubjectTimeCharts summary={weeklyData.subjectTimeSummary} emptyText="Generate from logs to populate the weekly subject time bar and pie charts." />
               <CrossSubjectChartPlaceholder />
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markWeeklySectionReviewed("summary")} disabled={reviewedWeeklySections.includes("summary")}>
+                  {reviewedWeeklySections.includes("summary") ? "Reviewed" : "Mark Summary Info Reviewed"}
+                </button>
+              </div>
               </section>
               ) : null}
 
@@ -2662,6 +2685,11 @@ export default function Home() {
                     {weeklyRatings.map((rating) => <option key={rating}>{rating}</option>)}
                   </select>
                 </label>
+              </div>
+              <div className="section-review-row">
+                <button className="primary-button" type="button" onClick={() => markWeeklySectionReviewed("parent")} disabled={reviewedWeeklySections.includes("parent")}>
+                  {reviewedWeeklySections.includes("parent") ? "Reviewed" : "Mark Parent Ratings Reviewed"}
+                </button>
               </div>
               </section>
               ) : null}
@@ -2686,6 +2714,11 @@ export default function Home() {
                     </select>
                   </label>
                   <label><span>Dictated reflection</span><textarea value={weeklyData.studentDictation} onChange={(event) => updateWeeklyData("studentDictation", event.target.value)} /></label>
+                </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markWeeklySectionReviewed("student")} disabled={reviewedWeeklySections.includes("student")}>
+                    {reviewedWeeklySections.includes("student") ? "Reviewed" : "Mark Student Reflection Reviewed"}
+                  </button>
                 </div>
               </section>
               ) : null}
@@ -2724,6 +2757,11 @@ export default function Home() {
                     </article>
                   ))}
                 </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markWeeklySectionReviewed("skills")} disabled={reviewedWeeklySections.includes("skills")}>
+                    {reviewedWeeklySections.includes("skills") ? "Reviewed" : "Mark Skills Review Reviewed"}
+                  </button>
+                </div>
               </section>
               ) : null}
 
@@ -2755,6 +2793,11 @@ export default function Home() {
                     </label>
                   ))}
                   {portfolioArtifacts.length === 0 ? <p className="muted">Upload proof files before selecting weekly portfolio highlights.</p> : null}
+                </div>
+                <div className="section-review-row">
+                  <button className="primary-button" type="button" onClick={() => markWeeklySectionReviewed("portfolio")} disabled={reviewedWeeklySections.includes("portfolio")}>
+                    {reviewedWeeklySections.includes("portfolio") ? "Reviewed" : "Mark Portfolio Reviewed"}
+                  </button>
                 </div>
               </section>
               ) : null}
