@@ -751,8 +751,10 @@ export default function Home() {
   const [weeklyStatusMessage, setWeeklyStatusMessage] = useState("Waiting to generate a draft review from approved activity logs.");
   const [lastWeeklyPdfArtifact, setLastWeeklyPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [lastAnnualPlanPdfArtifact, setLastAnnualPlanPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
+  const [lastDailyPdfArtifact, setLastDailyPdfArtifact] = useState<WeeklyPdfArtifact | null>(null);
   const [isWeeklyBusy, setIsWeeklyBusy] = useState(false);
   const [isAnnualPlanBusy, setIsAnnualPlanBusy] = useState(false);
+  const [isDailyPdfBusy, setIsDailyPdfBusy] = useState(false);
   const [quarterReviewId, setQuarterReviewId] = useState("");
   const [quarterLabel, setQuarterLabel] = useState("Quarter 1");
   const [quarterStartDate, setQuarterStartDate] = useState("2026-07-01");
@@ -1261,6 +1263,34 @@ export default function Home() {
       setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan PDF generation failed.");
     } finally {
       setIsAnnualPlanBusy(false);
+    }
+  }
+
+  async function exportDailySummaryPdf() {
+    setIsDailyPdfBusy(true);
+    setLastDailyPdfArtifact(null);
+    setStatus(`Creating daily summary PDF for ${selectedDate}...`);
+    try {
+      const response = await fetch("/api/daily-summary/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          date: selectedDate,
+          recordStatus: schoolYearStatus
+        })
+      });
+      const data = await response.json().catch(() => ({ error: "Daily summary PDF generation failed before the app received details." }));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Daily summary PDF generation failed.");
+      setLastDailyPdfArtifact(data.artifact);
+      window.open(`/api/artifacts/${data.artifact.id}/download`, "_blank", "noopener,noreferrer");
+      setStatus(`${data.artifact.originalName} was saved to the Portfolio and is ready to open.`);
+      await loadPortfolio();
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Daily summary PDF generation failed.");
+    } finally {
+      setIsDailyPdfBusy(false);
     }
   }
 
@@ -1885,10 +1915,23 @@ export default function Home() {
                   <p className="eyebrow">Saved records</p>
                   <h2>Saved records for selected date</h2>
                 </div>
-                <button className="secondary-button" type="button" onClick={() => void loadSavedActivities(selectedDate)} disabled={isLoadingRecords}>
-                  {isLoadingRecords ? "Loading..." : "Refresh"}
-                </button>
+                <div className="primary-action-row">
+                  <button className="secondary-button" type="button" onClick={() => void loadSavedActivities(selectedDate)} disabled={isLoadingRecords}>
+                    {isLoadingRecords ? "Loading..." : "Refresh"}
+                  </button>
+                  <button className="primary-button" type="button" onClick={() => void exportDailySummaryPdf()} disabled={isDailyPdfBusy || savedActivities.length === 0}>
+                    {isDailyPdfBusy ? "Creating..." : "Create Daily Summary PDF"}
+                  </button>
+                </div>
               </div>
+              {lastDailyPdfArtifact ? (
+                <div className="status-line">
+                  <span>{lastDailyPdfArtifact.originalName}</span>
+                  <a className="download-link" href={`/api/artifacts/${lastDailyPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
+                    Open PDF
+                  </a>
+                </div>
+              ) : null}
               <div className="record-list">
                 {savedActivities.length === 0 ? (
                   <p className="muted">No saved activities for {selectedDate} yet.</p>
