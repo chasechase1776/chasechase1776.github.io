@@ -689,6 +689,25 @@ function dateLabel(value: string) {
   return value.slice(0, 10);
 }
 
+function defaultNarrationForType(activityType: string) {
+  if (activityType === "Language Arts") {
+    return "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and helped measure boards for the Construction unit.";
+  }
+  if (activityType === "Math") {
+    return "Today we practiced math using a short problem set and talked through the steps out loud.";
+  }
+  if (activityType === "Finance") {
+    return "Today we practiced money concepts, compared choices, and talked about earning, saving, spending, and giving.";
+  }
+  if (activityType === "Science Journal") {
+    return "Today we observed, drew, labeled, and described changes or patterns in the science journal.";
+  }
+  if (activityType === "Field Trip") {
+    return "Today we connected real-world observations to the current unit study and discussed what we noticed.";
+  }
+  return "";
+}
+
 function mockDrafts(activityType: string): DraftCard[] {
   return [
     {
@@ -725,9 +744,14 @@ export default function Home() {
   const [selectedType, setSelectedType] = useState("Language Arts");
   const [title, setTitle] = useState("");
   const [actualMinutes, setActualMinutes] = useState(25);
-  const [narration, setNarration] = useState(
-    "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and helped measure boards for the Construction unit."
-  );
+  const [narration, setNarration] = useState(defaultNarrationForType("Language Arts"));
+  const [entryDraftsByType, setEntryDraftsByType] = useState<Record<string, { title: string; narration: string; minutes: number }>>({
+    "Language Arts": {
+      title: "",
+      narration: defaultNarrationForType("Language Arts"),
+      minutes: 25
+    }
+  });
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
   const [uploadedArtifacts, setUploadedArtifacts] = useState<UploadedArtifact[]>([]);
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
@@ -868,7 +892,20 @@ export default function Home() {
   }, [loadPortfolio]);
 
   function selectActivityType(type: string) {
+    const nextDrafts = {
+      ...entryDraftsByType,
+      [selectedType]: { title, narration, minutes: actualMinutes }
+    };
+    const saved = nextDrafts[type];
+    setEntryDraftsByType(nextDrafts);
+    setTitle(saved?.title ?? "");
+    setNarration(saved?.narration ?? defaultNarrationForType(type));
+    setActualMinutes(saved?.minutes ?? 25);
     setSelectedType(type);
+    setDraftCards([]);
+    setUploadedArtifacts([]);
+    setSelectedProof([]);
+    setStatus(`${type} selected. Entry text is separate for each activity type.`);
   }
 
   function buttonState(type: string) {
@@ -1015,16 +1052,27 @@ export default function Home() {
     setDraftCards((current) =>
       current.map((draft) => {
         if (draft.id !== id) return draft;
-        const minutes = draft.minutes || actualMinutes || 15;
-        const subject = draft.subjectAllocations[0]?.subject ?? primarySubject;
+        const options = Array.from(new Set([10, 15, 20, 25, 30, actualMinutes || 25])).sort((a, b) => a - b);
+        const currentIndex = options.findIndex((option) => option === draft.minutes);
+        const minutes = options[(currentIndex + 1) % options.length] ?? 15;
+        const existingTotal = draft.subjectAllocations.reduce((sum, allocation) => sum + allocation.minutes, 0);
+        const subjectAllocations =
+          draft.subjectAllocations.length > 1 && existingTotal > 0
+            ? draft.subjectAllocations.map((allocation, index) => {
+                const scaled = index === draft.subjectAllocations.length - 1
+                  ? minutes - draft.subjectAllocations.slice(0, -1).reduce((sum, item) => sum + Math.round((item.minutes / existingTotal) * minutes), 0)
+                  : Math.round((allocation.minutes / existingTotal) * minutes);
+                return { ...allocation, minutes: Math.max(0, scaled) };
+              })
+            : [{ subject: draft.subjectAllocations[0]?.subject ?? primarySubject, minutes }];
         return {
           ...draft,
           minutes,
-          subjectAllocations: [{ subject, minutes }]
+          subjectAllocations
         };
       })
     );
-    setStatus("Time selected for parsed card. Review allocation before approval.");
+    setStatus("Parsed card time changed. Review allocation before approval.");
   }
 
   function cycleDraftAllocation(id: string) {
