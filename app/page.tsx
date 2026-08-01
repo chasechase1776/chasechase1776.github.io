@@ -65,6 +65,7 @@ type DraftCard = {
   minutes: number;
   status: "needs_approval" | "approved";
   subjectAllocations: { subject: string; minutes: number }[];
+  crossSubject: { enabled: boolean; subject: string; topic: string };
   legalTags: string[];
   skills: string[];
 };
@@ -708,30 +709,58 @@ function defaultNarrationForType(activityType: string) {
   return "";
 }
 
-function mockDrafts(activityType: string): DraftCard[] {
+function parsedSubjectForType(activityType: string) {
+  if (activityType === "Math") return "Math";
+  if (activityType === "Finance") return "Finance";
+  if (activityType === "Science Journal") return "Science";
+  if (activityType === "Field Trip" || activityType === "Group Event") return "Social Studies";
+  if (activityType === "Unit Study") return "Unit Study";
+  return "Language Arts";
+}
+
+function parsedLegalTagsForType(activityType: string) {
+  if (activityType === "Math") return ["Mathematics", "Visual Curriculum", "Bona Fide Instruction"];
+  if (activityType === "Finance") return ["Mathematics", "Good Citizenship", "Bona Fide Instruction"];
+  if (activityType === "Science Journal") return ["Visual Curriculum", "Bona Fide Instruction"];
+  return ["Reading", "Grammar", "Spelling"];
+}
+
+function parsedSkillsForType(activityType: string) {
+  if (activityType === "Math") return ["Measurement and Money", "Mathematical Communication"];
+  if (activityType === "Finance") return ["Earning and Saving", "Spending Choices", "Money Vocabulary"];
+  if (activityType === "Science Journal") return ["Observation", "Questioning", "Scientific Drawing"];
+  return ["Reading", "Fluency", "Editing"];
+}
+
+function mockDrafts(activityType: string, minutes: number): DraftCard[] {
+  const primarySubject = parsedSubjectForType(activityType);
+  const primaryMinutes = minutes || 25;
   return [
     {
       id: "draft-primary",
       title: activityType === "Language Arts" ? "Story Weaver read-aloud and editing" : `${activityType} narration record`,
-      minutes: 25,
+      minutes: primaryMinutes,
       status: "needs_approval",
-      subjectAllocations: activityType === "Math" ? [{ subject: "Math", minutes: 25 }] : [{ subject: "Language Arts", minutes: 25 }],
-      legalTags: activityType === "Math" ? ["Mathematics", "Visual Curriculum", "Bona Fide Instruction"] : ["Reading", "Grammar", "Spelling"],
-      skills: activityType === "Math" ? ["Measurement and Money", "Mathematical Communication"] : ["Reading", "Fluency", "Editing"]
+      subjectAllocations: [{ subject: primarySubject, minutes: primaryMinutes }],
+      crossSubject: { enabled: false, subject: primarySubject === "Science" ? "Language Arts" : "Science Journal", topic: unitStudyFallback(activityType) },
+      legalTags: parsedLegalTagsForType(activityType),
+      skills: parsedSkillsForType(activityType)
     },
     {
       id: "draft-unit-connection",
       title: "Construction unit connection",
-      minutes: 20,
+      minutes: Math.max(5, Math.round(primaryMinutes / 2)),
       status: "needs_approval",
-      subjectAllocations: [
-        { subject: "Science", minutes: 10 },
-        { subject: "Unit Study", minutes: 10 }
-      ],
+      subjectAllocations: [{ subject: primarySubject, minutes: Math.max(5, Math.round(primaryMinutes / 2)) }],
+      crossSubject: { enabled: true, subject: "Unit Study", topic: "Construction" },
       legalTags: ["Visual Curriculum", "Bona Fide Instruction"],
       skills: ["Uses Tools and Models", "Problem-Solving and Application"]
     }
   ];
+}
+
+function unitStudyFallback(activityType: string) {
+  return activityType === "Finance" ? "Money choices" : "Unit connection";
 }
 
 export default function Home() {
@@ -843,6 +872,20 @@ export default function Home() {
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
+  const savedMinutesForSelectedDate = useMemo(
+    () => savedActivities.reduce((sum, activity) => sum + activity.actualMinutes, 0),
+    [savedActivities]
+  );
+  const parsedCardsTotalMinutes = useMemo(
+    () => draftCards.reduce((sum, draft) => sum + draft.minutes, 0),
+    [draftCards]
+  );
+  const dailyInstructionMinutesForBars = Math.max(
+    savedMinutesForSelectedDate + actualMinutes,
+    parsedCardsTotalMinutes,
+    actualMinutes,
+    1
+  );
 
   const canParse = useMemo(
     () => Boolean(student && schoolYear && unitStudy && selectedDate && selectedType && narration.trim()),
@@ -1039,7 +1082,7 @@ export default function Home() {
   }
 
   function parseWithAi() {
-    const drafts = mockDrafts(selectedType);
+    const drafts = mockDrafts(selectedType, actualMinutes);
     setDraftCards(drafts);
     setStatus("Mock AI parse complete. Review the editable-looking cards below before saving in a later backend step.");
   }
@@ -1075,35 +1118,15 @@ export default function Home() {
     setStatus("Parsed card time changed. Review allocation before approval.");
   }
 
-  function cycleDraftAllocation(id: string) {
+  function updateDraftCrossSubject(id: string, patch: Partial<DraftCard["crossSubject"]>) {
     setDraftCards((current) =>
-      current.map((draft) => {
-        if (draft.id !== id) return draft;
-        const subjects = draft.subjectAllocations.map((allocation) => allocation.subject);
-        const minutes = draft.minutes || actualMinutes || 15;
-        if (subjects.length < 2) {
-          const secondSubject = draft.title.toLowerCase().includes("construction") ? "Unit Study" : "Science";
-          const firstMinutes = Math.ceil(minutes / 2);
-          return {
-            ...draft,
-            subjectAllocations: [
-              { subject: subjects[0] ?? primarySubject, minutes: firstMinutes },
-              { subject: secondSubject, minutes: minutes - firstMinutes }
-            ]
-          };
-        }
-        const first = draft.subjectAllocations[0];
-        const rest = draft.subjectAllocations.slice(1);
-        return {
-          ...draft,
-          subjectAllocations: [
-            ...rest,
-            { ...first, minutes: Math.max(0, minutes - rest.reduce((sum, allocation) => sum + allocation.minutes, 0)) }
-          ]
-        };
-      })
+      current.map((draft) =>
+        draft.id === id
+          ? { ...draft, crossSubject: { ...draft.crossSubject, ...patch } }
+          : draft
+      )
     );
-    setStatus("Subject allocation changed for parsed card.");
+    setStatus("Cross-subject connection updated. Time remains allocated to the original subject.");
   }
 
   function mergeDraftCard(id: string) {
@@ -1120,7 +1143,8 @@ export default function Home() {
         status: "needs_approval",
         subjectAllocations: [...target.subjectAllocations, ...source.subjectAllocations],
         legalTags: Array.from(new Set([...target.legalTags, ...source.legalTags])),
-        skills: Array.from(new Set([...target.skills, ...source.skills]))
+        skills: Array.from(new Set([...target.skills, ...source.skills])),
+        crossSubject: target.crossSubject.enabled ? target.crossSubject : source.crossSubject
       };
       return current.filter((draft) => draft.id !== id).map((draft) => (draft.id === target.id ? merged : draft));
     });
@@ -2045,12 +2069,14 @@ export default function Home() {
                       </div>
                       <div className="subject-allocation-bars" aria-label={`${draft.title} subject time allocations`}>
                         {draft.subjectAllocations.map((allocation) => {
-                          const percent = draft.minutes ? Math.max(8, Math.round((allocation.minutes / draft.minutes) * 100)) : 0;
+                          const rawPercent = (allocation.minutes / dailyInstructionMinutesForBars) * 100;
+                          const percent = Math.min(100, Math.max(3, Math.round(rawPercent)));
+                          const displayedPercent = Math.round(rawPercent * 10) / 10;
                           return (
                             <div className="allocation-bar-row" key={`${draft.id}-${allocation.subject}`}>
                               <div>
                                 <strong>{allocation.subject}</strong>
-                                <span>{allocation.minutes} min</span>
+                                <span>{allocation.minutes} min of {dailyInstructionMinutesForBars} min day ({displayedPercent}%)</span>
                               </div>
                               <div className="allocation-track">
                                 <span style={{ width: `${percent}%` }} />
@@ -2059,10 +2085,45 @@ export default function Home() {
                           );
                         })}
                       </div>
+                      <div className="cross-subject-panel">
+                        <label className="cross-subject-toggle">
+                          <input
+                            type="checkbox"
+                            checked={draft.crossSubject.enabled}
+                            onChange={(event) => updateDraftCrossSubject(draft.id, { enabled: event.target.checked })}
+                          />
+                          <span>Cross-subject topic</span>
+                        </label>
+                        {draft.crossSubject.enabled ? (
+                          <div className="cross-subject-fields">
+                            <label>
+                              <span>Connects to</span>
+                              <select
+                                value={draft.crossSubject.subject}
+                                onChange={(event) => updateDraftCrossSubject(draft.id, { subject: event.target.value })}
+                              >
+                                <option>Science Journal</option>
+                                <option>Unit Study</option>
+                                <option>Social Studies</option>
+                                <option>Finance</option>
+                                <option>Math</option>
+                                <option>Language Arts</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Topic</span>
+                              <input
+                                value={draft.crossSubject.topic}
+                                onChange={(event) => updateDraftCrossSubject(draft.id, { topic: event.target.value })}
+                                placeholder="Volcanoes, money choices, construction..."
+                              />
+                            </label>
+                          </div>
+                        ) : null}
+                      </div>
                       <div className="parsed-card-actions">
                         <button className="secondary-button" type="button" onClick={() => selectDraftTime(draft.id)}>Select time</button>
                         <button className="secondary-button" type="button" onClick={() => mergeDraftCard(draft.id)} disabled={draftCards.length < 2}>Merge</button>
-                        <button className="secondary-button" type="button" onClick={() => cycleDraftAllocation(draft.id)}>Change allocation</button>
                         <button className="text-button" type="button" onClick={() => deleteDraftCard(draft.id)}>Delete</button>
                         <button className="primary-button" type="button" onClick={() => approveDraftCard(draft.id)} disabled={draft.status === "approved"}>Approve card</button>
                       </div>
