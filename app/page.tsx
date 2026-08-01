@@ -558,6 +558,13 @@ const initialUnitPlanRows: UnitPlanRow[] = [
 
 const workspaceTabs: WorkspaceTab[] = [
   {
+    key: "annual-plan",
+    label: "Annual Plan",
+    eyebrow: "Annual plan",
+    headline: "Plan the school-year framework",
+    description: "Document intent, spines, weekly rhythm, unit-study arc, journals, capstones, and annual records."
+  },
+  {
     key: "daily",
     label: "Daily Records",
     eyebrow: "Narration-first daily logging",
@@ -577,13 +584,6 @@ const workspaceTabs: WorkspaceTab[] = [
     eyebrow: "Quarter review",
     headline: "Track quarter review readiness",
     description: "See review alerts and compliance reminders without changing daily records."
-  },
-  {
-    key: "annual-plan",
-    label: "Annual Plan",
-    eyebrow: "Annual plan",
-    headline: "Plan the school-year framework",
-    description: "Document intent, spines, weekly rhythm, unit-study arc, journals, capstones, and annual records."
   },
   {
     key: "annual-review",
