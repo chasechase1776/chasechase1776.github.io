@@ -968,6 +968,54 @@ details.skill-group[open] summary {
   font-size: 0.78rem;
 }
 
+.plan-table input,
+.plan-table select,
+.plan-table textarea {
+  width: 100%;
+  min-width: 92px;
+  border: 1px solid #c8d5d8;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  padding: 7px;
+}
+
+.plan-table textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.plan-table .table-order-input {
+  min-width: 56px;
+  max-width: 64px;
+}
+
+.plan-table .table-weeks-input {
+  min-width: 58px;
+  max-width: 72px;
+}
+
+.unit-status-active td {
+  background: #eef8f0;
+}
+
+.unit-status-upcoming td {
+  background: #edf6ff;
+}
+
+.unit-status-complete td {
+  background: #f2f4f5;
+  color: #5f6b70;
+}
+
+.unit-status-skipped td {
+  background: #f8f2ee;
+  color: #77645d;
+}
+
 .mini-tabs,
 .snapshot-actions {
   display: flex;

@@ -147,6 +147,23 @@ type WeeklyRhythmDay = {
   narrative: string;
 };
 
+type UnitPlanStatus = "active" | "upcoming" | "planned" | "complete" | "skipped";
+
+type UnitPlanRow = {
+  id: string;
+  title: string;
+  weeks: string;
+  guidingQuestion: string;
+  primaryCompetency: string;
+  formatType: string;
+  weeklyRhythmOverride: string;
+  publishedSequence: string;
+  parentDesigned: string;
+  fieldTrip: string;
+  finalFridayCapstone: string;
+  status: UnitPlanStatus;
+};
+
 const activityTypes = [
   "Language Arts",
   "Math",
@@ -245,6 +262,181 @@ const initialWeeklyRhythmDays: WeeklyRhythmDay[] = [
     id: "final-friday-summary",
     title: "Final Friday Summary",
     narrative: "Unit capstone: present the final project, explain learning, and select proof-of-learning artifacts."
+  }
+];
+
+const unitFormatOptions = ["Harbor & Sprout Template", "Open-and-Go Published Unit", "Minimal Structure / Parent-Designed"];
+const weeklyRhythmOverrideOptions = ["Use full rhythm", "None", "Light overlay", "Use Thursday heavily", "Finance daily", "Cooking Friday", "Context Wednesday focus", "Meaning Thursday focus", "Creating Friday capstone"];
+const unitStatusOptions: UnitPlanStatus[] = ["active", "upcoming", "planned", "complete", "skipped"];
+
+const initialUnitPlanRows: UnitPlanRow[] = [
+  {
+    id: "construction",
+    title: "Construction",
+    weeks: "3",
+    guidingQuestion: "How do people build safe structures?",
+    primaryCompetency: "Design and problem solving",
+    formatType: "Minimal Structure / Parent-Designed",
+    weeklyRhythmOverride: "Use full rhythm",
+    publishedSequence: "No",
+    parentDesigned: "Yes",
+    fieldTrip: "Visit a build site or hardware store",
+    finalFridayCapstone: "Build and explain a model frame",
+    status: "active"
+  },
+  {
+    id: "all-about-me",
+    title: "All About Me",
+    weeks: "2",
+    guidingQuestion: "Who am I in my family and community?",
+    primaryCompetency: "Identity and self-awareness",
+    formatType: "Harbor & Sprout Template",
+    weeklyRhythmOverride: "None",
+    publishedSequence: "No",
+    parentDesigned: "Partial",
+    fieldTrip: "Family interview",
+    finalFridayCapstone: "Identity lap book",
+    status: "upcoming"
+  },
+  {
+    id: "off-the-land",
+    title: "Off the Land",
+    weeks: "3",
+    guidingQuestion: "How do people use land responsibly?",
+    primaryCompetency: "Self-sufficiency",
+    formatType: "Open-and-Go Published Unit",
+    weeklyRhythmOverride: "Light overlay",
+    publishedSequence: "Yes",
+    parentDesigned: "No",
+    fieldTrip: "Farm or garden visit",
+    finalFridayCapstone: "Food source presentation",
+    status: "planned"
+  },
+  {
+    id: "gratitude-and-thanksgiving",
+    title: "Gratitude and Thanksgiving",
+    weeks: "2",
+    guidingQuestion: "How do gratitude and service shape community?",
+    primaryCompetency: "Character and relationships",
+    formatType: "Minimal Structure / Parent-Designed",
+    weeklyRhythmOverride: "Use Thursday heavily",
+    publishedSequence: "No",
+    parentDesigned: "Yes",
+    fieldTrip: "Service project",
+    finalFridayCapstone: "Thankfulness presentation",
+    status: "planned"
+  },
+  {
+    id: "all-about-money",
+    title: "All About Money",
+    weeks: "3",
+    guidingQuestion: "How do people earn, save, spend, and give?",
+    primaryCompetency: "Financial literacy",
+    formatType: "Minimal Structure / Parent-Designed",
+    weeklyRhythmOverride: "Finance daily",
+    publishedSequence: "No",
+    parentDesigned: "Yes",
+    fieldTrip: "Store comparison shopping",
+    finalFridayCapstone: "Budget board game",
+    status: "planned"
+  },
+  {
+    id: "lets-cook",
+    title: "Let's Cook!",
+    weeks: "3",
+    guidingQuestion: "How does cooking use science and life skills?",
+    primaryCompetency: "Life skills and chemistry",
+    formatType: "Open-and-Go Published Unit",
+    weeklyRhythmOverride: "Cooking Friday",
+    publishedSequence: "Yes",
+    parentDesigned: "Partial",
+    fieldTrip: "Cook a family meal",
+    finalFridayCapstone: "Recipe book",
+    status: "planned"
+  },
+  {
+    id: "human-body",
+    title: "Human Body",
+    weeks: "3",
+    guidingQuestion: "How does my body work?",
+    primaryCompetency: "Health literacy",
+    formatType: "Harbor & Sprout Template",
+    weeklyRhythmOverride: "None",
+    publishedSequence: "No",
+    parentDesigned: "Partial",
+    fieldTrip: "Health habit tracker",
+    finalFridayCapstone: "Body systems display",
+    status: "planned"
+  },
+  {
+    id: "community-helpers",
+    title: "Community Helpers",
+    weeks: "2",
+    guidingQuestion: "Who helps a community work?",
+    primaryCompetency: "Civic understanding",
+    formatType: "Minimal Structure / Parent-Designed",
+    weeklyRhythmOverride: "Meaning Thursday focus",
+    publishedSequence: "No",
+    parentDesigned: "Yes",
+    fieldTrip: "Interview a helper",
+    finalFridayCapstone: "Helper presentation",
+    status: "planned"
+  },
+  {
+    id: "world-cultures-and-traditions",
+    title: "World Cultures and Traditions",
+    weeks: "3",
+    guidingQuestion: "How do people celebrate and remember?",
+    primaryCompetency: "Cultural awareness",
+    formatType: "Open-and-Go Published Unit",
+    weeklyRhythmOverride: "Light overlay",
+    publishedSequence: "Yes",
+    parentDesigned: "No",
+    fieldTrip: "Cultural food or event",
+    finalFridayCapstone: "Culture display",
+    status: "planned"
+  },
+  {
+    id: "50-states",
+    title: "50 States",
+    weeks: "3",
+    guidingQuestion: "How do places shape people?",
+    primaryCompetency: "Geographic literacy",
+    formatType: "Minimal Structure / Parent-Designed",
+    weeklyRhythmOverride: "Context Wednesday focus",
+    publishedSequence: "No",
+    parentDesigned: "Yes",
+    fieldTrip: "Map practice trip",
+    finalFridayCapstone: "State map portfolio",
+    status: "planned"
+  },
+  {
+    id: "transportation",
+    title: "Transportation",
+    weeks: "2",
+    guidingQuestion: "How do people and goods move?",
+    primaryCompetency: "Systems and movement",
+    formatType: "Harbor & Sprout Template",
+    weeklyRhythmOverride: "None",
+    publishedSequence: "No",
+    parentDesigned: "Partial",
+    fieldTrip: "Transit observation",
+    finalFridayCapstone: "Transportation model",
+    status: "planned"
+  },
+  {
+    id: "outdoor-adventure-and-stewardship",
+    title: "Outdoor Adventure and Stewardship",
+    weeks: "2",
+    guidingQuestion: "How do we explore responsibly?",
+    primaryCompetency: "Outdoor competence",
+    formatType: "Minimal Structure / Parent-Designed",
+    weeklyRhythmOverride: "Creating Friday capstone",
+    publishedSequence: "No",
+    parentDesigned: "Yes",
+    fieldTrip: "Camping/outdoor field studies",
+    finalFridayCapstone: "Adventure Guide",
+    status: "planned"
   }
 ];
 
@@ -487,6 +679,7 @@ export default function Home() {
   const [editingSpineId, setEditingSpineId] = useState<string | null>(null);
   const [weeklyRhythmDays, setWeeklyRhythmDays] = useState<WeeklyRhythmDay[]>(initialWeeklyRhythmDays);
   const [editingRhythmDayId, setEditingRhythmDayId] = useState<string | null>(null);
+  const [unitPlanRows, setUnitPlanRows] = useState<UnitPlanRow[]>(initialUnitPlanRows);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -755,6 +948,46 @@ export default function Home() {
       [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
       return copy;
     });
+  }
+
+  function updateUnitPlanRow<K extends keyof UnitPlanRow>(id: string, key: K, value: UnitPlanRow[K]) {
+    setUnitPlanRows((current) => current.map((item) => (item.id === id ? { ...item, [key]: value } : item)));
+  }
+
+  function moveUnitPlanRowTo(id: string, position: number) {
+    setUnitPlanRows((current) => {
+      const currentIndex = current.findIndex((item) => item.id === id);
+      if (currentIndex < 0) return current;
+      const boundedIndex = Math.min(Math.max(position - 1, 0), current.length - 1);
+      const copy = [...current];
+      const [row] = copy.splice(currentIndex, 1);
+      copy.splice(boundedIndex, 0, row);
+      return copy;
+    });
+  }
+
+  function addUnitPlanRow() {
+    setUnitPlanRows((current) => [
+      ...current,
+      {
+        id: `unit-plan-${Date.now()}`,
+        title: "New Unit Study",
+        weeks: "1",
+        guidingQuestion: "What question will guide this unit?",
+        primaryCompetency: "Core competency",
+        formatType: "Minimal Structure / Parent-Designed",
+        weeklyRhythmOverride: "Use full rhythm",
+        publishedSequence: "No",
+        parentDesigned: "Yes",
+        fieldTrip: "Application or field trip",
+        finalFridayCapstone: "Final Friday capstone",
+        status: "upcoming"
+      }
+    ]);
+  }
+
+  function deleteUnitPlanRow(id: string) {
+    setUnitPlanRows((current) => current.filter((item) => item.id !== id));
   }
 
   function handleQuarterStartChange(value: string) {
@@ -1897,7 +2130,10 @@ export default function Home() {
               </section>
 
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 4</p><h2>Unit Study Format Options</h2></div></div>
+                <div className="section-head">
+                  <div><p className="eyebrow">Section 4</p><h2>Unit Study Format Options</h2></div>
+                  <button className="secondary-button" type="button" onClick={addUnitPlanRow}>Add row</button>
+                </div>
                 <div className="records-grid">
                   <div className="record-link"><strong>Harbor & Sprout Template</strong><span>Use the Monday-Friday pattern: science/writing, nature/music, history/geography, U.S. study/citizenship/philosophy/EQ, and Friday presentation/art/science.</span></div>
                   <div className="record-link"><strong>Open-and-Go Published Unit</strong><span>Follow the publisher sequence in general. The app still tags activities, subjects, legal categories, skills, artifacts, and time.</span></div>
@@ -1906,22 +2142,65 @@ export default function Home() {
                 </div>
                 <div className="plan-table-wrap">
                   <table className="plan-table">
-                    <thead><tr><th>#</th><th>Unit title</th><th>Weeks</th><th>Guiding question</th><th>Primary competency</th><th>Unit format type</th><th>Weekly rhythm override</th><th>Published sequence?</th><th>Parent designed?</th><th>Field trip / application</th><th>Final Friday capstone</th><th>Status</th></tr></thead>
+                    <thead><tr><th>#</th><th>Unit title</th><th>Weeks</th><th>Guiding question</th><th>Primary competency</th><th>Unit format type</th><th>Weekly rhythm override</th><th>Published sequence?</th><th>Parent designed?</th><th>Field trip / application</th><th>Final Friday capstone</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
-                      <tr><td>1</td><td>Construction</td><td>3</td><td>How do people build safe structures?</td><td>Design and problem solving</td><td>Minimal Structure / Parent-Designed</td><td>Use full rhythm</td><td>No</td><td>Yes</td><td>Visit a build site or hardware store</td><td>Build and explain a model frame</td><td>active</td></tr>
-                      <tr><td>2</td><td>All About Me</td><td>2</td><td>Who am I in my family and community?</td><td>Identity and self-awareness</td><td>Harbor & Sprout Template</td><td>None</td><td>No</td><td>Partial</td><td>Family interview</td><td>Identity lap book</td><td>planned</td></tr>
-                      <tr><td>3</td><td>Off the Land</td><td>3</td><td>How do people use land responsibly?</td><td>Self-sufficiency</td><td>Open-and-Go Published Unit</td><td>Light overlay</td><td>Yes</td><td>No</td><td>Farm or garden visit</td><td>Food source presentation</td><td>planned</td></tr>
-                      <tr><td>4</td><td>Gratitude and Thanksgiving</td><td>2</td><td>How do gratitude and service shape community?</td><td>Character and relationships</td><td>Minimal Structure / Parent-Designed</td><td>Use Thursday heavily</td><td>No</td><td>Yes</td><td>Service project</td><td>Thankfulness presentation</td><td>planned</td></tr>
-                      <tr><td>5</td><td>All About Money</td><td>3</td><td>How do people earn, save, spend, and give?</td><td>Financial literacy</td><td>Minimal Structure / Parent-Designed</td><td>Finance daily</td><td>No</td><td>Yes</td><td>Store comparison shopping</td><td>Budget board game</td><td>planned</td></tr>
-                      <tr><td>6</td><td>Let&apos;s Cook!</td><td>3</td><td>How does cooking use science and life skills?</td><td>Life skills and chemistry</td><td>Open-and-Go Published Unit</td><td>Cooking Friday</td><td>Yes</td><td>Partial</td><td>Cook a family meal</td><td>Recipe book</td><td>planned</td></tr>
-                      <tr><td>7</td><td>Human Body</td><td>3</td><td>How does my body work?</td><td>Health literacy</td><td>Harbor & Sprout Template</td><td>None</td><td>No</td><td>Partial</td><td>Health habit tracker</td><td>Body systems display</td><td>planned</td></tr>
-                      <tr><td>8</td><td>Community Helpers</td><td>2</td><td>Who helps a community work?</td><td>Civic understanding</td><td>Minimal Structure / Parent-Designed</td><td>Meaning Thursday focus</td><td>No</td><td>Yes</td><td>Interview a helper</td><td>Helper presentation</td><td>planned</td></tr>
-                      <tr><td>9</td><td>World Cultures and Traditions</td><td>3</td><td>How do people celebrate and remember?</td><td>Cultural awareness</td><td>Open-and-Go Published Unit</td><td>Light overlay</td><td>Yes</td><td>No</td><td>Cultural food or event</td><td>Culture display</td><td>planned</td></tr>
-                      <tr><td>10</td><td>50 States</td><td>3</td><td>How do places shape people?</td><td>Geographic literacy</td><td>Minimal Structure / Parent-Designed</td><td>Context Wednesday focus</td><td>No</td><td>Yes</td><td>Map practice trip</td><td>State map portfolio</td><td>planned</td></tr>
-                      <tr><td>11</td><td>Transportation</td><td>2</td><td>How do people and goods move?</td><td>Systems and movement</td><td>Harbor & Sprout Template</td><td>None</td><td>No</td><td>Partial</td><td>Transit observation</td><td>Transportation model</td><td>planned</td></tr>
-                      <tr><td>12</td><td>Outdoor Adventure and Stewardship</td><td>2</td><td>How do we explore responsibly?</td><td>Outdoor competence</td><td>Minimal Structure / Parent-Designed</td><td>Creating Friday capstone</td><td>No</td><td>Yes</td><td>Camping/outdoor field studies</td><td>Adventure Guide</td><td>planned</td></tr>
+                      {unitPlanRows.map((row, index) => (
+                        <tr className={`unit-status-row unit-status-${row.status}`} key={row.id}>
+                          <td>
+                            <input
+                              aria-label={`Order for ${row.title}`}
+                              className="table-order-input"
+                              min="1"
+                              max={unitPlanRows.length}
+                              type="number"
+                              value={index + 1}
+                              onChange={(event) => moveUnitPlanRowTo(row.id, Number(event.target.value))}
+                            />
+                          </td>
+                          <td><input value={row.title} onChange={(event) => updateUnitPlanRow(row.id, "title", event.target.value)} /></td>
+                          <td><input className="table-weeks-input" value={row.weeks} onChange={(event) => updateUnitPlanRow(row.id, "weeks", event.target.value)} /></td>
+                          <td><textarea value={row.guidingQuestion} onChange={(event) => updateUnitPlanRow(row.id, "guidingQuestion", event.target.value)} /></td>
+                          <td><textarea value={row.primaryCompetency} onChange={(event) => updateUnitPlanRow(row.id, "primaryCompetency", event.target.value)} /></td>
+                          <td>
+                            <input list="unit-format-options" value={row.formatType} onChange={(event) => updateUnitPlanRow(row.id, "formatType", event.target.value)} />
+                          </td>
+                          <td>
+                            <input list="weekly-rhythm-override-options" value={row.weeklyRhythmOverride} onChange={(event) => updateUnitPlanRow(row.id, "weeklyRhythmOverride", event.target.value)} />
+                          </td>
+                          <td>
+                            <select value={row.publishedSequence} onChange={(event) => updateUnitPlanRow(row.id, "publishedSequence", event.target.value)}>
+                              <option>No</option>
+                              <option>Yes</option>
+                              <option>Partial</option>
+                            </select>
+                          </td>
+                          <td>
+                            <select value={row.parentDesigned} onChange={(event) => updateUnitPlanRow(row.id, "parentDesigned", event.target.value)}>
+                              <option>Yes</option>
+                              <option>No</option>
+                              <option>Partial</option>
+                            </select>
+                          </td>
+                          <td><textarea value={row.fieldTrip} onChange={(event) => updateUnitPlanRow(row.id, "fieldTrip", event.target.value)} /></td>
+                          <td><textarea value={row.finalFridayCapstone} onChange={(event) => updateUnitPlanRow(row.id, "finalFridayCapstone", event.target.value)} /></td>
+                          <td>
+                            <select value={row.status} onChange={(event) => updateUnitPlanRow(row.id, "status", event.target.value as UnitPlanStatus)}>
+                              {unitStatusOptions.map((statusOption) => <option key={statusOption}>{statusOption}</option>)}
+                            </select>
+                          </td>
+                          <td>
+                            <button className="text-button" type="button" onClick={() => deleteUnitPlanRow(row.id)} disabled={unitPlanRows.length === 1}>Delete</button>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
+                  <datalist id="unit-format-options">
+                    {unitFormatOptions.map((option) => <option key={option} value={option} />)}
+                  </datalist>
+                  <datalist id="weekly-rhythm-override-options">
+                    {weeklyRhythmOverrideOptions.map((option) => <option key={option} value={option} />)}
+                  </datalist>
                 </div>
               </section>
 
