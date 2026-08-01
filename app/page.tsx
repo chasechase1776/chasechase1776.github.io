@@ -4333,14 +4333,15 @@ export default function Home() {
               </div>
               <div className="report-bucket-grid">
                 {reportBucketRows.map((bucket) => (
-                  <section className="report-bucket-card" key={bucket.key}>
-                    <div className="section-head compact-head">
+                  <details className="report-bucket-card" key={bucket.key}>
+                    <summary className="report-bucket-summary">
                       <div>
                         <p className="eyebrow">{bucket.label}</p>
                         <h3>{bucket.artifacts.length} report{bucket.artifacts.length === 1 ? "" : "s"}</h3>
                         <p className="panel-note">{bucket.description}</p>
                       </div>
-                    </div>
+                      <span className="report-expand-label">Open</span>
+                    </summary>
                     <div className="report-list">
                       {bucket.artifacts.length ? bucket.artifacts.map((artifact) => (
                         <article className="report-list-row" key={artifact.id}>
@@ -4354,7 +4355,7 @@ export default function Home() {
                         </article>
                       )) : <p className="muted">No reports in this bucket yet.</p>}
                     </div>
-                  </section>
+                  </details>
                 ))}
               </div>
             </section>

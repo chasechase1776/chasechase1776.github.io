@@ -1695,6 +1695,50 @@ details.skill-group[open] summary {
   padding: 12px;
 }
 
+.report-bucket-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.report-bucket-summary::-webkit-details-marker {
+  display: none;
+}
+
+.report-expand-label {
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+
+.report-bucket-card[open] .report-expand-label {
+  color: var(--green);
+}
+
+.report-bucket-card[open] .report-expand-label::before {
+  content: "Close";
+}
+
+.report-bucket-card[open] .report-expand-label {
+  font-size: 0;
+}
+
+.report-bucket-card[open] .report-expand-label::before {
+  font-size: 0.78rem;
+}
+
+.report-bucket-card[open] .report-list {
+  border-top: 1px solid var(--soft-line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
 .report-list-row,
 .book-list-header,
 .book-list-row {
