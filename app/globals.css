@@ -941,6 +941,53 @@ details.skill-group[open] summary {
   padding-top: 16px;
 }
 
+.annual-section-hub {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+
+.annual-section-button {
+  display: grid;
+  min-height: 86px;
+  align-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 14px;
+  text-align: left;
+  box-shadow: 0 5px 14px rgb(24 34 38 / 0.04);
+}
+
+.annual-section-button span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.annual-section-button strong {
+  font-size: 0.96rem;
+  line-height: 1.25;
+}
+
+.annual-section-button.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.annual-section-button.is-finalized {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.annual-section-button.is-active.is-finalized {
+  box-shadow: inset 0 0 0 2px rgb(38 135 88 / 0.22);
+}
+
 .plan-table-wrap {
   overflow: auto;
   border: 1px solid var(--soft-line);
@@ -1380,6 +1427,7 @@ details.skill-group[open] summary {
     .weekly-notes-grid,
     .skill-rating-row,
     .portfolio-grid,
+    .annual-section-hub,
   .records-grid,
   .review-metrics,
   .alert-grid,

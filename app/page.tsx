@@ -153,6 +153,8 @@ type JournalPortfolioCard = {
   narrative: string;
 };
 
+type AnnualPlanSectionId = "section-1" | "section-2" | "section-3" | "section-4" | "section-5" | "section-6" | "section-7" | "section-8";
+
 type UnitPlanStatus = "active" | "upcoming" | "planned" | "complete" | "skipped";
 
 type UnitPlanRow = {
@@ -302,6 +304,17 @@ const initialJournalPortfolioCards: JournalPortfolioCard[] = [
 const unitFormatOptions = ["Harbor & Sprout Template", "Open-and-Go Published Unit", "Minimal Structure / Parent-Designed"];
 const weeklyRhythmOverrideOptions = ["Use full rhythm", "None", "Light overlay", "Use Thursday heavily", "Finance daily", "Cooking Friday", "Context Wednesday focus", "Meaning Thursday focus", "Creating Friday capstone"];
 const unitStatusOptions: UnitPlanStatus[] = ["active", "upcoming", "planned", "complete", "skipped"];
+
+const annualPlanSections: { id: AnnualPlanSectionId; label: string; summary: string }[] = [
+  { id: "section-1", label: "Section 1", summary: "Big Picture Framework" },
+  { id: "section-2", label: "Section 2", summary: "Curriculum Spines" },
+  { id: "section-3", label: "Section 3", summary: "Weekly Rhythm" },
+  { id: "section-4", label: "Section 4", summary: "Unit Studies" },
+  { id: "section-5", label: "Section 5", summary: "Year-End Capstone" },
+  { id: "section-6", label: "Section 6", summary: "Journals and Portfolios" },
+  { id: "section-7", label: "Section 7", summary: "Annual Records" },
+  { id: "section-8", label: "Section 8", summary: "Exports" }
+];
 
 const initialUnitPlanRows: UnitPlanRow[] = [
   {
@@ -716,6 +729,8 @@ export default function Home() {
   const [unitPlanRows, setUnitPlanRows] = useState<UnitPlanRow[]>(initialUnitPlanRows);
   const [journalPortfolioCards, setJournalPortfolioCards] = useState<JournalPortfolioCard[]>(initialJournalPortfolioCards);
   const [editingJournalPortfolioId, setEditingJournalPortfolioId] = useState<string | null>(null);
+  const [activeAnnualPlanSection, setActiveAnnualPlanSection] = useState<AnnualPlanSectionId | null>(null);
+  const [finalizedAnnualPlanSections, setFinalizedAnnualPlanSections] = useState<AnnualPlanSectionId[]>([]);
 
   const primarySubject = useMemo(() => inferSubject(selectedType), [selectedType]);
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
@@ -918,6 +933,12 @@ export default function Home() {
   function updateAnnualPlan(message: string, statusValue?: "draft" | "active" | "finalized" | "archived") {
     if (statusValue) setAnnualPlanStatus(statusValue);
     setAnnualPlanMessage(message);
+  }
+
+  function finalizeAnnualPlanSection(id: AnnualPlanSectionId) {
+    const section = annualPlanSections.find((item) => item.id === id);
+    setFinalizedAnnualPlanSections((current) => (current.includes(id) ? current : [...current, id]));
+    setAnnualPlanMessage(`${section?.summary ?? "Annual Plan section"} finalized. Its landing button is now green.`);
   }
 
   function updateCurriculumSpine(id: string, key: "title" | "narrative", value: string) {
@@ -2091,8 +2112,30 @@ export default function Home() {
               </div>
               <p className="status-line" role="status">{annualPlanMessage}</p>
 
+              <div className="annual-section-hub" aria-label="Annual Plan sections">
+                {annualPlanSections.map((section) => {
+                  const isFinalized = finalizedAnnualPlanSections.includes(section.id);
+                  const isActive = activeAnnualPlanSection === section.id;
+                  return (
+                    <button
+                      className={`annual-section-button${isActive ? " is-active" : ""}${isFinalized ? " is-finalized" : ""}`}
+                      key={section.id}
+                      type="button"
+                      onClick={() => setActiveAnnualPlanSection(section.id)}
+                    >
+                      <span>{section.label}</span>
+                      <strong>{section.summary}</strong>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activeAnnualPlanSection === "section-1" ? (
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 1</p><h2>Big Picture Framework</h2></div></div>
+                <div className="section-head">
+                  <div><p className="eyebrow">Section 1</p><h2>Big Picture Framework</h2></div>
+                  <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-1")}>Finalize</button>
+                </div>
                 <div className="review-form-grid">
                   <label><span>Primary Theme</span><input defaultValue="Me and My Community" /></label>
                   <label><span>Central Question</span><input defaultValue="How do people live together?" /></label>
@@ -2104,14 +2147,19 @@ export default function Home() {
                   <label><span>Spiral Curriculum Summary</span><textarea defaultValue="This is a spiral curriculum. Core skills in literacy, mathematics, finance, observation, writing, project work, and presentation are practiced repeatedly across changing thematic unit studies. Each unit provides a new context for applying the same core skills at a deeper level." /></label>
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-2" ? (
               <section className="plan-section">
                 <div className="section-head">
                   <div>
                     <p className="eyebrow">Section 2</p>
                     <h2>Daily recurring expectations and curriculum spines</h2>
                   </div>
-                  <button className="secondary-button" type="button" onClick={addCurriculumSpine}>Add box</button>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button" onClick={addCurriculumSpine}>Add box</button>
+                    <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-2")}>Finalize</button>
+                  </div>
                 </div>
                 <div className="records-grid editable-card-grid">
                   {curriculumSpines.map((spine, index) => (
@@ -2150,13 +2198,16 @@ export default function Home() {
                   ))}
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-3" ? (
               <section className="plan-section">
                 <div className="section-head">
                   <div><p className="eyebrow">Section 3</p><h2>Weekly Rhythm</h2></div>
                   <div className="primary-action-row">
                     <button className="secondary-button" type="button" onClick={addWeeklyRhythmDay}>Add day card</button>
                     <span className="tag">Flexible planning scaffold</span>
+                    <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-3")}>Finalize</button>
                   </div>
                 </div>
                 <p className="panel-note">Each week includes a writing prompt developed throughout the week and finalized on Friday. Friday is the weekly culmination point; at the end of a unit, Final Friday becomes a larger unit capstone.</p>
@@ -2197,11 +2248,16 @@ export default function Home() {
                   ))}
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-4" ? (
               <section className="plan-section">
                 <div className="section-head">
                   <div><p className="eyebrow">Section 4</p><h2>Unit Study Format Options</h2></div>
-                  <button className="secondary-button" type="button" onClick={addUnitPlanRow}>Add row</button>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button" onClick={addUnitPlanRow}>Add row</button>
+                    <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-4")}>Finalize</button>
+                  </div>
                 </div>
                 <div className="records-grid">
                   <div className="record-link"><strong>Harbor & Sprout Template</strong><span>Use the Monday-Friday pattern: science/writing, nature/music, history/geography, U.S. study/citizenship/philosophy/EQ, and Friday presentation/art/science.</span></div>
@@ -2272,9 +2328,14 @@ export default function Home() {
                   </datalist>
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-5" ? (
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 5</p><h2>Year-End Capstone</h2></div></div>
+                <div className="section-head">
+                  <div><p className="eyebrow">Section 5</p><h2>Year-End Capstone</h2></div>
+                  <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-5")}>Finalize</button>
+                </div>
                 <div className="review-form-grid">
                   <label><span>Capstone title</span><input defaultValue="Outdoor Adventure and Stewardship" /></label>
                   <label><span>Expected duration</span><input defaultValue="2 weeks" /></label>
@@ -2285,11 +2346,16 @@ export default function Home() {
                   <label><span>Summary</span><textarea defaultValue="The year ends with an Outdoor Adventure and Stewardship capstone. The student creates an Adventure Guide containing packing lists, nature journal pages, animal observations, plant sketches, trail maps, camp recipes, safety rules, Leave No Trace principles, first-aid basics, and favorite parks. The binder becomes a real tool for summer camping and field studies." /></label>
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-6" ? (
               <section className="plan-section">
                 <div className="section-head">
                   <div><p className="eyebrow">Section 6</p><h2>Journals and Portfolios</h2></div>
-                  <button className="secondary-button" type="button" onClick={addJournalPortfolioCard}>Add card</button>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button" onClick={addJournalPortfolioCard}>Add card</button>
+                    <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-6")}>Finalize</button>
+                  </div>
                 </div>
                 <div className="records-grid editable-card-grid">
                   {journalPortfolioCards.map((card, index) => (
@@ -2328,9 +2394,17 @@ export default function Home() {
                   ))}
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-7" ? (
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 7</p><h2>Annual Records</h2></div><button className="secondary-button" type="button">Add school-year file</button></div>
+                <div className="section-head">
+                  <div><p className="eyebrow">Section 7</p><h2>Annual Records</h2></div>
+                  <div className="primary-action-row">
+                    <button className="secondary-button" type="button">Add school-year file</button>
+                    <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-7")}>Finalize</button>
+                  </div>
+                </div>
                 <div className="records-grid">
                   <div className="record-link"><strong>Curriculum overview</strong><span>Core resources and visual curriculum evidence.</span></div>
                   <div className="record-link"><strong>Scope and sequence</strong><span>Expected skills, projects, weekly rhythm, and unit arc.</span></div>
@@ -2340,15 +2414,18 @@ export default function Home() {
                   <div className="record-link"><strong>Other school-year records</strong><span>Annual plan documents, uploaded files, and notes.</span></div>
                 </div>
               </section>
+              ) : null}
 
+              {activeAnnualPlanSection === "section-8" ? (
               <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 8</p><h2>Annual Plan Exports</h2></div><div className="primary-action-row"><button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Generate Annual Plan Markdown</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Generated Annual Plan PDF including all planning sections and the note that daily logs document reality.")}>Generate Annual Plan PDF</button><button className="primary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatus)}>Add to Legal Archive</button></div></div>
+                <div className="section-head"><div><p className="eyebrow">Section 8</p><h2>Annual Plan Exports</h2></div><div className="primary-action-row"><button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Generate Annual Plan Markdown</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Generated Annual Plan PDF including all planning sections and the note that daily logs document reality.")}>Generate Annual Plan PDF</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatus)}>Add to Legal Archive</button><button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-8")}>Finalize</button></div></div>
                 <div className="coverage-summary-grid">
                   <div className="record-link"><strong>Markdown path</strong><span>records/{schoolYear}/annual-plan.md</span></div>
                   <div className="record-link"><strong>PDF export</strong><span>Includes all Annual Plan sections above.</span></div>
                   <div className="record-link"><strong>Archive note</strong><span>Annual Plan explains intent; daily logs document reality.</span></div>
                 </div>
               </section>
+              ) : null}
             </section>
             ) : null}
 
