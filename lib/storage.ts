@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
@@ -173,4 +173,29 @@ export async function readStoredFile(storagePath: string) {
   }
 
   return Buffer.from(await response.arrayBuffer());
+}
+
+export async function deleteStoredFile(storagePath: string) {
+  const supabaseObject = supabaseStoredObject(storagePath);
+  if (!supabaseObject) {
+    await unlink(storagePath).catch(() => undefined);
+    return;
+  }
+
+  const { serviceRoleKey, supabaseUrl } = supabaseStorageConfig();
+  const deleteUrl = `${supabaseUrl.replace(/\/+$/g, "")}/storage/v1/object/${encodeURIComponent(supabaseObject.bucket)}`;
+  const response = await fetch(deleteUrl, {
+    method: "DELETE",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prefixes: [supabaseObject.objectPath] })
+  });
+
+  if (!response.ok && response.status !== 404) {
+    const details = await response.text().catch(() => "");
+    throw new Error(`Stored file could not be deleted${details ? `: ${details}` : "."}`);
+  }
 }
