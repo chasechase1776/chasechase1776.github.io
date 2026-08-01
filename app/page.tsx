@@ -65,7 +65,7 @@ type DraftCard = {
   minutes: number;
   status: "needs_approval" | "approved";
   subjectAllocations: { subject: string; minutes: number }[];
-  crossSubject: { enabled: boolean; subject: string; topic: string };
+  crossSubjects: { id: string; activityType: string; topic: string }[];
   legalTags: string[];
   skills: string[];
 };
@@ -217,6 +217,9 @@ const legalCoverage = [
   ["Visual Curriculum", "Covered"],
   ["Bona Fide Instruction", "Covered"]
 ];
+
+const allLegalTagOptions = legalCoverage.map(([label]) => label);
+const allSkillTagOptions = Array.from(new Set(Object.values(skillTaxonomy).flat())).sort((a, b) => a.localeCompare(b));
 
 const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
 const weeklyRatings = ["Not Observed", "Introduced", "Developing", "Practicing", "Proficient", "Mastery"];
@@ -742,25 +745,11 @@ function mockDrafts(activityType: string, minutes: number): DraftCard[] {
       minutes: primaryMinutes,
       status: "needs_approval",
       subjectAllocations: [{ subject: primarySubject, minutes: primaryMinutes }],
-      crossSubject: { enabled: false, subject: primarySubject === "Science" ? "Language Arts" : "Science Journal", topic: unitStudyFallback(activityType) },
+      crossSubjects: [],
       legalTags: parsedLegalTagsForType(activityType),
       skills: parsedSkillsForType(activityType)
-    },
-    {
-      id: "draft-unit-connection",
-      title: "Construction unit connection",
-      minutes: Math.max(5, Math.round(primaryMinutes / 2)),
-      status: "needs_approval",
-      subjectAllocations: [{ subject: primarySubject, minutes: Math.max(5, Math.round(primaryMinutes / 2)) }],
-      crossSubject: { enabled: true, subject: "Unit Study", topic: "Construction" },
-      legalTags: ["Visual Curriculum", "Bona Fide Instruction"],
-      skills: ["Uses Tools and Models", "Problem-Solving and Application"]
     }
   ];
-}
-
-function unitStudyFallback(activityType: string) {
-  return activityType === "Finance" ? "Money choices" : "Unit connection";
 }
 
 export default function Home() {
@@ -1091,6 +1080,38 @@ export default function Home() {
     setDraftCards((current) => current.map((draft) => (draft.id === id ? { ...draft, ...patch } : draft)));
   }
 
+  function toggleDraftSkill(id: string, skill: string) {
+    setDraftCards((current) =>
+      current.map((draft) =>
+        draft.id === id
+          ? {
+              ...draft,
+              skills: draft.skills.includes(skill)
+                ? draft.skills.filter((item) => item !== skill)
+                : [...draft.skills, skill]
+            }
+          : draft
+      )
+    );
+    setStatus("Skill tags updated for parsed card.");
+  }
+
+  function toggleDraftLegalTag(id: string, tag: string) {
+    setDraftCards((current) =>
+      current.map((draft) =>
+        draft.id === id
+          ? {
+              ...draft,
+              legalTags: draft.legalTags.includes(tag)
+                ? draft.legalTags.filter((item) => item !== tag)
+                : [...draft.legalTags, tag]
+            }
+          : draft
+      )
+    );
+    setStatus("Legal tags updated for parsed card.");
+  }
+
   function selectDraftTime(id: string) {
     setDraftCards((current) =>
       current.map((draft) => {
@@ -1118,15 +1139,55 @@ export default function Home() {
     setStatus("Parsed card time changed. Review allocation before approval.");
   }
 
-  function updateDraftCrossSubject(id: string, patch: Partial<DraftCard["crossSubject"]>) {
+  function addDraftCrossSubject(id: string) {
     setDraftCards((current) =>
       current.map((draft) =>
         draft.id === id
-          ? { ...draft, crossSubject: { ...draft.crossSubject, ...patch } }
+          ? {
+              ...draft,
+              crossSubjects: [
+                ...draft.crossSubjects,
+                {
+                  id: `cross-${Date.now()}-${draft.crossSubjects.length}`,
+                  activityType: activityTypes.find((type) => type !== selectedType) ?? "Unit Study",
+                  topic: ""
+                }
+              ]
+            }
           : draft
       )
     );
-    setStatus("Cross-subject connection updated. Time remains allocated to the original subject.");
+    setStatus("Cross-subject topic added. Time remains allocated to the original activity.");
+  }
+
+  function updateDraftCrossSubject(cardId: string, crossId: string, patch: Partial<DraftCard["crossSubjects"][number]>) {
+    setDraftCards((current) =>
+      current.map((draft) =>
+        draft.id === cardId
+          ? {
+              ...draft,
+              crossSubjects: draft.crossSubjects.map((crossSubject) =>
+                crossSubject.id === crossId ? { ...crossSubject, ...patch } : crossSubject
+              )
+            }
+          : draft
+      )
+    );
+    setStatus("Cross-subject topic updated. Time remains allocated to the original activity.");
+  }
+
+  function removeDraftCrossSubject(cardId: string, crossId: string) {
+    setDraftCards((current) =>
+      current.map((draft) =>
+        draft.id === cardId
+          ? {
+              ...draft,
+              crossSubjects: draft.crossSubjects.filter((crossSubject) => crossSubject.id !== crossId)
+            }
+          : draft
+      )
+    );
+    setStatus("Cross-subject topic removed.");
   }
 
   function mergeDraftCard(id: string) {
@@ -1144,7 +1205,7 @@ export default function Home() {
         subjectAllocations: [...target.subjectAllocations, ...source.subjectAllocations],
         legalTags: Array.from(new Set([...target.legalTags, ...source.legalTags])),
         skills: Array.from(new Set([...target.skills, ...source.skills])),
-        crossSubject: target.crossSubject.enabled ? target.crossSubject : source.crossSubject
+        crossSubjects: [...target.crossSubjects, ...source.crossSubjects]
       };
       return current.filter((draft) => draft.id !== id).map((draft) => (draft.id === target.id ? merged : draft));
     });
@@ -2067,6 +2128,39 @@ export default function Home() {
                         {draft.skills.map((skill) => <span className="skill-chip" key={skill}>{skill}</span>)}
                         {draft.legalTags.map((tag) => <span className="legal-chip" key={tag}>{tag}</span>)}
                       </div>
+                      <details className="parsed-tag-editor">
+                        <summary>Adjust skill and legal tags</summary>
+                        <div className="tag-editor-section">
+                          <strong>Skill tags</strong>
+                          <div className="tag-option-grid">
+                            {allSkillTagOptions.map((skill) => (
+                              <button
+                                className={draft.skills.includes(skill) ? "tag-button skill-option is-active" : "tag-button skill-option"}
+                                key={skill}
+                                type="button"
+                                onClick={() => toggleDraftSkill(draft.id, skill)}
+                              >
+                                {skill}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="tag-editor-section">
+                          <strong>Legal tags</strong>
+                          <div className="tag-option-grid">
+                            {allLegalTagOptions.map((tag) => (
+                              <button
+                                className={draft.legalTags.includes(tag) ? "tag-button legal-option is-active" : "tag-button legal-option"}
+                                key={tag}
+                                type="button"
+                                onClick={() => toggleDraftLegalTag(draft.id, tag)}
+                              >
+                                {tag}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </details>
                       <div className="subject-allocation-bars" aria-label={`${draft.title} subject time allocations`}>
                         {draft.subjectAllocations.map((allocation) => {
                           const rawPercent = (allocation.minutes / dailyInstructionMinutesForBars) * 100;
@@ -2086,40 +2180,42 @@ export default function Home() {
                         })}
                       </div>
                       <div className="cross-subject-panel">
-                        <label className="cross-subject-toggle">
-                          <input
-                            type="checkbox"
-                            checked={draft.crossSubject.enabled}
-                            onChange={(event) => updateDraftCrossSubject(draft.id, { enabled: event.target.checked })}
-                          />
-                          <span>Cross-subject topic</span>
-                        </label>
-                        {draft.crossSubject.enabled ? (
-                          <div className="cross-subject-fields">
-                            <label>
-                              <span>Connects to</span>
-                              <select
-                                value={draft.crossSubject.subject}
-                                onChange={(event) => updateDraftCrossSubject(draft.id, { subject: event.target.value })}
-                              >
-                                <option>Science Journal</option>
-                                <option>Unit Study</option>
-                                <option>Social Studies</option>
-                                <option>Finance</option>
-                                <option>Math</option>
-                                <option>Language Arts</option>
-                              </select>
-                            </label>
-                            <label>
-                              <span>Topic</span>
-                              <input
-                                value={draft.crossSubject.topic}
-                                onChange={(event) => updateDraftCrossSubject(draft.id, { topic: event.target.value })}
-                                placeholder="Volcanoes, money choices, construction..."
-                              />
-                            </label>
+                        <div className="cross-subject-header">
+                          <strong>Cross-subject topics</strong>
+                          <button className="secondary-button" type="button" onClick={() => addDraftCrossSubject(draft.id)}>
+                            {draft.crossSubjects.length ? "Add another" : "Add cross-subject topic"}
+                          </button>
+                        </div>
+                        {draft.crossSubjects.length ? (
+                          <div className="cross-subject-list">
+                            {draft.crossSubjects.map((crossSubject) => (
+                              <div className="cross-subject-fields" key={crossSubject.id}>
+                                <label>
+                                  <span>Connects to</span>
+                                  <select
+                                    value={crossSubject.activityType}
+                                    onChange={(event) => updateDraftCrossSubject(draft.id, crossSubject.id, { activityType: event.target.value })}
+                                  >
+                                    {activityTypes.map((type) => (
+                                      <option key={type}>{type}</option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label>
+                                  <span>Topic</span>
+                                  <input
+                                    value={crossSubject.topic}
+                                    onChange={(event) => updateDraftCrossSubject(draft.id, crossSubject.id, { topic: event.target.value })}
+                                    placeholder="Volcanoes, money choices, construction..."
+                                  />
+                                </label>
+                                <button className="text-button" type="button" onClick={() => removeDraftCrossSubject(draft.id, crossSubject.id)}>Remove</button>
+                              </div>
+                            ))}
                           </div>
-                        ) : null}
+                        ) : (
+                          <p className="muted">Optional: connect this activity topic to another activity workspace without moving the time.</p>
+                        )}
                       </div>
                       <div className="parsed-card-actions">
                         <button className="secondary-button" type="button" onClick={() => selectDraftTime(draft.id)}>Select time</button>

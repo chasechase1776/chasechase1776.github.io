@@ -852,6 +852,51 @@ details.skill-group[open] summary {
   font-weight: 800;
 }
 
+.parsed-tag-editor {
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 10px;
+}
+
+.parsed-tag-editor summary {
+  cursor: pointer;
+  color: var(--blue);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.tag-editor-section {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tag-editor-section strong {
+  font-size: 0.82rem;
+}
+
+.tag-option-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  max-height: 180px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.tag-button.skill-option.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.tag-button.legal-option.is-active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
 .skill-chip {
   border: 1px solid var(--blue);
   background: var(--blue-soft);
@@ -915,25 +960,26 @@ details.skill-group[open] summary {
   padding: 10px;
 }
 
-.cross-subject-toggle {
+.cross-subject-header {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   align-items: center;
   color: var(--text);
   font-size: 0.88rem;
   font-weight: 800;
 }
 
-.cross-subject-toggle input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
+.cross-subject-list {
+  display: grid;
+  gap: 10px;
 }
 
 .cross-subject-fields {
   display: grid;
-  grid-template-columns: minmax(150px, 0.35fr) minmax(0, 1fr);
+  grid-template-columns: minmax(145px, 0.32fr) minmax(0, 1fr) auto;
   gap: 10px;
+  align-items: end;
 }
 
 .review-alert-card {
