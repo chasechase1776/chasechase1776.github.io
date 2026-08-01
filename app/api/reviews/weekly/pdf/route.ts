@@ -1,4 +1,3 @@
-import PDFDocument from "pdfkit";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -33,8 +32,84 @@ function stringifySummary(value: unknown) {
   return String(value);
 }
 
-function addWrappedText(doc: PDFKit.PDFDocument, text: string, options: PDFKit.Mixins.TextOptions = {}) {
-  doc.text(text || "None", { width: 480, lineGap: 3, ...options });
+function escapePdfText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function wrapLine(value: string, width = 92) {
+  const words = value.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > width) {
+      if (current) lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  });
+
+  if (current) lines.push(current);
+  return lines.length ? lines : [""];
+}
+
+function buildPdf(lines: string[]) {
+  const pages: string[][] = [];
+  for (let index = 0; index < lines.length; index += 42) {
+    pages.push(lines.slice(index, index + 42));
+  }
+
+  const objects: string[] = [];
+  const addObject = (body: string) => {
+    objects.push(body);
+    return objects.length;
+  };
+
+  const catalogId = addObject("<< /Type /Catalog /Pages 2 0 R >>");
+  const pagesId = addObject("");
+  const fontId = addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  const pageIds: number[] = [];
+
+  pages.forEach((pageLines, pageIndex) => {
+    const stream = [
+      "BT",
+      "/F1 10 Tf",
+      "48 748 Td",
+      "14 TL",
+      ...pageLines.flatMap((line, lineIndex) => {
+        const safe = escapePdfText(line);
+        return lineIndex === 0 ? [`(${safe}) Tj`] : ["T*", `(${safe}) Tj`];
+      }),
+      "ET",
+      "BT",
+      "/F1 8 Tf",
+      `48 36 Td (Weekly Review - Page ${pageIndex + 1}) Tj`,
+      "ET"
+    ].join("\n");
+    const streamId = addObject(`<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`);
+    const pageId = addObject(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${streamId} 0 R >>`);
+    pageIds.push(pageId);
+  });
+
+  objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((body, index) => {
+    offsets.push(Buffer.byteLength(pdf));
+    pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const xrefOffset = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n`;
+  pdf += "0000000000 65535 f \n";
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return Buffer.from(pdf, "utf8");
 }
 
 async function pdfBufferForWeeklyReview(review: {
@@ -47,68 +122,41 @@ async function pdfBufferForWeeklyReview(review: {
   schoolYear: { label: string; student: { name: string } };
 }) {
   const data = JSON.parse(review.dataJson) as Record<string, unknown>;
-  const doc = new PDFDocument({ margin: 48, size: "LETTER", bufferPages: true });
-  const chunks: Buffer[] = [];
+  const sourceLines = [
+    "Weekly Review",
+    `${review.schoolYear.student.name} - ${review.schoolYear.label}`,
+    `${dateKey(review.weekStartDate)} to ${dateKey(review.weekEndDate)} - ${review.status}`,
+    "",
+    "Generated Metrics",
+    `Total approved time: ${data.totalApprovedLearningTime ?? 0} minutes`,
+    `Activities logged: ${data.activitiesLogged ?? 0}`,
+    `Days logged: ${data.daysLogged ?? 0}`,
+    `Artifacts saved: ${data.artifactsSaved ?? 0}`,
+    `Needs review: ${data.activitiesNeedingReview ?? 0}`,
+    "",
+    "Coverage Summary",
+    `Subject time: ${stringifySummary(data.subjectTimeSummary)}`,
+    `Legal coverage: ${stringifySummary(data.legalCoverageSummary)}`,
+    `Overall rating: ${data.overallWeeklyRating ?? "Not Observed"}`,
+    "",
+    "Parent Notes",
+    `Weekly summary: ${data.parentWeeklySummary ?? ""}`,
+    `Next week focus: ${data.nextWeekFocus ?? ""}`,
+    "",
+    "Student Reflection",
+    `Favorite activity: ${data.studentFavorite ?? ""}`,
+    `Hardest activity: ${data.studentHardest ?? ""}`,
+    `Proudest work: ${data.studentProudest ?? ""}`,
+    `Question or curiosity: ${data.studentQuestion ?? ""}`,
+    `Self-rating: ${data.studentRating ?? ""}`,
+    `Dictated reflection: ${data.studentDictation ?? ""}`,
+    "",
+    "Skills and Portfolio",
+    `Skills touched: ${stringifySummary(data.skillsTouchedThisWeek)}`,
+    `Portfolio selections: ${stringifySummary(data.portfolioSelections)}`
+  ];
 
-  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-  const finished = new Promise<Buffer>((resolve) => {
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-  });
-
-  doc.font("Helvetica-Bold").fontSize(18).text("Weekly Review", { lineGap: 4 });
-  doc.font("Helvetica").fontSize(10).fillColor("#5a6872").text(`${review.schoolYear.student.name} - ${review.schoolYear.label}`);
-  doc.text(`${dateKey(review.weekStartDate)} to ${dateKey(review.weekEndDate)} - ${review.status}`);
-  doc.moveDown();
-
-  doc.fillColor("#17212b").font("Helvetica-Bold").fontSize(12).text("Generated Metrics");
-  doc.font("Helvetica").fontSize(10);
-  addWrappedText(doc, `Total approved time: ${data.totalApprovedLearningTime ?? 0} minutes`);
-  addWrappedText(doc, `Activities logged: ${data.activitiesLogged ?? 0}`);
-  addWrappedText(doc, `Days logged: ${data.daysLogged ?? 0}`);
-  addWrappedText(doc, `Artifacts saved: ${data.artifactsSaved ?? 0}`);
-  addWrappedText(doc, `Needs review: ${data.activitiesNeedingReview ?? 0}`);
-  doc.moveDown();
-
-  doc.font("Helvetica-Bold").fontSize(12).text("Coverage Summary");
-  doc.font("Helvetica").fontSize(10);
-  addWrappedText(doc, `Subject time: ${stringifySummary(data.subjectTimeSummary)}`);
-  addWrappedText(doc, `Legal coverage: ${stringifySummary(data.legalCoverageSummary)}`);
-  addWrappedText(doc, `Overall rating: ${data.overallWeeklyRating ?? "Not Observed"}`);
-  doc.moveDown();
-
-  doc.font("Helvetica-Bold").fontSize(12).text("Parent Notes");
-  doc.font("Helvetica").fontSize(10);
-  addWrappedText(doc, `Weekly summary: ${data.parentWeeklySummary ?? ""}`);
-  doc.moveDown(0.5);
-  addWrappedText(doc, `Next week focus: ${data.nextWeekFocus ?? ""}`);
-  doc.moveDown();
-
-  doc.font("Helvetica-Bold").fontSize(12).text("Student Reflection");
-  doc.font("Helvetica").fontSize(10);
-  addWrappedText(doc, `Favorite activity: ${data.studentFavorite ?? ""}`);
-  addWrappedText(doc, `Hardest activity: ${data.studentHardest ?? ""}`);
-  addWrappedText(doc, `Proudest work: ${data.studentProudest ?? ""}`);
-  addWrappedText(doc, `Question or curiosity: ${data.studentQuestion ?? ""}`);
-  addWrappedText(doc, `Self-rating: ${data.studentRating ?? ""}`);
-  addWrappedText(doc, `Dictated reflection: ${data.studentDictation ?? ""}`);
-  doc.moveDown();
-
-  doc.font("Helvetica-Bold").fontSize(12).text("Skills and Portfolio");
-  doc.font("Helvetica").fontSize(10);
-  addWrappedText(doc, `Skills touched: ${stringifySummary(data.skillsTouchedThisWeek)}`);
-  addWrappedText(doc, `Portfolio selections: ${stringifySummary(data.portfolioSelections)}`);
-
-  const range = doc.bufferedPageRange();
-  for (let i = range.start; i < range.start + range.count; i += 1) {
-    doc.switchToPage(i);
-    doc.font("Helvetica").fontSize(8).fillColor("#5a6872").text(`Weekly Review - ${weekKey(review.weekStartDate)} - Page ${i + 1}`, 48, 748, {
-      align: "center",
-      width: 516
-    });
-  }
-
-  doc.end();
-  return finished;
+  return buildPdf(sourceLines.flatMap((line) => wrapLine(line)));
 }
 
 export async function POST(request: Request) {
