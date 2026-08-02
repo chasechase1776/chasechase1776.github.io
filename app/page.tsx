@@ -3267,7 +3267,7 @@ export default function Home() {
         dayTotals.set(day, (dayTotals.get(day) ?? 0) + activity.actualMinutes);
       });
 
-    const meaningfulDays = Array.from(dayTotals.entries()).filter(([, minutes]) => minutes >= 90).map(([day]) => day);
+    const meaningfulDays = Array.from(dayTotals.entries()).filter(([, minutes]) => minutes >= 180).map(([day]) => day);
     return {
       traditionalStart,
       traditionalEnd,
@@ -5126,7 +5126,7 @@ export default function Home() {
                 </div>
                 <div className="education-ticker-card">
                   <span>Meaningful day rule</span>
-                  <strong>90 min</strong>
+                  <strong>180 min</strong>
                   <small>Approved activity time on one date</small>
                 </div>
               </div>
