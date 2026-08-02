@@ -1767,6 +1767,19 @@ details.skill-group[open] summary {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) 160px 140px auto;
 }
 
+.portfolio-note-header,
+.portfolio-note-row {
+  grid-template-columns: 170px minmax(0, 1fr) auto;
+}
+
+.portfolio-note-row textarea {
+  min-height: 92px;
+}
+
+.portfolio-archive-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .book-list-header {
   color: var(--muted);
   font-size: 0.78rem;

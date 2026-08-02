@@ -53,6 +53,14 @@ type BookListEntry = {
   rating: number;
 };
 
+type PortfolioListCategory = "achievements" | "accolades" | "projects";
+
+type PortfolioListEntry = {
+  id: string;
+  narrative: string;
+  date: string;
+};
+
 type ReportBucket = {
   key: string;
   label: string;
@@ -76,7 +84,7 @@ type WorkspaceTab = {
 };
 
 type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
-type PortfolioSection = "proof" | "books";
+type PortfolioSection = "proof" | "books" | PortfolioListCategory;
 
 const DEFAULT_STUDENT_NAME = "Bennett C. Claypool";
 const STUDENT_NAME_STORAGE_KEY = "bennett-homeschool-student-name";
@@ -88,6 +96,22 @@ const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   skills: "Skills Review",
   portfolio: "Portfolio"
 };
+
+const portfolioListLabels: Record<PortfolioListCategory, string> = {
+  achievements: "Achievements & Awards",
+  accolades: "Accolades",
+  projects: "Major Projects"
+};
+
+const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
+  proof: "",
+  books: "portfolio_book_list",
+  achievements: "portfolio_achievements",
+  accolades: "portfolio_accolades",
+  projects: "portfolio_major_projects"
+};
+
+const portfolioListCategories: PortfolioListCategory[] = ["achievements", "accolades", "projects"];
 
 type DraftCard = {
   id: string;
@@ -348,6 +372,10 @@ function isReportArtifact(artifact: Pick<PortfolioArtifact, "classification" | "
   if (reportBuckets.some((bucket) => bucket.classifications.includes(classification))) return true;
   if (!artifact.mimeType.includes("pdf")) return false;
   return /(summary|review|annual-plan|annual review|quarter|weekly|legal|report)/i.test(artifact.originalName);
+}
+
+function isPortfolioListArchive(artifact: Pick<PortfolioArtifact, "classification">) {
+  return Object.values(portfolioArchiveClassifications).filter(Boolean).includes(artifact.classification ?? "");
 }
 
 const proofOptions = ["Upload photo", "Upload file", "Skip proof for now"];
@@ -1147,6 +1175,17 @@ export default function Home() {
   const [bookListEntries, setBookListEntries] = useState<BookListEntry[]>([]);
   const [bookListMessage, setBookListMessage] = useState("Running book list is ready.");
   const [isBookListBusy, setIsBookListBusy] = useState(false);
+  const [portfolioListEntries, setPortfolioListEntries] = useState<Record<PortfolioListCategory, PortfolioListEntry[]>>({
+    achievements: [],
+    accolades: [],
+    projects: []
+  });
+  const [portfolioListMessages, setPortfolioListMessages] = useState<Record<PortfolioListCategory, string>>({
+    achievements: "Achievements & Awards list is ready.",
+    accolades: "Accolades list is ready.",
+    projects: "Major Projects list is ready."
+  });
+  const [isPortfolioListBusy, setIsPortfolioListBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
   const [activeWeeklySection, setActiveWeeklySection] = useState<WeeklyReviewSection>("summary");
   const [reviewedWeeklySections, setReviewedWeeklySections] = useState<WeeklyReviewSection[]>([]);
@@ -1341,6 +1380,29 @@ export default function Home() {
     }
   }, [schoolYear, student]);
 
+  const loadPortfolioList = useCallback(async (category: PortfolioListCategory) => {
+    if (!student || !schoolYear) return;
+    setIsPortfolioListBusy(true);
+    try {
+      const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear, category });
+      const response = await fetch(`/api/portfolio-lists?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load portfolio list.");
+      setPortfolioListEntries((current) => ({ ...current, [category]: data.entries ?? [] }));
+      setPortfolioListMessages((current) => ({
+        ...current,
+        [category]: data.entries?.length ? `${portfolioListLabels[category]} loaded.` : `No ${portfolioListLabels[category].toLowerCase()} saved yet.`
+      }));
+    } catch (error) {
+      setPortfolioListMessages((current) => ({
+        ...current,
+        [category]: error instanceof Error ? error.message : "Could not load portfolio list."
+      }));
+    } finally {
+      setIsPortfolioListBusy(false);
+    }
+  }, [schoolYear, student]);
+
   useEffect(() => {
     void loadSavedActivities(selectedDate);
   }, [loadSavedActivities, selectedDate]);
@@ -1356,6 +1418,12 @@ export default function Home() {
   useEffect(() => {
     void loadBookList();
   }, [loadBookList]);
+
+  useEffect(() => {
+    portfolioListCategories.forEach((category) => {
+      void loadPortfolioList(category);
+    });
+  }, [loadPortfolioList]);
 
   function selectActivityType(type: string) {
     const nextDrafts = {
@@ -1453,6 +1521,150 @@ export default function Home() {
       setBookListMessage(error instanceof Error ? error.message : "Book list save failed.");
     } finally {
       setIsBookListBusy(false);
+    }
+  }
+
+  function addPortfolioListEntry(category: PortfolioListCategory) {
+    setPortfolioListEntries((current) => ({
+      ...current,
+      [category]: [{ id: `${category}-${Date.now()}`, narrative: "", date: todayIso() }, ...current[category]]
+    }));
+    setPortfolioListMessages((current) => ({ ...current, [category]: "Row added. Save the list when finished." }));
+  }
+
+  function updatePortfolioListEntry(category: PortfolioListCategory, id: string, patch: Partial<Omit<PortfolioListEntry, "id">>) {
+    setPortfolioListEntries((current) => ({
+      ...current,
+      [category]: current[category].map((entry) => (entry.id === id ? { ...entry, ...patch } : entry))
+    }));
+  }
+
+  function deletePortfolioListEntry(category: PortfolioListCategory, id: string) {
+    setPortfolioListEntries((current) => ({
+      ...current,
+      [category]: current[category].filter((entry) => entry.id !== id)
+    }));
+    setPortfolioListMessages((current) => ({ ...current, [category]: "Row removed. Save the list when finished." }));
+  }
+
+  async function savePortfolioList(category: PortfolioListCategory, entries = portfolioListEntries[category]) {
+    setIsPortfolioListBusy(true);
+    try {
+      const response = await fetch("/api/portfolio-lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          category,
+          entries: entries
+            .filter((entry) => entry.narrative.trim())
+            .map((entry) => ({
+              narrative: entry.narrative.trim(),
+              date: entry.date
+            }))
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Portfolio list save failed.");
+      setPortfolioListEntries((current) => ({ ...current, [category]: data.entries ?? [] }));
+      setPortfolioListMessages((current) => ({ ...current, [category]: `${portfolioListLabels[category]} saved.` }));
+      return true;
+    } catch (error) {
+      setPortfolioListMessages((current) => ({
+        ...current,
+        [category]: error instanceof Error ? error.message : "Portfolio list save failed."
+      }));
+      return false;
+    } finally {
+      setIsPortfolioListBusy(false);
+    }
+  }
+
+  async function compilePortfolioPdf(section: Exclude<PortfolioSection, "proof">) {
+    const isBooks = section === "books";
+    if (isBooks) setIsBookListBusy(true);
+    else setIsPortfolioListBusy(true);
+
+    try {
+      const entries = isBooks
+        ? bookListEntries
+            .filter((entry) => entry.title.trim())
+            .map((entry) => ({
+              title: entry.title.trim(),
+              author: entry.author.trim(),
+              completedDate: entry.completedDate,
+              rating: entry.rating
+            }))
+        : portfolioListEntries[section]
+            .filter((entry) => entry.narrative.trim())
+            .map((entry) => ({ narrative: entry.narrative.trim(), date: entry.date }));
+
+      const response = await fetch("/api/portfolio-lists/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          category: section,
+          entries
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "PDF export failed.");
+      if (isBooks) setBookListMessage(`${data.artifact.originalName} saved to past book lists.`);
+      else setPortfolioListMessages((current) => ({ ...current, [section]: `${data.artifact.originalName} saved to past ${portfolioListLabels[section].toLowerCase()}.` }));
+      await loadPortfolio();
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "PDF export failed.";
+      if (isBooks) setBookListMessage(message);
+      else setPortfolioListMessages((current) => ({ ...current, [section]: message }));
+      return false;
+    } finally {
+      if (isBooks) setIsBookListBusy(false);
+      else setIsPortfolioListBusy(false);
+    }
+  }
+
+  async function closeOutPriorSchoolYear() {
+    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, and major projects, then clear those running lists for the selected school year.`);
+    if (!confirmed) return;
+
+    setIsBookListBusy(true);
+    setIsPortfolioListBusy(true);
+    try {
+      const sections: Exclude<PortfolioSection, "proof">[] = ["books", "achievements", "accolades", "projects"];
+      for (const section of sections) {
+        const exported = await compilePortfolioPdf(section);
+        if (!exported) throw new Error("Closeout stopped because one PDF could not be created.");
+      }
+
+      await fetch("/api/book-list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentName: student, schoolYearLabel: schoolYear, schoolYearStatus, entries: [] })
+      });
+      for (const category of portfolioListCategories) {
+        await savePortfolioList(category, []);
+      }
+
+      setBookListEntries([]);
+      setBookListMessage(`${schoolYear} book list archived and reset.`);
+      setPortfolioListEntries({ achievements: [], accolades: [], projects: [] });
+      setPortfolioListMessages({
+        achievements: `${schoolYear} achievements archived and reset.`,
+        accolades: `${schoolYear} accolades archived and reset.`,
+        projects: `${schoolYear} major projects archived and reset.`
+      });
+      await loadPortfolio();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "School-year closeout failed.";
+      setBookListMessage(message);
+    } finally {
+      setIsBookListBusy(false);
+      setIsPortfolioListBusy(false);
     }
   }
 
@@ -2551,7 +2763,7 @@ export default function Home() {
   }, [savedActivities]);
 
   const portfolioNodes = useMemo<PortfolioNode[]>(() => {
-    const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact));
+    const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact) && !isPortfolioListArchive(artifact));
     const countBy = (getKey: (artifact: PortfolioArtifact) => string | null) => {
       const counts = new Map<string, number>();
       proofArtifacts.forEach((artifact) => {
@@ -2582,7 +2794,7 @@ export default function Home() {
   }, [portfolioArtifacts]);
 
   const selectedPortfolioArtifacts = useMemo(() => {
-    const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact));
+    const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact) && !isPortfolioListArchive(artifact));
     if (selectedPortfolioKey === "all") return proofArtifacts;
     if (selectedPortfolioKey === "unattached") return proofArtifacts.filter((artifact) => !artifact.activity);
     if (!selectedPortfolioKey.includes(":")) return proofArtifacts;
@@ -2598,6 +2810,11 @@ export default function Home() {
   }, [portfolioArtifacts, selectedPortfolioKey]);
 
   const selectedPortfolioNode = portfolioNodes.find((node) => node.key === selectedPortfolioKey);
+  const portfolioArchiveArtifacts = useMemo(
+    () => (section: Exclude<PortfolioSection, "proof">) =>
+      portfolioArtifacts.filter((artifact) => artifact.classification === portfolioArchiveClassifications[section]),
+    [portfolioArtifacts]
+  );
   const activeWorkspace = workspaceTabs.find((tab) => tab.key === activeTab) ?? workspaceTabs[0];
   const reportBucketRows = useMemo(
     () =>
@@ -4395,13 +4612,19 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Portfolio</p>
                   <h2>Portfolio workspace</h2>
-                  <p className="panel-note">Choose proof files or Bennett&apos;s book list. Generated reports are grouped in Reports.</p>
+                  <p className="panel-note">Choose proof files, Bennett&apos;s book list, or year-long portfolio lists. Generated reports stay in Reports; list PDFs stay with their portfolio section.</p>
                 </div>
+                <button className="secondary-button" type="button" onClick={() => void closeOutPriorSchoolYear()} disabled={isBookListBusy || isPortfolioListBusy}>
+                  Close out prior school year
+                </button>
               </div>
               <div className="weekly-section-hub portfolio-section-hub" aria-label="Portfolio sections">
                 {[
                   ["proof", "Proof file explorer", "Browse uploaded images, documents, and activity artifacts."],
-                  ["books", "Book list", "Add completed books with author, finish date, and student rating."]
+                  ["books", "Book list", "Add completed books with author, finish date, and student rating."],
+                  ["achievements", "Achievements & Awards", "Track dated achievements and awards with a short note."],
+                  ["accolades", "Accolades", "Save praise, recognition, and outside feedback."],
+                  ["projects", "Major Projects", "Track major project milestones and outcomes."]
                 ].map(([key, label, description]) => (
                   <button
                     className={activePortfolioSection === key ? "weekly-section-button is-active" : "weekly-section-button"}
@@ -4488,6 +4711,9 @@ export default function Home() {
                   </div>
                   <div className="primary-action-row">
                     <button className="secondary-button" type="button" onClick={addBookListEntry}>Add book</button>
+                    <button className="secondary-button" type="button" onClick={() => void compilePortfolioPdf("books")} disabled={isBookListBusy}>
+                      Compile PDF
+                    </button>
                     <button className="primary-button" type="button" onClick={() => void saveBookList()} disabled={isBookListBusy}>
                       {isBookListBusy ? "Saving..." : "Save book list"}
                     </button>
@@ -4528,8 +4754,81 @@ export default function Home() {
                     </div>
                   )) : <p className="muted">No completed books added yet.</p>}
                 </div>
+                <details className="report-bucket-card">
+                  <summary className="report-bucket-summary">
+                    <span>Past book lists</span>
+                    <strong>{portfolioArchiveArtifacts("books").length}</strong>
+                  </summary>
+                  <div className="report-list">
+                    {portfolioArchiveArtifacts("books").length ? portfolioArchiveArtifacts("books").map((artifact) => (
+                      <article className="report-list-row portfolio-archive-row" key={artifact.id}>
+                        <span><strong>{artifact.originalName}</strong><br />{dateLabel(artifact.createdAt)}</span>
+                        <span>{formatBytes(artifact.sizeBytes)}</span>
+                        <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">Open</a>
+                      </article>
+                    )) : <p className="muted">No past book list PDFs yet.</p>}
+                  </div>
+                </details>
               </section>
               ) : null}
+              {portfolioListCategories.map((category) => (
+                activePortfolioSection === category ? (
+                <section className="book-list-panel" key={category}>
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">{portfolioListLabels[category]}</p>
+                      <h2>{portfolioListLabels[category]}</h2>
+                      <p className="panel-note">Add dated notes. New entries appear at the top of the list.</p>
+                    </div>
+                    <div className="primary-action-row">
+                      <button className="secondary-button" type="button" onClick={() => addPortfolioListEntry(category)}>Add row</button>
+                      <button className="secondary-button" type="button" onClick={() => void compilePortfolioPdf(category)} disabled={isPortfolioListBusy}>
+                        Compile PDF
+                      </button>
+                      <button className="primary-button" type="button" onClick={() => void savePortfolioList(category)} disabled={isPortfolioListBusy}>
+                        {isPortfolioListBusy ? "Saving..." : "Save list"}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="status-line" role="status">{portfolioListMessages[category]}</p>
+                  <div className="book-list-table">
+                    <div className="book-list-header portfolio-note-header" aria-hidden="true">
+                      <span>Date</span>
+                      <span>Narrative</span>
+                      <span>Action</span>
+                    </div>
+                    {portfolioListEntries[category].length ? portfolioListEntries[category].map((entry) => (
+                      <div className="book-list-row portfolio-note-row" key={entry.id}>
+                        <label>
+                          <span>Date</span>
+                          <input type="date" value={entry.date} onChange={(event) => updatePortfolioListEntry(category, entry.id, { date: event.target.value })} />
+                        </label>
+                        <label>
+                          <span>Short narrative</span>
+                          <textarea value={entry.narrative} onChange={(event) => updatePortfolioListEntry(category, entry.id, { narrative: event.target.value })} />
+                        </label>
+                        <button className="text-button" type="button" onClick={() => deletePortfolioListEntry(category, entry.id)}>Delete</button>
+                      </div>
+                    )) : <p className="muted">No {portfolioListLabels[category].toLowerCase()} added yet.</p>}
+                  </div>
+                  <details className="report-bucket-card">
+                    <summary className="report-bucket-summary">
+                      <span>Past {portfolioListLabels[category]}</span>
+                      <strong>{portfolioArchiveArtifacts(category).length}</strong>
+                    </summary>
+                    <div className="report-list">
+                      {portfolioArchiveArtifacts(category).length ? portfolioArchiveArtifacts(category).map((artifact) => (
+                        <article className="report-list-row portfolio-archive-row" key={artifact.id}>
+                          <span><strong>{artifact.originalName}</strong><br />{dateLabel(artifact.createdAt)}</span>
+                          <span>{formatBytes(artifact.sizeBytes)}</span>
+                          <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">Open</a>
+                        </article>
+                      )) : <p className="muted">No past {portfolioListLabels[category].toLowerCase()} PDFs yet.</p>}
+                    </div>
+                  </details>
+                </section>
+                ) : null
+              ))}
             </section>
             ) : null}
           </section>

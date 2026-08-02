@@ -34,6 +34,7 @@ model SchoolYear {
   quarterReviews               QuarterReview[]
   annualPlans                  AnnualPlan[]
   bookListEntries              BookListEntry[]
+  portfolioListEntries         PortfolioListEntry[]
   exportSnapshots              ExportSnapshot[]
 
   @@unique([studentId, label])
@@ -149,6 +150,20 @@ model BookListEntry {
   schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
 
   @@index([schoolYearId, sortOrder])
+}
+
+model PortfolioListEntry {
+  id           String     @id @default(cuid())
+  category     String
+  narrative    String
+  occurredAt   DateTime?
+  sortOrder    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+
+  @@index([schoolYearId, category, sortOrder])
 }
 
 model AnnualPlan {
