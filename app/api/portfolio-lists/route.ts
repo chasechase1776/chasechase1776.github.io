@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
-const categorySchema = z.enum(["achievements", "accolades", "projects"]);
+const categorySchema = z.enum(["achievements", "accolades", "projects", "fieldTrips"]);
 
 const entrySchema = z.object({
   narrative: z.string().min(1),
-  date: z.string().default("")
+  date: z.string().default(""),
+  artifactIds: z.array(z.string()).default([])
 });
 
 const saveSchema = z.object({
@@ -17,11 +18,21 @@ const saveSchema = z.object({
   entries: z.array(entrySchema)
 });
 
-function formatEntry(entry: { id: string; narrative: string; occurredAt: Date | null }) {
+function safeArtifactIds(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function formatEntry(entry: { id: string; narrative: string; artifactIdsJson: string; occurredAt: Date | null }) {
   return {
     id: entry.id,
     narrative: entry.narrative,
-    date: entry.occurredAt ? entry.occurredAt.toISOString().slice(0, 10) : ""
+    date: entry.occurredAt ? entry.occurredAt.toISOString().slice(0, 10) : "",
+    artifactIds: safeArtifactIds(entry.artifactIdsJson)
   };
 }
 
@@ -93,6 +104,7 @@ export async function POST(request: Request) {
           data: input.entries.map((entry, index) => ({
             category: input.category,
             narrative: entry.narrative,
+            artifactIdsJson: JSON.stringify(entry.artifactIds),
             occurredAt: entry.date ? new Date(`${entry.date}T00:00:00.000Z`) : null,
             sortOrder: index,
             schoolYearId: schoolYear.id

@@ -8,14 +8,16 @@ const categoryLabels = {
   books: "Book List",
   achievements: "Achievements & Awards",
   accolades: "Accolades",
-  projects: "Major Projects"
+  projects: "Major Projects",
+  fieldTrips: "Field Trips"
 } as const;
 
 const classificationByCategory = {
   books: "portfolio_book_list",
   achievements: "portfolio_achievements",
   accolades: "portfolio_accolades",
-  projects: "portfolio_major_projects"
+  projects: "portfolio_major_projects",
+  fieldTrips: "portfolio_field_trips"
 } as const;
 
 const entrySchema = z.object({
@@ -24,13 +26,14 @@ const entrySchema = z.object({
   rating: z.number().int().min(1).max(5).optional(),
   completedDate: z.string().default(""),
   narrative: z.string().default(""),
-  date: z.string().default("")
+  date: z.string().default(""),
+  artifactIds: z.array(z.string()).default([])
 });
 
 const pdfSchema = z.object({
   studentName: z.string().min(1).default("Bennett C. Claypool"),
   schoolYearLabel: z.string().min(1),
-  category: z.enum(["books", "achievements", "accolades", "projects"]),
+  category: z.enum(["books", "achievements", "accolades", "projects", "fieldTrips"]),
   entries: z.array(entrySchema)
 });
 
@@ -75,7 +78,7 @@ async function schoolYearFor(studentName: string, schoolYearLabel: string) {
   });
 }
 
-async function buildPdf(input: z.infer<typeof pdfSchema>) {
+async function buildPdf(input: z.infer<typeof pdfSchema>, artifactsById: Map<string, { originalName: string }>) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -122,6 +125,10 @@ async function buildPdf(input: z.infer<typeof pdfSchema>) {
 
     drawLine(`${index + 1}. ${entry.date || "No date listed"}`, { heading: true });
     wrapText(entry.narrative || "No narrative entered.", 92).forEach((line) => drawLine(line));
+    const proofNames = entry.artifactIds.map((id) => artifactsById.get(id)?.originalName).filter(Boolean);
+    if (proofNames.length) {
+      drawLine(`Attached proof: ${proofNames.join(", ")}`);
+    }
     y -= 8;
   });
 
@@ -137,7 +144,15 @@ export async function POST(request: Request) {
 
     const input = parsed.data;
     const schoolYear = await schoolYearFor(input.studentName, input.schoolYearLabel);
-    const pdfBytes = await buildPdf(input);
+    const artifactIds = Array.from(new Set(input.entries.flatMap((entry) => entry.artifactIds)));
+    const artifacts = artifactIds.length
+      ? await prisma.evidenceArtifact.findMany({
+          where: { id: { in: artifactIds } },
+          select: { id: true, originalName: true }
+        })
+      : [];
+    const artifactsById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
+    const pdfBytes = await buildPdf(input, artifactsById);
     const fileName = `${slug(categoryLabels[input.category])}-${slug(input.schoolYearLabel)}-${Date.now()}.pdf`;
     const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
     const artifact = await prisma.evidenceArtifact.create({

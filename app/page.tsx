@@ -53,12 +53,13 @@ type BookListEntry = {
   rating: number;
 };
 
-type PortfolioListCategory = "achievements" | "accolades" | "projects";
+type PortfolioListCategory = "achievements" | "accolades" | "projects" | "fieldTrips";
 
 type PortfolioListEntry = {
   id: string;
   narrative: string;
   date: string;
+  artifactIds: string[];
 };
 
 type ReportBucket = {
@@ -100,7 +101,8 @@ const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
 const portfolioListLabels: Record<PortfolioListCategory, string> = {
   achievements: "Achievements & Awards",
   accolades: "Accolades",
-  projects: "Major Projects"
+  projects: "Major Projects",
+  fieldTrips: "Field Trips"
 };
 
 const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
@@ -108,10 +110,16 @@ const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
   books: "portfolio_book_list",
   achievements: "portfolio_achievements",
   accolades: "portfolio_accolades",
-  projects: "portfolio_major_projects"
+  projects: "portfolio_major_projects",
+  fieldTrips: "portfolio_field_trips"
 };
 
-const portfolioListCategories: PortfolioListCategory[] = ["achievements", "accolades", "projects"];
+const portfolioListCategories: PortfolioListCategory[] = ["achievements", "accolades", "projects", "fieldTrips"];
+const proofEnabledPortfolioLists: PortfolioListCategory[] = ["projects", "fieldTrips"];
+const portfolioProofClassifications: Partial<Record<PortfolioListCategory, string>> = {
+  projects: "portfolio_major_projects_proof",
+  fieldTrips: "portfolio_field_trips_proof"
+};
 
 type DraftCard = {
   id: string;
@@ -1178,12 +1186,14 @@ export default function Home() {
   const [portfolioListEntries, setPortfolioListEntries] = useState<Record<PortfolioListCategory, PortfolioListEntry[]>>({
     achievements: [],
     accolades: [],
-    projects: []
+    projects: [],
+    fieldTrips: []
   });
   const [portfolioListMessages, setPortfolioListMessages] = useState<Record<PortfolioListCategory, string>>({
     achievements: "Achievements & Awards list is ready.",
     accolades: "Accolades list is ready.",
-    projects: "Major Projects list is ready."
+    projects: "Major Projects list is ready.",
+    fieldTrips: "Field Trips list is ready."
   });
   const [isPortfolioListBusy, setIsPortfolioListBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
@@ -1527,7 +1537,7 @@ export default function Home() {
   function addPortfolioListEntry(category: PortfolioListCategory) {
     setPortfolioListEntries((current) => ({
       ...current,
-      [category]: [{ id: `${category}-${Date.now()}`, narrative: "", date: todayIso() }, ...current[category]]
+      [category]: [{ id: `${category}-${Date.now()}`, narrative: "", date: todayIso(), artifactIds: [] }, ...current[category]]
     }));
     setPortfolioListMessages((current) => ({ ...current, [category]: "Row added. Save the list when finished." }));
   }
@@ -1547,6 +1557,47 @@ export default function Home() {
     setPortfolioListMessages((current) => ({ ...current, [category]: "Row removed. Save the list when finished." }));
   }
 
+  async function uploadPortfolioListArtifact(category: PortfolioListCategory, entryId: string, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setIsPortfolioListBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("recordStatus", schoolYearStatus);
+      formData.append("classification", portfolioProofClassifications[category] ?? "portfolio_proof");
+      formData.append("tagsJson", JSON.stringify({ schoolYear, portfolioSection: category }));
+
+      const response = await fetch("/api/uploads", {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Portfolio proof upload failed.");
+
+      setPortfolioListEntries((current) => ({
+        ...current,
+        [category]: current[category].map((entry) =>
+          entry.id === entryId ? { ...entry, artifactIds: Array.from(new Set([...entry.artifactIds, data.artifact.id])) } : entry
+        )
+      }));
+      setPortfolioListMessages((current) => ({
+        ...current,
+        [category]: `${file.name} attached. Save the list when finished.`
+      }));
+      await loadPortfolio();
+    } catch (error) {
+      setPortfolioListMessages((current) => ({
+        ...current,
+        [category]: error instanceof Error ? error.message : "Portfolio proof upload failed."
+      }));
+    } finally {
+      setIsPortfolioListBusy(false);
+    }
+  }
+
   async function savePortfolioList(category: PortfolioListCategory, entries = portfolioListEntries[category]) {
     setIsPortfolioListBusy(true);
     try {
@@ -1562,7 +1613,8 @@ export default function Home() {
             .filter((entry) => entry.narrative.trim())
             .map((entry) => ({
               narrative: entry.narrative.trim(),
-              date: entry.date
+              date: entry.date,
+              artifactIds: entry.artifactIds
             }))
         })
       });
@@ -1599,7 +1651,7 @@ export default function Home() {
             }))
         : portfolioListEntries[section]
             .filter((entry) => entry.narrative.trim())
-            .map((entry) => ({ narrative: entry.narrative.trim(), date: entry.date }));
+            .map((entry) => ({ narrative: entry.narrative.trim(), date: entry.date, artifactIds: entry.artifactIds }));
 
       const response = await fetch("/api/portfolio-lists/pdf", {
         method: "POST",
@@ -1629,13 +1681,13 @@ export default function Home() {
   }
 
   async function closeOutPriorSchoolYear() {
-    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, and major projects, then clear those running lists for the selected school year.`);
+    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, and field trips, then clear those running lists for the selected school year.`);
     if (!confirmed) return;
 
     setIsBookListBusy(true);
     setIsPortfolioListBusy(true);
     try {
-      const sections: Exclude<PortfolioSection, "proof">[] = ["books", "achievements", "accolades", "projects"];
+      const sections: Exclude<PortfolioSection, "proof">[] = ["books", "achievements", "accolades", "projects", "fieldTrips"];
       for (const section of sections) {
         const exported = await compilePortfolioPdf(section);
         if (!exported) throw new Error("Closeout stopped because one PDF could not be created.");
@@ -1652,11 +1704,12 @@ export default function Home() {
 
       setBookListEntries([]);
       setBookListMessage(`${schoolYear} book list archived and reset.`);
-      setPortfolioListEntries({ achievements: [], accolades: [], projects: [] });
+      setPortfolioListEntries({ achievements: [], accolades: [], projects: [], fieldTrips: [] });
       setPortfolioListMessages({
         achievements: `${schoolYear} achievements archived and reset.`,
         accolades: `${schoolYear} accolades archived and reset.`,
-        projects: `${schoolYear} major projects archived and reset.`
+        projects: `${schoolYear} major projects archived and reset.`,
+        fieldTrips: `${schoolYear} field trips archived and reset.`
       });
       await loadPortfolio();
     } catch (error) {
@@ -4624,7 +4677,8 @@ export default function Home() {
                   ["books", "Book list", "Add completed books with author, finish date, and student rating."],
                   ["achievements", "Achievements & Awards", "Track dated achievements and awards with a short note."],
                   ["accolades", "Accolades", "Save praise, recognition, and outside feedback."],
-                  ["projects", "Major Projects", "Track major project milestones and outcomes."]
+                  ["projects", "Major Projects", "Track major project milestones and outcomes."],
+                  ["fieldTrips", "Field trips", "Track field trip dates, narratives, and proof files."]
                 ].map(([key, label, description]) => (
                   <button
                     className={activePortfolioSection === key ? "weekly-section-button is-active" : "weekly-section-button"}
@@ -4807,7 +4861,32 @@ export default function Home() {
                           <span>Short narrative</span>
                           <textarea value={entry.narrative} onChange={(event) => updatePortfolioListEntry(category, entry.id, { narrative: event.target.value })} />
                         </label>
-                        <button className="text-button" type="button" onClick={() => deletePortfolioListEntry(category, entry.id)}>Delete</button>
+                        <div className="portfolio-note-actions">
+                          {proofEnabledPortfolioLists.includes(category) ? (
+                            <>
+                              <label className="secondary-button upload-inline-button">
+                                Attach proof
+                                <input
+                                  type="file"
+                                  onChange={(event) => void uploadPortfolioListArtifact(category, entry.id, event)}
+                                />
+                              </label>
+                              <div className="attached-proof-list">
+                                {entry.artifactIds.length ? entry.artifactIds.map((artifactId) => {
+                                  const artifact = portfolioArtifacts.find((item) => item.id === artifactId);
+                                  return artifact ? (
+                                    <a href={`/api/artifacts/${artifact.id}/download`} key={artifact.id} target="_blank" rel="noreferrer">
+                                      {artifact.originalName}
+                                    </a>
+                                  ) : (
+                                    <span key={artifactId}>Attached proof</span>
+                                  );
+                                }) : <span>No proof attached</span>}
+                              </div>
+                            </>
+                          ) : null}
+                          <button className="text-button" type="button" onClick={() => deletePortfolioListEntry(category, entry.id)}>Delete</button>
+                        </div>
                       </div>
                     )) : <p className="muted">No {portfolioListLabels[category].toLowerCase()} added yet.</p>}
                   </div>

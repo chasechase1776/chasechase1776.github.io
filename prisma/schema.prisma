@@ -156,6 +156,7 @@ model PortfolioListEntry {
   id           String     @id @default(cuid())
   category     String
   narrative    String
+  artifactIdsJson String     @default("[]")
   occurredAt   DateTime?
   sortOrder    Int        @default(0)
   createdAt    DateTime   @default(now())

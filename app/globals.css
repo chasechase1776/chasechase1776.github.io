@@ -1769,11 +1769,36 @@ details.skill-group[open] summary {
 
 .portfolio-note-header,
 .portfolio-note-row {
-  grid-template-columns: 170px minmax(0, 1fr) auto;
+  grid-template-columns: 170px minmax(0, 1fr) 220px;
 }
 
 .portfolio-note-row textarea {
   min-height: 92px;
+}
+
+.portfolio-note-actions,
+.attached-proof-list {
+  display: grid;
+  gap: 8px;
+}
+
+.upload-inline-button {
+  justify-content: center;
+  text-align: center;
+}
+
+.upload-inline-button input {
+  display: none;
+}
+
+.attached-proof-list {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.attached-proof-list a {
+  color: var(--blue);
+  font-weight: 800;
 }
 
 .portfolio-archive-row {

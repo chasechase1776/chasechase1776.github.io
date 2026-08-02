@@ -15,12 +15,14 @@ export async function POST(request: Request) {
     const activityId = formData.get("activityId");
     const recordStatus = String(formData.get("recordStatus") ?? "trial");
     const tagsJson = String(formData.get("tagsJson") ?? "[]");
+    const classification = formData.get("classification");
 
     const artifact = await prisma.evidenceArtifact.create({
       data: {
         ...savedFile,
         recordStatus,
         tagsJson,
+        classification: typeof classification === "string" && classification ? classification : undefined,
         activityId: typeof activityId === "string" && activityId ? activityId : undefined
       }
     });
