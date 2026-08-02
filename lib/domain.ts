@@ -61,10 +61,37 @@ export const skillTaxonomy: Record<string, string[]> = {
     "Asks Questions and Seeks Answers",
     "Critical Thinking for Problem Solving",
     "Uses Tools and Models to Investigate the World",
+    "Observational Skills",
+    "Biology",
+    "Chemistry",
+    "Physics",
+    "Earth Science",
+    "Astronomy",
+    "Medicine",
+    "Social Science",
+    "Computer Science",
+    "Environmental Science",
+    "Engineering",
     "Matter & Energy",
     "Force, Motion & Energy",
     "Earth & Space",
     "Organisms & Environments"
+  ],
+  Music: [
+    "Rhythm & Timing",
+    "Ear Training",
+    "Technical Proficiency",
+    "Music Theory & Sight-Reading",
+    "Improvisation & Repertoire",
+    "Music Appreciation"
+  ],
+  Art: [
+    "Observation",
+    "Line & Form",
+    "Color",
+    "Composition",
+    "Medium",
+    "Art Appreciation"
   ],
   "Social Studies": [
     "US History",
@@ -118,7 +145,20 @@ export function suggestLegalTags(activityType: string, subjects: string[]) {
   if (combined.includes("grammar") || combined.includes("writing")) tags.add("Grammar");
   if (combined.includes("math") || combined.includes("finance") || combined.includes("money")) tags.add("Mathematics");
   if (combined.includes("citizenship") || combined.includes("social") || combined.includes("group") || combined.includes("service") || combined.includes("extracurricular")) tags.add("Good Citizenship");
-  if (combined.includes("visual") || combined.includes("presentation") || combined.includes("journal") || combined.includes("field") || combined.includes("foreign") || combined.includes("language") || combined.includes("arts") || combined.includes("stem")) tags.add("Visual Curriculum");
+  if (
+    combined.includes("visual") ||
+    combined.includes("presentation") ||
+    combined.includes("journal") ||
+    combined.includes("field") ||
+    combined.includes("foreign") ||
+    combined.includes("language") ||
+    combined.includes("arts") ||
+    combined.includes("art") ||
+    combined.includes("music") ||
+    combined.includes("stem")
+  ) {
+    tags.add("Visual Curriculum");
+  }
 
   return Array.from(tags);
 }

@@ -294,6 +294,8 @@ const unitStudySubjectOptions = [
   "Government",
   "Foreign Language",
   "Independent Reading",
+  "Music",
+  "Art",
   "Extracurricular",
   "Visual Arts",
   "Technology & STEM",
@@ -914,7 +916,7 @@ function parsedLegalTagsForType(activityType: string, text = "") {
   if (/(grammar|sentence|writing|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
   if (/(math|measure|money|finance|budget|saving|spending|count|fraction|logic|problem)/.test(combined)) tags.add("Mathematics");
   if (/(citizen|service|community|group|club|team|leadership|communication|social|extracurricular|government|suffrage|vote|rights|history|american)/.test(combined)) tags.add("Good Citizenship");
-  if (/(visual|art|draw|journal|presentation|field|model|photo|photograph|stem|tech|performing|science|experiment|observe|physics|architect|construction|building)/.test(combined)) tags.add("Visual Curriculum");
+  if (/(visual|art|draw|journal|presentation|field|model|photo|photograph|stem|tech|performing|music|rhythm|song|science|experiment|observe|physics|architect|construction|building)/.test(combined)) tags.add("Visual Curriculum");
   return Array.from(tags);
 }
 
@@ -948,12 +950,22 @@ function parsedSkillsForType(activityType: string, text = "") {
   if (/(measure|money|fraction|count|budget|saving|spending|finance)/.test(combined)) ["Measurement and Money", "Money Recognition and Counting", "Saving and Goal Setting", "Spending and Decision-Making"].forEach(add);
   if (/(logic|puzzle|strategy|mind game|chess)/.test(combined)) ["Logic", "Strategic Thinking"].forEach(add);
   if (/(problem|solve|solution|challenge|reason)/.test(combined)) ["Problem-Solving", "Problem-Solving and Application"].forEach(add);
-  if (/(observe|science|experiment|model|tool|draw|label|nature|physics|structure|building|construction|force|motion|architect)/.test(combined)) ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World", "Force, Motion & Energy"].forEach(add);
+  if (/(observe|observation|science|experiment|model|tool|draw|label|nature|physics|structure|building|construction|force|motion|architect)/.test(combined)) ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World", "Observational Skills", "Physics", "Force, Motion & Energy"].forEach(add);
+  if (/(biology|animal|plant|organism|life cycle|habitat|ecosystem)/.test(combined)) ["Biology", "Organisms & Environments", "Environmental Science"].forEach(add);
+  if (/(chemistry|chemical|matter|mixture|reaction|solution)/.test(combined)) ["Chemistry", "Matter & Energy"].forEach(add);
+  if (/(earth science|rock|weather|climate|geology|volcano|ocean)/.test(combined)) ["Earth Science", "Earth & Space", "Environmental Science"].forEach(add);
+  if (/(astronomy|space|planet|star|moon|solar)/.test(combined)) ["Astronomy", "Earth & Space"].forEach(add);
+  if (/(medicine|medical|health|body|anatomy|first aid)/.test(combined)) ["Medicine", "Biology"].forEach(add);
+  if (/(social science|psychology|society|behavior)/.test(combined)) ["Social Science"].forEach(add);
+  if (/(computer science|code|coding|program|algorithm)/.test(combined)) ["Computer Science", "Technical Skills"].forEach(add);
+  if (/(engineer|engineering|design|prototype|build|construction)/.test(combined)) ["Engineering", "Uses Tools and Models to Investigate the World"].forEach(add);
   if (/(history|american|early 1900|1900s|timeline|frank lloyd wright|wright)/.test(combined)) ["US History", "Culture"].forEach(add);
   if (/(government|suffrage|vote|law|rights|civic)/.test(combined)) ["Government", "Citizenship"].forEach(add);
   if (/(economic|transportation|industry|trade|market|labor)/.test(combined)) ["Economics"].forEach(add);
   if (/(service|community|citizen|club|team|leadership)/.test(combined)) ["Citizenship", "Service", "Teamwork", "Leadership"].forEach(add);
-  if (/(art|perform|visual|music|creative)/.test(combined)) ["Creative Expression", "Visual Curriculum"].forEach(add);
+  if (/(music|song|rhythm|beat|tempo|pitch|ear training|instrument|piano|guitar|sight-read|repertoire|improv)/.test(combined)) ["Rhythm & Timing", "Ear Training", "Technical Proficiency", "Music Theory & Sight-Reading", "Improvisation & Repertoire", "Music Appreciation"].forEach(add);
+  if (/(art|draw|drawing|paint|painting|visual|color|line|form|composition|sketch|medium|observe)/.test(combined)) ["Observation", "Line & Form", "Color", "Composition", "Medium", "Art Appreciation"].forEach(add);
+  if (/(art|perform|visual|music|creative)/.test(combined)) ["Creative Expression"].forEach(add);
   if (/(tech|stem|code|computer|build)/.test(combined)) ["Technical Skills", "Critical Thinking for Problem Solving"].forEach(add);
   if (/(spanish|foreign|vocabulary|speak|listen)/.test(combined)) ["Listening Comprehension", "Speaking Practice", "Vocabulary", "Cultural Awareness"].forEach(add);
 
@@ -983,14 +995,15 @@ function inferSubjectSplitAllocations(activityType: string, text: string, minute
   const primarySubject = parsedSubjectForType(activityType);
   if (primarySubject !== "Unit Study") addSubject(primarySubject);
   if (/(read|book|story|chapter|author|literature|narrat|frank lloyd wright|wright)/.test(combined)) addSubject("Language Arts");
-  if (/(physics|science|structure|building|construction|force|motion|stand|frame|model|experiment)/.test(combined)) addSubject("Science");
+  if (/(physics|science|structure|building|construction|force|motion|stand|frame|model|experiment|biology|chemistry|earth science|astronomy|medicine|environment|engineering)/.test(combined)) addSubject("Science");
   if (/(math|measure|geometry|fraction|angle|count|calculate|number)/.test(combined)) addSubject("Math");
   if (/(finance|money|budget|cost|earn|save|spend|price)/.test(combined)) addSubject("Finance");
   if (/(economic|transportation|industry|trade|market|work|labor)/.test(combined)) addSubject("Economics");
   if (/(history|american|early 1900|1900s|timeline|frank lloyd wright|wright)/.test(combined)) addSubject("US History");
   if (/(government|suffrage|vote|law|rights|citizen|civic)/.test(combined)) addSubject("Government");
   if (/(map|geography|community|culture|society)/.test(combined)) addSubject("Social Studies");
-  if (/(draw|photo|photograph|visual|art|design)/.test(combined)) addSubject("Visual Arts");
+  if (/(music|song|rhythm|beat|tempo|pitch|ear training|instrument|sight-read|repertoire|improv)/.test(combined)) addSubject("Music");
+  if (/(draw|photo|photograph|visual|art|design|paint|color|line|form|composition|sketch|medium)/.test(combined)) addSubject("Art");
   if (/(technology|tech|stem|engineer|tool)/.test(combined)) addSubject("Technology & STEM");
 
   return splitMinutesAcrossSubjects(subjects, minutes);
@@ -2530,10 +2543,23 @@ export default function Home() {
         });
       });
 
-    return ["Language Arts", "Math", "Finance", "Science", "Social Studies", "Unit Study"].map((subject) => [
-      subject,
-      formatMinutes(totals.get(subject) ?? 0)
-    ]);
+    const visibleSubjects = [
+      "Language Arts",
+      "Math",
+      "Finance",
+      "Science",
+      "Social Studies",
+      "Music",
+      "Art",
+      "Foreign Language",
+      "Independent Reading",
+      "Extracurricular",
+      "Unit Study"
+    ];
+    Array.from(totals.keys()).forEach((subject) => {
+      if (!visibleSubjects.includes(subject)) visibleSubjects.push(subject);
+    });
+    return visibleSubjects.map((subject) => [subject, formatMinutes(totals.get(subject) ?? 0)]);
   }, [savedActivities]);
 
   const portfolioNodes = useMemo<PortfolioNode[]>(() => {
