@@ -116,7 +116,7 @@ const portfolioListLabels: Record<PortfolioListCategory, string> = {
   accolades: "Accolades",
   projects: "Major Projects",
   fieldTrips: "Field Trips",
-  valuableFailures: "Valuable Failures"
+  valuableFailures: "Valuable Setbacks & Failure"
 };
 
 const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
@@ -1266,7 +1266,7 @@ export default function Home() {
     accolades: "Accolades list is ready.",
     projects: "Major Projects list is ready.",
     fieldTrips: "Field Trips list is ready.",
-    valuableFailures: "Valuable Failures list is ready."
+    valuableFailures: "Valuable Setbacks & Failure list is ready."
   });
   const [isPortfolioListBusy, setIsPortfolioListBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
@@ -1800,7 +1800,7 @@ export default function Home() {
   }
 
   async function closeOutPriorSchoolYear() {
-    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, field trips, and valuable failures, then clear those running lists for the selected school year.`);
+    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, field trips, and valuable setbacks & failure, then clear those running lists for the selected school year.`);
     if (!confirmed) return;
     const unresolvedFailures = portfolioListEntries.valuableFailures.filter((entry) => !entry.resolved);
     const carryForwardFailures = unresolvedFailures.length
@@ -1857,8 +1857,8 @@ export default function Home() {
         projects: `${schoolYear} major projects archived and reset.`,
         fieldTrips: `${schoolYear} field trips archived and reset.`,
         valuableFailures: carryForwardFailures
-          ? `${schoolYear} valuable failures archived and unresolved items copied to ${nextSchoolYearLabel(schoolYear)}.`
-          : `${schoolYear} valuable failures archived and reset.`
+          ? `${schoolYear} valuable setbacks & failure archived and unresolved items copied to ${nextSchoolYearLabel(schoolYear)}.`
+          : `${schoolYear} valuable setbacks & failure archived and reset.`
       });
       await loadPortfolio();
     } catch (error) {
@@ -4826,7 +4826,7 @@ export default function Home() {
                   ["accolades", "Accolades", "Save praise, recognition, and outside feedback."],
                   ["projects", "Major Projects", "Track major project milestones and outcomes."],
                   ["fieldTrips", "Field trips", "Track field trip dates, narratives, and proof files."],
-                  ["valuableFailures", "Valuable Failures", "Track setbacks, responses, reflections, plans, and follow-ups."]
+                  ["valuableFailures", "Valuable Setbacks & Failure", "Track setbacks, responses, reflections, plans, and follow-ups."]
                 ].map(([key, label, description]) => (
                   <button
                     className={activePortfolioSection === key ? "weekly-section-button is-active" : "weekly-section-button"}
@@ -5060,8 +5060,8 @@ export default function Home() {
                 <section className="book-list-panel valuable-failures-panel">
                   <div className="section-head">
                     <div>
-                      <p className="eyebrow">Valuable Failures</p>
-                      <h2>Valuable Failures</h2>
+                      <p className="eyebrow">Valuable Setbacks & Failure</p>
+                      <h2>Valuable Setbacks & Failure</h2>
                       <p className="panel-note">Open items stay at the top. Once an event is resolved, the full thread moves to the bottom.</p>
                     </div>
                     <div className="primary-action-row">
@@ -5152,11 +5152,11 @@ export default function Home() {
                           </div>
                         ) : null}
                       </article>
-                    )) : <p className="muted">No valuable failures added yet.</p>}
+                    )) : <p className="muted">No valuable setbacks & failure added yet.</p>}
                   </div>
                   <details className="report-bucket-card">
                     <summary className="report-bucket-summary">
-                      <span>Past Valuable Failures</span>
+                      <span>Past Valuable Setbacks & Failure</span>
                       <strong>{portfolioArchiveArtifacts("valuableFailures").length}</strong>
                     </summary>
                     <div className="report-list">
@@ -5166,7 +5166,7 @@ export default function Home() {
                           <span>{formatBytes(artifact.sizeBytes)}</span>
                           <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">Open</a>
                         </article>
-                      )) : <p className="muted">No past valuable failures PDFs yet.</p>}
+                      )) : <p className="muted">No past valuable setbacks & failure PDFs yet.</p>}
                     </div>
                   </details>
                 </section>

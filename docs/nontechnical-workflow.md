@@ -81,8 +81,8 @@ Portfolio closeout behavior:
 
 - Use the existing `Close out prior school year` button for school-year portfolio archives.
 - Compile running portfolio lists to PDF before resetting them.
-- Ask whether unresolved `Valuable Failures` should carry forward to the next school year.
-- Keep unresolved Valuable Failures open at the top of the list and move resolved threads to the bottom.
+- Ask whether unresolved `Valuable Setbacks & Failure` items should carry forward to the next school year.
+- Keep unresolved Valuable Setbacks & Failure items open at the top of the list and move resolved threads to the bottom.
 
 Before large feature work, Codex should confirm:
 

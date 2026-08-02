@@ -10,7 +10,7 @@ const categoryLabels = {
   accolades: "Accolades",
   projects: "Major Projects",
   fieldTrips: "Field Trips",
-  valuableFailures: "Valuable Failures"
+  valuableFailures: "Valuable Setbacks & Failure"
 } as const;
 
 const classificationByCategory = {
