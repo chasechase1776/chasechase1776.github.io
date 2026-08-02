@@ -912,11 +912,13 @@ function defaultAllocationSubjectForType(activityType: string) {
   return topLevelSubjectForAllocation(parsedSubjectForType(activityType));
 }
 
-function parsedLegalTagsForType(activityType: string, text = "") {
+function parsedLegalTagsForType(activityType: string, text = "", selectedSubjects: string[] = []) {
   const combined = `${activityType} ${text}`.toLowerCase();
   const tags = new Set<string>(["Bona Fide Instruction"]);
   const primarySubject = parsedSubjectForType(activityType);
   const allowsBroadTags = subjectSplitActivityTypes.includes(activityType);
+  const subjectSet = new Set(selectedSubjects.map(topLevelSubjectForAllocation).filter(Boolean));
+  const hasSelectedSubjects = subjectSet.size > 0;
 
   if (!allowsBroadTags) {
     if (primarySubject === "Language Arts" || primarySubject === "Independent Reading") tags.add("Reading");
@@ -933,12 +935,20 @@ function parsedLegalTagsForType(activityType: string, text = "") {
     return Array.from(tags);
   }
 
-  if (/(read|book|story|literature|language|vocabulary|spanish|foreign)/.test(combined)) tags.add("Reading");
-  if (/(spell|word study|phonics)/.test(combined)) tags.add("Spelling");
-  if (/(grammar|sentence|writing|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
-  if (/(math|measure|money|finance|budget|saving|spending|count|fraction|logic|problem)/.test(combined)) tags.add("Mathematics");
-  if (/(citizen|service|community|group|club|team|leadership|communication|social|extracurricular|government|suffrage|vote|rights|history|american)/.test(combined)) tags.add("Good Citizenship");
-  if (/(visual|art|draw|journal|presentation|field|model|photo|photograph|stem|tech|performing|music|rhythm|song|science|experiment|observe|physics|architect|construction|building)/.test(combined)) tags.add("Visual Curriculum");
+  if (subjectSet.has("Language Arts") || subjectSet.has("Independent Reading") || (!hasSelectedSubjects && /(read|book|story|literature|language|vocabulary|spanish|foreign)/.test(combined))) tags.add("Reading");
+  if ((subjectSet.has("Language Arts") || !hasSelectedSubjects) && /(spell|word study|phonics)/.test(combined)) tags.add("Spelling");
+  if ((subjectSet.has("Language Arts") || !hasSelectedSubjects) && /(grammar|sentence|writing|edit|capitalization|punctuation)/.test(combined)) tags.add("Grammar");
+  if (subjectSet.has("Math") || subjectSet.has("Finance") || (!hasSelectedSubjects && /(math|measure|money|finance|budget|saving|spending|count|fraction|logic|problem)/.test(combined))) tags.add("Mathematics");
+  if (subjectSet.has("Social Studies") || subjectSet.has("Extracurricular") || (!hasSelectedSubjects && /(citizen|service|community|group|club|team|leadership|communication|social|extracurricular|government|suffrage|vote|rights|history|american)/.test(combined))) tags.add("Good Citizenship");
+  if (
+    subjectSet.has("Science") ||
+    subjectSet.has("Art") ||
+    subjectSet.has("Music") ||
+    subjectSet.has("Foreign Language") ||
+    (!hasSelectedSubjects && /(visual|art|draw|journal|presentation|field|model|photo|photograph|stem|tech|performing|music|rhythm|song|science|experiment|observe|physics|architect|construction|building)/.test(combined))
+  ) {
+    tags.add("Visual Curriculum");
+  }
   return Array.from(tags);
 }
 
@@ -946,14 +956,21 @@ function skillSubjectForName(skill: string) {
   return Object.entries(skillTaxonomy).find(([, skills]) => skills.includes(skill))?.[0] ?? null;
 }
 
-function parsedSkillsForType(activityType: string, text = "") {
+function parsedSkillsForType(activityType: string, text = "", selectedSubjects: string[] = []) {
   const combined = `${activityType} ${text}`.toLowerCase();
   const primarySubject = parsedSubjectForType(activityType);
   const skills = new Set<string>();
   const allowsBroadSkills = subjectSplitActivityTypes.includes(activityType);
+  const subjectSet = new Set(selectedSubjects.map(topLevelSubjectForAllocation).filter(Boolean));
+  const hasSelectedSubjects = subjectSet.size > 0;
   const add = (skill: string) => {
     const skillSubject = skillSubjectForName(skill);
-    if (allowsBroadSkills || skillSubject === primarySubject) skills.add(skill);
+    const allocationSubject = topLevelSubjectForAllocation(skillSubject ?? "");
+    if (allowsBroadSkills) {
+      if (!hasSelectedSubjects || subjectSet.has(allocationSubject)) skills.add(skill);
+      return;
+    }
+    if (skillSubject === primarySubject) skills.add(skill);
   };
 
   if (primarySubject === "Language Arts") ["Reading", "Fluency", "Editing"].forEach(add);
@@ -1031,19 +1048,28 @@ function inferSubjectSplitAllocations(activityType: string, text: string, minute
   return splitMinutesAcrossSubjects(subjects, minutes);
 }
 
-function allocationSubjectForSkill(skill: string) {
-  const match = Object.entries(skillTaxonomy).find(([, skills]) => skills.includes(skill));
-  return topLevelSubjectForAllocation(match?.[0] ?? "");
-}
-
-function mockDrafts(activityType: string, minutes: number, draftTitle: string, narrationText: string, extracurricularSelections: string[]): DraftCard[] {
+function mockDrafts(
+  activityType: string,
+  minutes: number,
+  draftTitle: string,
+  narrationText: string,
+  extracurricularSelections: string[],
+  manualSubjectAllocations: { subject: string; minutes: number }[] = []
+): DraftCard[] {
   const primarySubject = parsedSubjectForType(activityType);
   const primaryMinutes = minutes || 25;
   const parseText = `${draftTitle} ${narrationText} ${extracurricularSelections.join(" ")}`;
+  const cleanManualAllocations = manualSubjectAllocations
+    .filter((allocation) => allocation.subject.trim() && allocation.minutes > 0)
+    .map((allocation) => ({ subject: topLevelSubjectForAllocation(allocation.subject.trim()), minutes: allocation.minutes }))
+    .filter((allocation) => allocation.subject);
   const subjectAllocations =
     subjectSplitActivityTypes.includes(activityType)
-      ? inferSubjectSplitAllocations(activityType, parseText, primaryMinutes)
+      ? cleanManualAllocations.length
+        ? cleanManualAllocations
+        : inferSubjectSplitAllocations(activityType, parseText, primaryMinutes)
       : [{ subject: primarySubject, minutes: primaryMinutes }];
+  const selectedSubjects = subjectAllocations.map((allocation) => allocation.subject);
 
   return [
     {
@@ -1053,8 +1079,8 @@ function mockDrafts(activityType: string, minutes: number, draftTitle: string, n
       status: "needs_approval",
       subjectAllocations,
       crossSubjects: [],
-      legalTags: parsedLegalTagsForType(activityType, parseText),
-      skills: parsedSkillsForType(activityType, parseText)
+      legalTags: parsedLegalTagsForType(activityType, parseText, selectedSubjects),
+      skills: parsedSkillsForType(activityType, parseText, selectedSubjects)
     }
   ];
 }
@@ -1921,11 +1947,15 @@ export default function Home() {
   }
 
   function parseWithAi() {
-    const drafts = mockDrafts(selectedType, actualMinutes, title.trim() || defaultActivityTitle(), narration, selectedExtracurriculars);
+    const drafts = mockDrafts(
+      selectedType,
+      actualMinutes,
+      title.trim() || defaultActivityTitle(),
+      narration,
+      selectedExtracurriculars,
+      activitySubjectAllocations
+    );
     setDraftCards(drafts);
-    if (hasSubjectTimeSplit && drafts[0]) {
-      setUnitStudyAllocations(unitStudyRowsFromAllocations(drafts[0].subjectAllocations));
-    }
     setStatus("Mock AI parse complete. Review the editable cards below before saving.");
   }
 
@@ -1939,21 +1969,15 @@ export default function Home() {
         if (draft.id !== id) return draft;
         const isRemoving = draft.skills.includes(skill);
         const nextSkills = isRemoving ? draft.skills.filter((item) => item !== skill) : [...draft.skills, skill];
-        const allocationSubject = allocationSubjectForSkill(skill);
-        const nextSubjectAllocations =
-          hasSubjectTimeSplit && allocationSubject && !isRemoving && !draft.subjectAllocations.some((allocation) => allocation.subject === allocationSubject)
-            ? [...draft.subjectAllocations, { subject: allocationSubject, minutes: 0 }]
-            : draft.subjectAllocations;
         return {
           ...draft,
-          skills: nextSkills,
-          subjectAllocations: nextSubjectAllocations
+          skills: nextSkills
         };
       })
     );
     setStatus(
       hasSubjectTimeSplit
-        ? `Skill tags updated. New ${selectedType} subject rows start at 0 minutes so you can assign the correct split.`
+        ? "Skill tags updated. Time allocations stay tied to the subject rows you entered."
         : "Skill tags updated for parsed card."
     );
   }
