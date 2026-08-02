@@ -283,24 +283,7 @@ const extracurricularOptions = [
   "Other"
 ];
 
-const unitStudySubjectOptions = [
-  "Language Arts",
-  "Math",
-  "Finance",
-  "Economics",
-  "Science",
-  "Social Studies",
-  "US History",
-  "Government",
-  "Foreign Language",
-  "Independent Reading",
-  "Music",
-  "Art",
-  "Extracurricular",
-  "Visual Arts",
-  "Technology & STEM",
-  "Unit Study"
-];
+const unitStudySubjectOptions = Object.keys(skillTaxonomy);
 
 const legalCoverage = [
   ["Reading", "Covered"],
@@ -879,6 +862,19 @@ function parsedSubjectForType(activityType: string) {
   return "Language Arts";
 }
 
+function topLevelSubjectForAllocation(subject: string) {
+  if (unitStudySubjectOptions.includes(subject)) return subject;
+  if (subject === "US History" || subject === "Government" || subject === "Economics") return "Social Studies";
+  if (subject === "Visual Arts") return "Art";
+  if (subject === "Technology & STEM") return "Science";
+  if (subject === "Unit Study") return "";
+  return subject;
+}
+
+function defaultAllocationSubjectForType(activityType: string) {
+  return topLevelSubjectForAllocation(parsedSubjectForType(activityType));
+}
+
 function parsedLegalTagsForType(activityType: string, text = "") {
   const combined = `${activityType} ${text}`.toLowerCase();
   const tags = new Set<string>(["Bona Fide Instruction"]);
@@ -963,8 +959,8 @@ function parsedSkillsForType(activityType: string, text = "") {
 
 function splitMinutesAcrossSubjects(subjects: string[], minutes: number) {
   const total = Math.max(1, minutes || 25);
-  const uniqueSubjects = Array.from(new Set(subjects)).filter(Boolean);
-  if (!uniqueSubjects.length) return [{ subject: "Unit Study", minutes: total }];
+  const uniqueSubjects = Array.from(new Set(subjects.map(topLevelSubjectForAllocation))).filter(Boolean);
+  if (!uniqueSubjects.length) return [{ subject: "", minutes: total }];
   const baseMinutes = Math.floor(total / uniqueSubjects.length);
   let usedMinutes = 0;
   return uniqueSubjects.map((subject, index) => {
@@ -987,9 +983,9 @@ function inferSubjectSplitAllocations(activityType: string, text: string, minute
   if (/(physics|science|structure|building|construction|force|motion|stand|frame|model|experiment|biology|chemistry|earth science|astronomy|medicine|environment|engineering)/.test(combined)) addSubject("Science");
   if (/(math|measure|geometry|fraction|angle|count|calculate|number)/.test(combined)) addSubject("Math");
   if (/(finance|money|budget|cost|earn|save|spend|price)/.test(combined)) addSubject("Finance");
-  if (/(economic|transportation|industry|trade|market|work|labor)/.test(combined)) addSubject("Economics");
-  if (/(history|american|early 1900|1900s|timeline|frank lloyd wright|wright)/.test(combined)) addSubject("US History");
-  if (/(government|suffrage|vote|law|rights|citizen|civic)/.test(combined)) addSubject("Government");
+  if (/(economic|transportation|industry|trade|market|work|labor)/.test(combined)) addSubject("Social Studies");
+  if (/(history|american|early 1900|1900s|timeline|frank lloyd wright|wright)/.test(combined)) addSubject("Social Studies");
+  if (/(government|suffrage|vote|law|rights|citizen|civic)/.test(combined)) addSubject("Social Studies");
   if (/(map|geography|community|culture|society)/.test(combined)) addSubject("Social Studies");
   if (/(music|song|rhythm|beat|tempo|pitch|ear training|instrument|sight-read|repertoire|improv)/.test(combined)) addSubject("Music");
   if (/(draw|photo|photograph|visual|art|design|paint|color|line|form|composition|sketch|medium)/.test(combined)) addSubject("Art");
@@ -999,9 +995,8 @@ function inferSubjectSplitAllocations(activityType: string, text: string, minute
 }
 
 function allocationSubjectForSkill(skill: string) {
-  if (skill === "US History" || skill === "Government" || skill === "Economics") return skill;
   const match = Object.entries(skillTaxonomy).find(([, skills]) => skills.includes(skill));
-  return match?.[0] ?? "Unit Study";
+  return topLevelSubjectForAllocation(match?.[0] ?? "");
 }
 
 function mockDrafts(activityType: string, minutes: number, draftTitle: string, narrationText: string, extracurricularSelections: string[]): DraftCard[] {
@@ -1132,7 +1127,7 @@ export default function Home() {
   const [foreignLanguage, setForeignLanguage] = useState("Spanish");
   const [selectedExtracurriculars, setSelectedExtracurriculars] = useState<string[]>([]);
   const [unitStudyAllocations, setUnitStudyAllocations] = useState<UnitStudyAllocation[]>([
-    { id: "unit-study-allocation-default", subject: "Unit Study", minutes: 25 }
+    { id: "unit-study-allocation-default", subject: "", minutes: 25 }
   ]);
   const [entryDraftsByType, setEntryDraftsByType] = useState<Record<string, { title: string; narration: string; minutes: number }>>({
     "Language Arts": {
@@ -1254,7 +1249,10 @@ export default function Home() {
     [unitStudyAllocations]
   );
   const hasSubjectTimeSplit = subjectSplitActivityTypes.includes(selectedType);
-  const unitStudyAllocationIsBalanced = !hasSubjectTimeSplit || unitStudyAllocationTotal === actualMinutes;
+  const unitStudyAllocationSubjectsAreValid = unitStudyAllocations.every(
+    (allocation) => allocation.minutes === 0 || unitStudySubjectOptions.includes(allocation.subject)
+  );
+  const unitStudyAllocationIsBalanced = !hasSubjectTimeSplit || (unitStudyAllocationTotal === actualMinutes && unitStudyAllocationSubjectsAreValid);
   const activitySubjectAllocations = useMemo(
     () =>
       hasSubjectTimeSplit
@@ -1369,7 +1367,7 @@ export default function Home() {
     setTitle(saved?.title ?? "");
     setNarration(saved?.narration ?? defaultNarrationForType(type));
     setActualMinutes(nextMinutes);
-    setUnitStudyAllocations([{ id: `subject-allocation-${Date.now()}`, subject: parsedSubjectForType(type), minutes: nextMinutes }]);
+    setUnitStudyAllocations([{ id: `subject-allocation-${Date.now()}`, subject: defaultAllocationSubjectForType(type), minutes: nextMinutes }]);
     setSelectedType(type);
     setDraftCards([]);
     setUploadedArtifacts([]);
@@ -1468,7 +1466,7 @@ export default function Home() {
   function unitStudyRowsFromAllocations(allocations: { subject: string; minutes: number }[]) {
     return allocations.map((allocation, index) => ({
       id: `unit-study-allocation-${Date.now()}-${index}`,
-      subject: allocation.subject,
+      subject: topLevelSubjectForAllocation(allocation.subject),
       minutes: allocation.minutes
     }));
   }
@@ -1476,7 +1474,7 @@ export default function Home() {
   function addUnitStudyAllocation() {
     setUnitStudyAllocations((current) => [
       ...current,
-      { id: `unit-study-allocation-${Date.now()}-${current.length}`, subject: "Science", minutes: 0 }
+      { id: `unit-study-allocation-${Date.now()}-${current.length}`, subject: "", minutes: 0 }
     ]);
     setStatus(`Subject row added. Adjust minutes so the ${selectedType} split equals the actual minutes.`);
   }
@@ -1677,7 +1675,7 @@ export default function Home() {
         const nextSkills = isRemoving ? draft.skills.filter((item) => item !== skill) : [...draft.skills, skill];
         const allocationSubject = allocationSubjectForSkill(skill);
         const nextSubjectAllocations =
-          hasSubjectTimeSplit && !isRemoving && !draft.subjectAllocations.some((allocation) => allocation.subject === allocationSubject)
+          hasSubjectTimeSplit && allocationSubject && !isRemoving && !draft.subjectAllocations.some((allocation) => allocation.subject === allocationSubject)
             ? [...draft.subjectAllocations, { subject: allocationSubject, minutes: 0 }]
             : draft.subjectAllocations;
         return {
@@ -2848,21 +2846,20 @@ export default function Home() {
                       {unitStudyAllocationTotal}/{actualMinutes || 0} min
                     </span>
                   </div>
-                  <datalist id="unit-study-subject-options">
-                    {unitStudySubjectOptions.map((subject) => (
-                      <option key={subject} value={subject} />
-                    ))}
-                  </datalist>
                   <div className="unit-study-allocation-list">
                     {unitStudyAllocations.map((allocation) => (
                       <div className="unit-study-allocation-row" key={allocation.id}>
                         <label>
-                          <span>Subject or tag area</span>
-                          <input
-                            list="unit-study-subject-options"
+                          <span>Subject area</span>
+                          <select
                             value={allocation.subject}
                             onChange={(event) => updateUnitStudyAllocation(allocation.id, { subject: event.target.value })}
-                          />
+                          >
+                            <option value="">Choose subject</option>
+                            {unitStudySubjectOptions.map((subject) => (
+                              <option key={subject} value={subject}>{subject}</option>
+                            ))}
+                          </select>
                         </label>
                         <label>
                           <span>Minutes</span>
@@ -3099,11 +3096,15 @@ export default function Home() {
                                 <div className="parsed-allocation-controls">
                                   <label>
                                     <span>Subject</span>
-                                    <input
-                                      list="unit-study-subject-options"
+                                    <select
                                       value={allocation.subject}
                                       onChange={(event) => updateDraftSubjectAllocation(draft.id, allocationIndex, { subject: event.target.value })}
-                                    />
+                                    >
+                                      <option value="">Choose subject</option>
+                                      {unitStudySubjectOptions.map((subject) => (
+                                        <option key={subject} value={subject}>{subject}</option>
+                                      ))}
+                                    </select>
                                   </label>
                                   <label>
                                     <span>Minutes</span>
