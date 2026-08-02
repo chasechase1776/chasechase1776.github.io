@@ -20,6 +20,11 @@ const activitySchema = z.object({
   subjectAllocations: z.array(z.object({ subject: z.string().min(1), minutes: z.number().int().nonnegative() })).default([]),
   legalTags: z.array(z.string().min(1)).default([]),
   skills: z.array(z.object({ subject: z.string().min(1), name: z.string().min(1) })).default([]),
+  resources: z.array(z.object({
+    title: z.string().default(""),
+    authorOrEditor: z.string().default(""),
+    url: z.string().default("")
+  })).default([]),
   artifactIds: z.array(z.string()).default([]),
   replaceApprovedActivityIds: z.array(z.string()).default([])
 });
@@ -124,6 +129,7 @@ export async function POST(request: Request) {
         actualMinutes: input.actualMinutes,
         activityType: input.activityType,
         narration: input.narration,
+        notes: input.resources.length ? JSON.stringify({ resources: input.resources }) : undefined,
         recordStatus,
         parentApproved: input.parentApproved,
         reviewStatus: input.parentApproved ? "approved" : "needs_review",

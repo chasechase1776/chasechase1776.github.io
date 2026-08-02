@@ -11,6 +11,7 @@ type SavedActivity = {
   actualMinutes: number;
   activityType: string;
   narration: string;
+  notes: string | null;
   recordStatus: string;
   parentApproved: boolean;
   reviewStatus: string;
@@ -23,6 +24,13 @@ type UploadedArtifact = {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
+};
+
+type LessonResource = {
+  id: string;
+  title: string;
+  authorOrEditor: string;
+  url: string;
 };
 
 type WeeklyPdfArtifact = UploadedArtifact;
@@ -103,6 +111,7 @@ type PortfolioSection = "proof" | "books" | PortfolioListCategory;
 
 const DEFAULT_STUDENT_NAME = "Bennett C. Claypool";
 const STUDENT_NAME_STORAGE_KEY = "bennett-homeschool-student-name";
+const ACTIVITY_RESOURCES_STORAGE_KEY = "bennett-homeschool-activity-resources";
 
 const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   summary: "Summary Info",
@@ -866,6 +875,26 @@ function blankValuableFailureFollowUp(): ValuableFailureFollowUp {
   };
 }
 
+function blankLessonResource(): LessonResource {
+  return {
+    id: `resource-${Date.now()}`,
+    title: "",
+    authorOrEditor: "",
+    url: ""
+  };
+}
+
+function filledLessonResources(resources: LessonResource[]) {
+  return resources
+    .map((resource) => ({
+      ...resource,
+      title: resource.title.trim(),
+      authorOrEditor: resource.authorOrEditor.trim(),
+      url: resource.url.trim()
+    }))
+    .filter((resource) => resource.title || resource.authorOrEditor || resource.url);
+}
+
 function inferSubject(activityType: string) {
   if (activityType === "Language Arts" || activityType === "Writing Project" || activityType === "Presentation Cycle") return "Language Arts";
   if (activityType === "Math") return "Math";
@@ -1246,6 +1275,8 @@ export default function Home() {
       minutes: 25
     }
   });
+  const [resourcesByActivityType, setResourcesByActivityType] = useState<Record<string, LessonResource[]>>({});
+  const [resourcesLoaded, setResourcesLoaded] = useState(false);
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
   const [uploadedArtifacts, setUploadedArtifacts] = useState<UploadedArtifact[]>([]);
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
@@ -1387,6 +1418,7 @@ export default function Home() {
         : [{ subject: primarySubject, minutes: actualMinutes }],
     [actualMinutes, hasSubjectTimeSplit, primarySubject, unitStudyAllocations]
   );
+  const currentLessonResources = resourcesByActivityType[selectedType] ?? [];
   const [legalTags, setLegalTags] = useState<string[]>(legalTagSuggestions("Language Arts", "Language Arts"));
   const savedMinutesForSelectedDate = useMemo(
     () => savedActivities.reduce((sum, activity) => sum + activity.actualMinutes, 0),
@@ -1497,6 +1529,25 @@ export default function Home() {
   }, [student]);
 
   useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(ACTIVITY_RESOURCES_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Record<string, LessonResource[]>;
+        setResourcesByActivityType(parsed);
+      }
+    } catch {
+      setResourcesByActivityType({});
+    } finally {
+      setResourcesLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!resourcesLoaded) return;
+    window.localStorage.setItem(ACTIVITY_RESOURCES_STORAGE_KEY, JSON.stringify(resourcesByActivityType));
+  }, [resourcesByActivityType, resourcesLoaded]);
+
+  useEffect(() => {
     void loadPortfolio();
   }, [loadPortfolio]);
 
@@ -1553,6 +1604,29 @@ export default function Home() {
 
   function toggleLegalTag(tag: string) {
     setLegalTags((current) => (current.includes(tag) ? current.filter((item) => item !== tag) : [...current, tag]));
+  }
+
+  function addLessonResource() {
+    setResourcesByActivityType((current) => ({
+      ...current,
+      [selectedType]: [blankLessonResource(), ...(current[selectedType] ?? [])]
+    }));
+    setStatus(`${selectedType} resource row added. It will carry forward until changed or deleted.`);
+  }
+
+  function updateLessonResource(id: string, patch: Partial<Omit<LessonResource, "id">>) {
+    setResourcesByActivityType((current) => ({
+      ...current,
+      [selectedType]: (current[selectedType] ?? []).map((resource) => (resource.id === id ? { ...resource, ...patch } : resource))
+    }));
+  }
+
+  function deleteLessonResource(id: string) {
+    setResourcesByActivityType((current) => ({
+      ...current,
+      [selectedType]: (current[selectedType] ?? []).filter((resource) => resource.id !== id)
+    }));
+    setStatus(`${selectedType} resource removed. The updated list will carry forward.`);
   }
 
   function toggleExtracurricularOption(option: string) {
@@ -1958,6 +2032,7 @@ export default function Home() {
       subjectAllocations: activitySubjectAllocations,
       legalTags,
       skills: [],
+      resources: filledLessonResources(currentLessonResources),
       artifactIds: uploadedArtifacts.map((artifact) => artifact.id),
       replaceApprovedActivityIds
     };
@@ -3431,6 +3506,39 @@ export default function Home() {
                       )}
                     </div>
                   </div>
+                </section>
+
+                <section className="panel" id="resources">
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">Optional resources</p>
+                      <h2>Resources</h2>
+                      <p className="panel-note">These resources stay with {selectedType} until you change or delete them.</p>
+                    </div>
+                    <button className="secondary-button" type="button" onClick={addLessonResource}>Add resource</button>
+                  </div>
+                  <div className="resource-list">
+                    {currentLessonResources.length ? currentLessonResources.map((resource) => (
+                      <div className="resource-row" key={resource.id}>
+                        <label>
+                          <span>Book or Resource title</span>
+                          <input value={resource.title} onChange={(event) => updateLessonResource(resource.id, { title: event.target.value })} />
+                        </label>
+                        <label>
+                          <span>Author or Editor</span>
+                          <input value={resource.authorOrEditor} onChange={(event) => updateLessonResource(resource.id, { authorOrEditor: event.target.value })} />
+                        </label>
+                        <label>
+                          <span>Optional URL</span>
+                          <input value={resource.url} onChange={(event) => updateLessonResource(resource.id, { url: event.target.value })} />
+                        </label>
+                        <button className="text-button" type="button" onClick={() => deleteLessonResource(resource.id)}>Delete</button>
+                      </div>
+                    )) : <p className="muted">No resources added for {selectedType} yet.</p>}
+                  </div>
+                  {filledLessonResources(currentLessonResources).length ? (
+                    <p className="status-line">{filledLessonResources(currentLessonResources).length} resource{filledLessonResources(currentLessonResources).length === 1 ? "" : "s"} will save with this activity.</p>
+                  ) : null}
                 </section>
               </>
             ) : null}

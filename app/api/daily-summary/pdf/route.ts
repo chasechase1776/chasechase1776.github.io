@@ -60,6 +60,26 @@ function wrapLine(value: string, width = 88) {
   return lines.length ? lines : [""];
 }
 
+function activityResources(notes: string | null) {
+  if (!notes) return [];
+  try {
+    const parsed = JSON.parse(notes) as { resources?: unknown };
+    if (!Array.isArray(parsed.resources)) return [];
+    return parsed.resources
+      .map((resource) => {
+        const item = resource as { title?: unknown; authorOrEditor?: unknown; url?: unknown };
+        return {
+          title: typeof item.title === "string" ? item.title : "",
+          authorOrEditor: typeof item.authorOrEditor === "string" ? item.authorOrEditor : "",
+          url: typeof item.url === "string" ? item.url : ""
+        };
+      })
+      .filter((resource) => resource.title || resource.authorOrEditor || resource.url);
+  } catch {
+    return [];
+  }
+}
+
 function attachmentName(name: string) {
   return pdfText(name).replace(/["\r\n]/g, "-") || "daily-proof";
 }
@@ -179,6 +199,13 @@ async function buildDailySummaryPdf(
     }
     if (activity.unitStudy) {
       drawWrapped(`Unit study: ${activity.unitStudy.title}`, 24);
+    }
+    const resources = activityResources(activity.notes);
+    if (resources.length) {
+      drawWrapped(
+        `Resources: ${resources.map((resource) => [resource.title, resource.authorOrEditor, resource.url].filter(Boolean).join(" - ")).join("; ")}`,
+        24
+      );
     }
     drawWrapped(
       activity.artifacts.length

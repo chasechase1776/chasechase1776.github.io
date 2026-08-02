@@ -690,6 +690,22 @@ textarea {
   font-size: 0.8rem;
 }
 
+.resource-list {
+  display: grid;
+  gap: 10px;
+}
+
+.resource-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 10px;
+}
+
 .primary-action-row {
   flex-wrap: wrap;
   margin-top: 14px;
@@ -2124,6 +2140,7 @@ details.skill-group[open] summary {
     .artifact-block,
     .artifact-grid,
     .upload-proof-box,
+    .resource-row,
     .allocation-panel,
     .file-explorer,
     .weekly-date-grid,
