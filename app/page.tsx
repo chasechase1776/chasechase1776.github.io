@@ -53,13 +53,26 @@ type BookListEntry = {
   rating: number;
 };
 
-type PortfolioListCategory = "achievements" | "accolades" | "projects" | "fieldTrips";
+type PortfolioListCategory = "achievements" | "accolades" | "projects" | "fieldTrips" | "valuableFailures";
+
+type ValuableFailureFollowUp = {
+  id: string;
+  date: string;
+  reattemptEvent: string;
+  learningOutcome: string;
+  resolved: boolean;
+};
 
 type PortfolioListEntry = {
   id: string;
   narrative: string;
   date: string;
   artifactIds: string[];
+  response: string;
+  reflection: string;
+  plan: string;
+  resolved: boolean;
+  followUps: ValuableFailureFollowUp[];
 };
 
 type ReportBucket = {
@@ -102,7 +115,8 @@ const portfolioListLabels: Record<PortfolioListCategory, string> = {
   achievements: "Achievements & Awards",
   accolades: "Accolades",
   projects: "Major Projects",
-  fieldTrips: "Field Trips"
+  fieldTrips: "Field Trips",
+  valuableFailures: "Valuable Failures"
 };
 
 const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
@@ -111,10 +125,11 @@ const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
   achievements: "portfolio_achievements",
   accolades: "portfolio_accolades",
   projects: "portfolio_major_projects",
-  fieldTrips: "portfolio_field_trips"
+  fieldTrips: "portfolio_field_trips",
+  valuableFailures: "portfolio_valuable_failures"
 };
 
-const portfolioListCategories: PortfolioListCategory[] = ["achievements", "accolades", "projects", "fieldTrips"];
+const portfolioListCategories: PortfolioListCategory[] = ["achievements", "accolades", "projects", "fieldTrips", "valuableFailures"];
 const proofEnabledPortfolioLists: PortfolioListCategory[] = ["projects", "fieldTrips"];
 const portfolioProofClassifications: Partial<Record<PortfolioListCategory, string>> = {
   projects: "portfolio_major_projects_proof",
@@ -819,6 +834,36 @@ function addDaysIso(value: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+function nextSchoolYearLabel(value: string) {
+  const match = value.match(/^(\d{4})-(\d{4})$/);
+  if (!match) return `${value} next`;
+  return `${Number(match[1]) + 1}-${Number(match[2]) + 1}`;
+}
+
+function blankPortfolioListEntry(category: PortfolioListCategory): PortfolioListEntry {
+  return {
+    id: `${category}-${Date.now()}`,
+    narrative: "",
+    date: todayIso(),
+    artifactIds: [],
+    response: "",
+    reflection: "",
+    plan: "",
+    resolved: false,
+    followUps: []
+  };
+}
+
+function blankValuableFailureFollowUp(): ValuableFailureFollowUp {
+  return {
+    id: `failure-follow-up-${Date.now()}`,
+    date: "",
+    reattemptEvent: "",
+    learningOutcome: "",
+    resolved: false
+  };
+}
+
 function inferSubject(activityType: string) {
   if (activityType === "Language Arts" || activityType === "Writing Project" || activityType === "Presentation Cycle") return "Language Arts";
   if (activityType === "Math") return "Math";
@@ -1213,13 +1258,15 @@ export default function Home() {
     achievements: [],
     accolades: [],
     projects: [],
-    fieldTrips: []
+    fieldTrips: [],
+    valuableFailures: []
   });
   const [portfolioListMessages, setPortfolioListMessages] = useState<Record<PortfolioListCategory, string>>({
     achievements: "Achievements & Awards list is ready.",
     accolades: "Accolades list is ready.",
     projects: "Major Projects list is ready.",
-    fieldTrips: "Field Trips list is ready."
+    fieldTrips: "Field Trips list is ready.",
+    valuableFailures: "Valuable Failures list is ready."
   });
   const [isPortfolioListBusy, setIsPortfolioListBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
@@ -1563,7 +1610,7 @@ export default function Home() {
   function addPortfolioListEntry(category: PortfolioListCategory) {
     setPortfolioListEntries((current) => ({
       ...current,
-      [category]: [{ id: `${category}-${Date.now()}`, narrative: "", date: todayIso(), artifactIds: [] }, ...current[category]]
+      [category]: [blankPortfolioListEntry(category), ...current[category]]
     }));
     setPortfolioListMessages((current) => ({ ...current, [category]: "Row added. Save the list when finished." }));
   }
@@ -1581,6 +1628,37 @@ export default function Home() {
       [category]: current[category].filter((entry) => entry.id !== id)
     }));
     setPortfolioListMessages((current) => ({ ...current, [category]: "Row removed. Save the list when finished." }));
+  }
+
+  function addValuableFailureFollowUp(entryId: string) {
+    setPortfolioListEntries((current) => ({
+      ...current,
+      valuableFailures: current.valuableFailures.map((entry) =>
+        entry.id === entryId ? { ...entry, resolved: false, followUps: [...entry.followUps, blankValuableFailureFollowUp()] } : entry
+      )
+    }));
+    setPortfolioListMessages((current) => ({ ...current, valuableFailures: "Follow-up row added. Save the list when finished." }));
+  }
+
+  function updateValuableFailureFollowUp(entryId: string, followUpId: string, patch: Partial<Omit<ValuableFailureFollowUp, "id">>) {
+    setPortfolioListEntries((current) => ({
+      ...current,
+      valuableFailures: current.valuableFailures.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              followUps: entry.followUps.map((followUp) => (followUp.id === followUpId ? { ...followUp, ...patch } : followUp))
+            }
+          : entry
+      )
+    }));
+  }
+
+  function valuableFailureDisplayEntries(entries = portfolioListEntries.valuableFailures) {
+    return [...entries].sort((left, right) => {
+      if (left.resolved !== right.resolved) return left.resolved ? 1 : -1;
+      return right.date.localeCompare(left.date);
+    });
   }
 
   async function uploadPortfolioListArtifact(category: PortfolioListCategory, entryId: string, event: ChangeEvent<HTMLInputElement>) {
@@ -1627,6 +1705,7 @@ export default function Home() {
   async function savePortfolioList(category: PortfolioListCategory, entries = portfolioListEntries[category]) {
     setIsPortfolioListBusy(true);
     try {
+      const entriesToSave = category === "valuableFailures" ? valuableFailureDisplayEntries(entries) : entries;
       const response = await fetch("/api/portfolio-lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1635,12 +1714,17 @@ export default function Home() {
           schoolYearLabel: schoolYear,
           schoolYearStatus,
           category,
-          entries: entries
+          entries: entriesToSave
             .filter((entry) => entry.narrative.trim())
             .map((entry) => ({
               narrative: entry.narrative.trim(),
               date: entry.date,
-              artifactIds: entry.artifactIds
+              artifactIds: entry.artifactIds,
+              response: entry.response,
+              reflection: entry.reflection,
+              plan: entry.plan,
+              resolved: entry.resolved,
+              followUps: entry.followUps
             }))
         })
       });
@@ -1677,7 +1761,16 @@ export default function Home() {
             }))
         : portfolioListEntries[section]
             .filter((entry) => entry.narrative.trim())
-            .map((entry) => ({ narrative: entry.narrative.trim(), date: entry.date, artifactIds: entry.artifactIds }));
+            .map((entry) => ({
+              narrative: entry.narrative.trim(),
+              date: entry.date,
+              artifactIds: entry.artifactIds,
+              response: entry.response,
+              reflection: entry.reflection,
+              plan: entry.plan,
+              resolved: entry.resolved,
+              followUps: entry.followUps
+            }));
 
       const response = await fetch("/api/portfolio-lists/pdf", {
         method: "POST",
@@ -1707,13 +1800,17 @@ export default function Home() {
   }
 
   async function closeOutPriorSchoolYear() {
-    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, and field trips, then clear those running lists for the selected school year.`);
+    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, field trips, and valuable failures, then clear those running lists for the selected school year.`);
     if (!confirmed) return;
+    const unresolvedFailures = portfolioListEntries.valuableFailures.filter((entry) => !entry.resolved);
+    const carryForwardFailures = unresolvedFailures.length
+      ? window.confirm(`Carry forward ${unresolvedFailures.length} unresolved valuable failure${unresolvedFailures.length === 1 ? "" : "s"} to ${nextSchoolYearLabel(schoolYear)}?`)
+      : false;
 
     setIsBookListBusy(true);
     setIsPortfolioListBusy(true);
     try {
-      const sections: Exclude<PortfolioSection, "proof">[] = ["books", "achievements", "accolades", "projects", "fieldTrips"];
+      const sections: Exclude<PortfolioSection, "proof">[] = ["books", "achievements", "accolades", "projects", "fieldTrips", "valuableFailures"];
       for (const section of sections) {
         const exported = await compilePortfolioPdf(section);
         if (!exported) throw new Error("Closeout stopped because one PDF could not be created.");
@@ -1727,15 +1824,41 @@ export default function Home() {
       for (const category of portfolioListCategories) {
         await savePortfolioList(category, []);
       }
+      if (carryForwardFailures) {
+        const nextYear = nextSchoolYearLabel(schoolYear);
+        await fetch("/api/portfolio-lists", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentName: student,
+            schoolYearLabel: nextYear,
+            schoolYearStatus: "trial",
+            category: "valuableFailures",
+            entries: unresolvedFailures.map((entry) => ({
+              narrative: entry.narrative,
+              date: entry.date,
+              artifactIds: entry.artifactIds,
+              response: entry.response,
+              reflection: entry.reflection,
+              plan: entry.plan,
+              resolved: false,
+              followUps: entry.followUps
+            }))
+          })
+        });
+      }
 
       setBookListEntries([]);
       setBookListMessage(`${schoolYear} book list archived and reset.`);
-      setPortfolioListEntries({ achievements: [], accolades: [], projects: [], fieldTrips: [] });
+      setPortfolioListEntries({ achievements: [], accolades: [], projects: [], fieldTrips: [], valuableFailures: [] });
       setPortfolioListMessages({
         achievements: `${schoolYear} achievements archived and reset.`,
         accolades: `${schoolYear} accolades archived and reset.`,
         projects: `${schoolYear} major projects archived and reset.`,
-        fieldTrips: `${schoolYear} field trips archived and reset.`
+        fieldTrips: `${schoolYear} field trips archived and reset.`,
+        valuableFailures: carryForwardFailures
+          ? `${schoolYear} valuable failures archived and unresolved items copied to ${nextSchoolYearLabel(schoolYear)}.`
+          : `${schoolYear} valuable failures archived and reset.`
       });
       await loadPortfolio();
     } catch (error) {
@@ -4702,7 +4825,8 @@ export default function Home() {
                   ["achievements", "Achievements & Awards", "Track dated achievements and awards with a short note."],
                   ["accolades", "Accolades", "Save praise, recognition, and outside feedback."],
                   ["projects", "Major Projects", "Track major project milestones and outcomes."],
-                  ["fieldTrips", "Field trips", "Track field trip dates, narratives, and proof files."]
+                  ["fieldTrips", "Field trips", "Track field trip dates, narratives, and proof files."],
+                  ["valuableFailures", "Valuable Failures", "Track setbacks, responses, reflections, plans, and follow-ups."]
                 ].map(([key, label, description]) => (
                   <button
                     className={activePortfolioSection === key ? "weekly-section-button is-active" : "weekly-section-button"}
@@ -4849,7 +4973,7 @@ export default function Home() {
                 </details>
               </section>
               ) : null}
-              {portfolioListCategories.map((category) => (
+              {portfolioListCategories.filter((category) => category !== "valuableFailures").map((category) => (
                 activePortfolioSection === category ? (
                 <section className="book-list-panel" key={category}>
                   <div className="section-head">
@@ -4932,6 +5056,121 @@ export default function Home() {
                 </section>
                 ) : null
               ))}
+              {activePortfolioSection === "valuableFailures" ? (
+                <section className="book-list-panel valuable-failures-panel">
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">Valuable Failures</p>
+                      <h2>Valuable Failures</h2>
+                      <p className="panel-note">Open items stay at the top. Once an event is resolved, the full thread moves to the bottom.</p>
+                    </div>
+                    <div className="primary-action-row">
+                      <button className="secondary-button" type="button" onClick={() => addPortfolioListEntry("valuableFailures")}>Add row</button>
+                      <button className="secondary-button" type="button" onClick={() => void compilePortfolioPdf("valuableFailures")} disabled={isPortfolioListBusy}>
+                        Compile PDF
+                      </button>
+                      <button className="primary-button" type="button" onClick={() => void savePortfolioList("valuableFailures")} disabled={isPortfolioListBusy}>
+                        {isPortfolioListBusy ? "Saving..." : "Save list"}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="status-line" role="status">{portfolioListMessages.valuableFailures}</p>
+                  <div className="valuable-failure-list">
+                    {valuableFailureDisplayEntries().length ? valuableFailureDisplayEntries().map((entry) => (
+                      <article className={entry.resolved ? "valuable-failure-card is-resolved" : "valuable-failure-card"} key={entry.id}>
+                        <div className="valuable-failure-main-grid">
+                          <label>
+                            <span>Date</span>
+                            <input type="date" value={entry.date} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { date: event.target.value })} />
+                          </label>
+                          <label>
+                            <span>Failure or setback</span>
+                            <textarea value={entry.narrative} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { narrative: event.target.value })} />
+                          </label>
+                          <label>
+                            <span>Response</span>
+                            <textarea value={entry.response} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { response: event.target.value })} />
+                          </label>
+                          <label>
+                            <span>Reflection</span>
+                            <textarea value={entry.reflection} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { reflection: event.target.value })} />
+                          </label>
+                          <label>
+                            <span>Plan</span>
+                            <textarea value={entry.plan} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { plan: event.target.value })} />
+                          </label>
+                        </div>
+                        <div className="valuable-failure-actions">
+                          <label className="checkbox-row">
+                            <input
+                              type="checkbox"
+                              checked={entry.resolved}
+                              onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { resolved: event.target.checked })}
+                            />
+                            <span>Event resolved</span>
+                          </label>
+                          <button className="secondary-button" type="button" onClick={() => addValuableFailureFollowUp(entry.id)} disabled={entry.resolved}>
+                            Create follow up
+                          </button>
+                          <button className="text-button" type="button" onClick={() => deletePortfolioListEntry("valuableFailures", entry.id)}>Delete</button>
+                        </div>
+                        {entry.followUps.length ? (
+                          <div className="valuable-follow-up-list">
+                            {entry.followUps.map((followUp, followUpIndex) => (
+                              <div className="valuable-follow-up-row" key={followUp.id}>
+                                <span className="follow-up-indent">Follow-up {followUpIndex + 1}</span>
+                                <label>
+                                  <span>Date</span>
+                                  <input type="date" value={followUp.date} onChange={(event) => updateValuableFailureFollowUp(entry.id, followUp.id, { date: event.target.value })} />
+                                </label>
+                                <label>
+                                  <span>Reattempt event</span>
+                                  <textarea value={followUp.reattemptEvent} onChange={(event) => updateValuableFailureFollowUp(entry.id, followUp.id, { reattemptEvent: event.target.value })} />
+                                </label>
+                                <label>
+                                  <span>Learning outcome</span>
+                                  <textarea value={followUp.learningOutcome} onChange={(event) => updateValuableFailureFollowUp(entry.id, followUp.id, { learningOutcome: event.target.value })} />
+                                </label>
+                                <div className="valuable-failure-actions">
+                                  <label className="checkbox-row">
+                                    <input
+                                      type="checkbox"
+                                      checked={followUp.resolved || entry.resolved}
+                                      onChange={(event) => {
+                                        updateValuableFailureFollowUp(entry.id, followUp.id, { resolved: event.target.checked });
+                                        updatePortfolioListEntry("valuableFailures", entry.id, { resolved: event.target.checked });
+                                      }}
+                                    />
+                                    <span>Event resolved</span>
+                                  </label>
+                                  <button className="secondary-button" type="button" onClick={() => addValuableFailureFollowUp(entry.id)} disabled={entry.resolved}>
+                                    Create follow up
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </article>
+                    )) : <p className="muted">No valuable failures added yet.</p>}
+                  </div>
+                  <details className="report-bucket-card">
+                    <summary className="report-bucket-summary">
+                      <span>Past Valuable Failures</span>
+                      <strong>{portfolioArchiveArtifacts("valuableFailures").length}</strong>
+                    </summary>
+                    <div className="report-list">
+                      {portfolioArchiveArtifacts("valuableFailures").length ? portfolioArchiveArtifacts("valuableFailures").map((artifact) => (
+                        <article className="report-list-row portfolio-archive-row" key={artifact.id}>
+                          <span><strong>{artifact.originalName}</strong><br />{dateLabel(artifact.createdAt)}</span>
+                          <span>{formatBytes(artifact.sizeBytes)}</span>
+                          <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">Open</a>
+                        </article>
+                      )) : <p className="muted">No past valuable failures PDFs yet.</p>}
+                    </div>
+                  </details>
+                </section>
+              ) : null}
             </section>
             ) : null}
           </section>

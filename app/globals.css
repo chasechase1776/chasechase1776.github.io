@@ -1801,6 +1801,73 @@ details.skill-group[open] summary {
   font-weight: 800;
 }
 
+.valuable-failures-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.valuable-failure-list,
+.valuable-follow-up-list,
+.valuable-failure-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.valuable-failure-card {
+  border: 1px solid var(--soft-line);
+  border-left: 4px solid var(--blue);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.valuable-failure-card.is-resolved {
+  border-left-color: var(--muted);
+  background: #f4f6f7;
+}
+
+.valuable-failure-main-grid {
+  display: grid;
+  grid-template-columns: 160px repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.valuable-failure-main-grid label:nth-child(2) {
+  grid-column: span 2;
+}
+
+.valuable-failure-main-grid textarea,
+.valuable-follow-up-row textarea {
+  min-height: 86px;
+}
+
+.valuable-failure-actions {
+  grid-template-columns: auto auto auto;
+  justify-content: start;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.valuable-follow-up-list {
+  margin-top: 12px;
+  padding-left: 22px;
+}
+
+.valuable-follow-up-row {
+  display: grid;
+  grid-template-columns: 100px 150px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  border-left: 2px solid var(--soft-line);
+  padding-left: 12px;
+}
+
+.follow-up-indent {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .portfolio-archive-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -2071,6 +2138,9 @@ details.skill-group[open] summary {
     .report-bucket-grid,
     .book-list-header,
     .book-list-row,
+    .valuable-failure-main-grid,
+    .valuable-failure-actions,
+    .valuable-follow-up-row,
     .skill-rating-row,
     .portfolio-grid,
     .annual-section-hub,

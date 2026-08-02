@@ -77,6 +77,13 @@ Do not simplify by removing required data. Keep the activity as the source of tr
 
 Each feature should include a simple checklist.
 
+Portfolio closeout behavior:
+
+- Use the existing `Close out prior school year` button for school-year portfolio archives.
+- Compile running portfolio lists to PDF before resetting them.
+- Ask whether unresolved `Valuable Failures` should carry forward to the next school year.
+- Keep unresolved Valuable Failures open at the top of the list and move resolved threads to the bottom.
+
 Before large feature work, Codex should confirm:
 
 1. Which workspace the feature belongs in.

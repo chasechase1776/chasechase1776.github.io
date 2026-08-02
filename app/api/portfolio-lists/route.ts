@@ -2,12 +2,25 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
-const categorySchema = z.enum(["achievements", "accolades", "projects", "fieldTrips"]);
+const categorySchema = z.enum(["achievements", "accolades", "projects", "fieldTrips", "valuableFailures"]);
+
+const followUpSchema = z.object({
+  id: z.string().default(""),
+  date: z.string().default(""),
+  reattemptEvent: z.string().default(""),
+  learningOutcome: z.string().default(""),
+  resolved: z.boolean().default(false)
+});
 
 const entrySchema = z.object({
   narrative: z.string().min(1),
   date: z.string().default(""),
-  artifactIds: z.array(z.string()).default([])
+  artifactIds: z.array(z.string()).default([]),
+  response: z.string().default(""),
+  reflection: z.string().default(""),
+  plan: z.string().default(""),
+  resolved: z.boolean().default(false),
+  followUps: z.array(followUpSchema).default([])
 });
 
 const saveSchema = z.object({
@@ -27,12 +40,43 @@ function safeArtifactIds(value: string) {
   }
 }
 
-function formatEntry(entry: { id: string; narrative: string; artifactIdsJson: string; occurredAt: Date | null }) {
+function safeFollowUps(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => ({
+      id: typeof item.id === "string" && item.id ? item.id : `follow-up-${Date.now()}`,
+      date: typeof item.date === "string" ? item.date : "",
+      reattemptEvent: typeof item.reattemptEvent === "string" ? item.reattemptEvent : "",
+      learningOutcome: typeof item.learningOutcome === "string" ? item.learningOutcome : "",
+      resolved: Boolean(item.resolved)
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function formatEntry(entry: {
+  id: string;
+  narrative: string;
+  response: string;
+  reflection: string;
+  plan: string;
+  resolved: boolean;
+  followUpsJson: string;
+  artifactIdsJson: string;
+  occurredAt: Date | null;
+}) {
   return {
     id: entry.id,
     narrative: entry.narrative,
     date: entry.occurredAt ? entry.occurredAt.toISOString().slice(0, 10) : "",
-    artifactIds: safeArtifactIds(entry.artifactIdsJson)
+    artifactIds: safeArtifactIds(entry.artifactIdsJson),
+    response: entry.response,
+    reflection: entry.reflection,
+    plan: entry.plan,
+    resolved: entry.resolved,
+    followUps: safeFollowUps(entry.followUpsJson)
   };
 }
 
@@ -104,6 +148,11 @@ export async function POST(request: Request) {
           data: input.entries.map((entry, index) => ({
             category: input.category,
             narrative: entry.narrative,
+            response: entry.response,
+            reflection: entry.reflection,
+            plan: entry.plan,
+            resolved: entry.resolved,
+            followUpsJson: JSON.stringify(entry.followUps),
             artifactIdsJson: JSON.stringify(entry.artifactIds),
             occurredAt: entry.date ? new Date(`${entry.date}T00:00:00.000Z`) : null,
             sortOrder: index,

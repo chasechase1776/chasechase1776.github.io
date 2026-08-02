@@ -9,7 +9,8 @@ const categoryLabels = {
   achievements: "Achievements & Awards",
   accolades: "Accolades",
   projects: "Major Projects",
-  fieldTrips: "Field Trips"
+  fieldTrips: "Field Trips",
+  valuableFailures: "Valuable Failures"
 } as const;
 
 const classificationByCategory = {
@@ -17,8 +18,17 @@ const classificationByCategory = {
   achievements: "portfolio_achievements",
   accolades: "portfolio_accolades",
   projects: "portfolio_major_projects",
-  fieldTrips: "portfolio_field_trips"
+  fieldTrips: "portfolio_field_trips",
+  valuableFailures: "portfolio_valuable_failures"
 } as const;
+
+const followUpSchema = z.object({
+  id: z.string().default(""),
+  date: z.string().default(""),
+  reattemptEvent: z.string().default(""),
+  learningOutcome: z.string().default(""),
+  resolved: z.boolean().default(false)
+});
 
 const entrySchema = z.object({
   title: z.string().default(""),
@@ -27,13 +37,18 @@ const entrySchema = z.object({
   completedDate: z.string().default(""),
   narrative: z.string().default(""),
   date: z.string().default(""),
-  artifactIds: z.array(z.string()).default([])
+  artifactIds: z.array(z.string()).default([]),
+  response: z.string().default(""),
+  reflection: z.string().default(""),
+  plan: z.string().default(""),
+  resolved: z.boolean().default(false),
+  followUps: z.array(followUpSchema).default([])
 });
 
 const pdfSchema = z.object({
   studentName: z.string().min(1).default("Bennett C. Claypool"),
   schoolYearLabel: z.string().min(1),
-  category: z.enum(["books", "achievements", "accolades", "projects", "fieldTrips"]),
+  category: z.enum(["books", "achievements", "accolades", "projects", "fieldTrips", "valuableFailures"]),
   entries: z.array(entrySchema)
 });
 
@@ -120,6 +135,28 @@ async function buildPdf(input: z.infer<typeof pdfSchema>, artifactsById: Map<str
       drawLine(`Author: ${entry.author || "Not listed"}`);
       drawLine(`Date completed: ${completed}`);
       drawLine(`Student rating: ${entry.rating ?? 5} star${entry.rating === 1 ? "" : "s"}`, { gap: 18 });
+      return;
+    }
+
+    if (input.category === "valuableFailures") {
+      drawLine(`${index + 1}. ${entry.date || "No date listed"} - ${entry.resolved ? "Resolved" : "Open"}`, { heading: true });
+      drawLine("Failure or setback", { heading: true });
+      wrapText(entry.narrative || "No event narrative entered.", 92).forEach((line) => drawLine(line));
+      drawLine("Initial response", { heading: true });
+      wrapText(entry.response || "No response entered.", 92).forEach((line) => drawLine(line));
+      drawLine("Reflection", { heading: true });
+      wrapText(entry.reflection || "No reflection entered.", 92).forEach((line) => drawLine(line));
+      drawLine("Plan", { heading: true });
+      wrapText(entry.plan || "No plan entered.", 92).forEach((line) => drawLine(line));
+      if (entry.followUps.length) {
+        drawLine("Follow-ups", { heading: true });
+        entry.followUps.forEach((followUp, followUpIndex) => {
+          drawLine(`  ${followUpIndex + 1}. ${followUp.date || "No date listed"} - ${followUp.resolved ? "Resolved" : "Open"}`, { heading: true });
+          wrapText(`Reattempt event: ${followUp.reattemptEvent || "Not entered."}`, 86).forEach((line) => drawLine(line));
+          wrapText(`Learning outcome: ${followUp.learningOutcome || "Not entered."}`, 86).forEach((line) => drawLine(line));
+        });
+      }
+      y -= 10;
       return;
     }
 
