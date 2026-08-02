@@ -35,6 +35,7 @@ model SchoolYear {
   annualPlans                  AnnualPlan[]
   bookListEntries              BookListEntry[]
   portfolioListEntries         PortfolioListEntry[]
+  legalArchiveBuckets          LegalArchiveBucket[]
   exportSnapshots              ExportSnapshot[]
 
   @@unique([studentId, label])
@@ -135,6 +136,31 @@ model EvidenceArtifact {
   createdAt      DateTime  @default(now())
   activityId     String?
   activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  legalArchiveLinks LegalArchiveLink[]
+}
+
+model LegalArchiveBucket {
+  id           String             @id @default(cuid())
+  bucketKey    String
+  reviewedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  schoolYearId String
+  schoolYear   SchoolYear         @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+  links        LegalArchiveLink[]
+
+  @@unique([schoolYearId, bucketKey])
+}
+
+model LegalArchiveLink {
+  id         String             @id @default(cuid())
+  createdAt  DateTime           @default(now())
+  bucketId   String
+  artifactId String
+  bucket     LegalArchiveBucket @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  artifact   EvidenceArtifact   @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+
+  @@unique([bucketId, artifactId])
 }
 
 model BookListEntry {

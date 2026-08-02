@@ -1889,6 +1889,101 @@ details.skill-group[open] summary {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.legal-archive-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.education-ticker-grid,
+.legal-bucket-grid,
+.legal-connect-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.education-ticker-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.education-ticker-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 12px;
+}
+
+.education-ticker-card span,
+.education-ticker-card small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.education-ticker-card strong {
+  font-size: 1.65rem;
+}
+
+.legal-bucket-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.legal-bucket-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  padding: 12px;
+  text-align: left;
+}
+
+.legal-bucket-button small {
+  grid-column: 2;
+  color: var(--muted);
+}
+
+.legal-bucket-button.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.review-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+.review-dot.is-reviewed {
+  background: var(--green);
+}
+
+.review-dot.is-due {
+  background: #d99a00;
+}
+
+.legal-bucket-detail {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 12px;
+}
+
+.legal-connect-grid {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.legal-upload-picker {
+  min-height: 74px;
+}
+
 .book-list-header {
   color: var(--muted);
   font-size: 0.78rem;
@@ -2159,6 +2254,9 @@ details.skill-group[open] summary {
     .valuable-failure-main-grid,
     .valuable-failure-actions,
     .valuable-follow-up-row,
+    .education-ticker-grid,
+    .legal-bucket-grid,
+    .legal-connect-grid,
     .skill-rating-row,
     .portfolio-grid,
     .annual-section-hub,

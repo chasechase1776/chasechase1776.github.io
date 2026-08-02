@@ -15,6 +15,7 @@ type SavedActivity = {
   recordStatus: string;
   parentApproved: boolean;
   reviewStatus: string;
+  schoolYear: { label: string };
   allocations: { subject: string; minutes: number }[];
   legalTags: { legalTag: { label: string } }[];
 };
@@ -51,6 +52,16 @@ type PortfolioArtifact = UploadedArtifact & {
     allocations: { subject: string; minutes: number }[];
     legalTags: { legalTag: { label: string } }[];
   } | null;
+};
+
+type LegalArchiveBucket = {
+  id: string;
+  bucketKey: string;
+  reviewedAt: string | null;
+  links: {
+    id: string;
+    artifact: PortfolioArtifact;
+  }[];
 };
 
 type BookListEntry = {
@@ -399,6 +410,47 @@ const reportBuckets: ReportBucket[] = [
     classifications: []
   }
 ];
+
+const legalArchiveBuckets = [
+  { key: "homeschool-charter", label: "Homeschool Charter" },
+  { key: "annual-plans", label: "Annual Plans" },
+  { key: "quarter-annual-reports", label: "Quarter + Annual Reports" },
+  { key: "compliance-summaries", label: "Compliance Summaries" },
+  { key: "reference-notes", label: "Reference Notes" },
+  { key: "prior-year-archives", label: "Prior Year Archives" }
+];
+
+function schoolYearStartYear(label: string) {
+  const match = label.match(/\b(20\d{2})\b/);
+  return match ? Number(match[1]) : new Date().getFullYear();
+}
+
+function legalReviewDatesForYear(label: string) {
+  const startYear = schoolYearStartYear(label);
+  return [`${startYear}-12-15`, `${startYear + 1}-06-15`];
+}
+
+function daysUntilIso(value: string) {
+  const today = new Date(`${todayIso()}T00:00:00.000Z`);
+  const target = new Date(`${value}T00:00:00.000Z`);
+  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+}
+
+function currentLegalReviewWindow(label: string) {
+  const [decemberReview, juneReview] = legalReviewDatesForYear(label);
+  const today = todayIso();
+  if (today <= decemberReview) return { dueDate: decemberReview, previousDueDate: `${schoolYearStartYear(label) - 1}-06-15` };
+  return { dueDate: juneReview, previousDueDate: decemberReview };
+}
+
+function legalBucketStatus(reviewedAt: string | null, label: string) {
+  const window = currentLegalReviewWindow(label);
+  const reviewedDate = reviewedAt?.slice(0, 10) ?? "";
+  if (reviewedDate >= window.previousDueDate && reviewedDate <= window.dueDate) return "reviewed";
+  const daysUntil = daysUntilIso(window.dueDate);
+  if (daysUntil >= 0 && daysUntil <= 30) return "due";
+  return "unaddressed";
+}
 
 function isReportArtifact(artifact: Pick<PortfolioArtifact, "classification" | "mimeType" | "originalName">) {
   const classification = artifact.classification ?? "";
@@ -1280,8 +1332,14 @@ export default function Home() {
   const [selectedProof, setSelectedProof] = useState<string[]>(["Upload photo"]);
   const [uploadedArtifacts, setUploadedArtifacts] = useState<UploadedArtifact[]>([]);
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
+  const [allSavedActivities, setAllSavedActivities] = useState<SavedActivity[]>([]);
   const [duplicateApprovedActivities, setDuplicateApprovedActivities] = useState<SavedActivity[]>([]);
   const [portfolioArtifacts, setPortfolioArtifacts] = useState<PortfolioArtifact[]>([]);
+  const [legalArchive, setLegalArchive] = useState<LegalArchiveBucket[]>([]);
+  const [activeLegalBucketKey, setActiveLegalBucketKey] = useState("homeschool-charter");
+  const [legalArchiveMessage, setLegalArchiveMessage] = useState("Legal Archive is ready for file-cabinet review.");
+  const [selectedLegalArtifactId, setSelectedLegalArtifactId] = useState("");
+  const [isLegalArchiveBusy, setIsLegalArchiveBusy] = useState(false);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activePortfolioSection, setActivePortfolioSection] = useState<PortfolioSection | null>(null);
   const [bookListEntries, setBookListEntries] = useState<BookListEntry[]>([]);
@@ -1466,6 +1524,17 @@ export default function Home() {
     }
   }, []);
 
+  const loadAllSavedActivities = useCallback(async () => {
+    try {
+      const response = await fetch("/api/activities", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load education-day records.");
+      setAllSavedActivities(data.activities ?? []);
+    } catch (error) {
+      setLegalArchiveMessage(error instanceof Error ? error.message : "Could not load education-day records.");
+    }
+  }, []);
+
   const loadPortfolio = useCallback(async () => {
     setIsLoadingPortfolio(true);
     try {
@@ -1479,6 +1548,22 @@ export default function Home() {
       setIsLoadingPortfolio(false);
     }
   }, []);
+
+  const loadLegalArchive = useCallback(async () => {
+    if (!student || !schoolYear) return;
+    setIsLegalArchiveBusy(true);
+    try {
+      const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear, schoolYearStatus });
+      const response = await fetch(`/api/legal-archive?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load Legal Archive.");
+      setLegalArchive(data.buckets ?? []);
+    } catch (error) {
+      setLegalArchiveMessage(error instanceof Error ? error.message : "Could not load Legal Archive.");
+    } finally {
+      setIsLegalArchiveBusy(false);
+    }
+  }, [schoolYear, schoolYearStatus, student]);
 
   const loadBookList = useCallback(async () => {
     if (!student || !schoolYear) return;
@@ -1525,6 +1610,10 @@ export default function Home() {
   }, [loadSavedActivities, selectedDate]);
 
   useEffect(() => {
+    void loadAllSavedActivities();
+  }, [loadAllSavedActivities]);
+
+  useEffect(() => {
     if (student.trim()) window.localStorage.setItem(STUDENT_NAME_STORAGE_KEY, student.trim());
   }, [student]);
 
@@ -1550,6 +1639,10 @@ export default function Home() {
   useEffect(() => {
     void loadPortfolio();
   }, [loadPortfolio]);
+
+  useEffect(() => {
+    void loadLegalArchive();
+  }, [loadLegalArchive]);
 
   useEffect(() => {
     void loadBookList();
@@ -2147,6 +2240,58 @@ export default function Home() {
       void uploadProofFile(file);
     }
     event.target.value = "";
+  }
+
+  async function updateLegalArchive(action: "review" | "connect", bucketKey = activeLegalBucketKey, artifactId = selectedLegalArtifactId) {
+    setIsLegalArchiveBusy(true);
+    try {
+      const response = await fetch("/api/legal-archive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          action,
+          bucketKey,
+          artifactId
+        })
+      });
+      const data = await response.json().catch(() => ({ error: "Legal Archive update failed." }));
+      if (!response.ok) throw new Error(data.error ?? "Legal Archive update failed.");
+      setLegalArchiveMessage(action === "review" ? "Bucket marked reviewed for this review cycle." : "File connected to Legal Archive bucket.");
+      setSelectedLegalArtifactId("");
+      await loadLegalArchive();
+    } catch (error) {
+      setLegalArchiveMessage(error instanceof Error ? error.message : "Legal Archive update failed.");
+    } finally {
+      setIsLegalArchiveBusy(false);
+    }
+  }
+
+  async function uploadLegalArchiveFile(bucketKey: string, event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setIsLegalArchiveBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("recordStatus", schoolYearStatus);
+      formData.append("classification", "legal_archive");
+      formData.append("tagsJson", JSON.stringify({ schoolYear, legalArchiveBucket: bucketKey }));
+      const response = await fetch("/api/uploads", { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Legal Archive upload failed.");
+      await updateLegalArchive("connect", bucketKey, data.artifact.id);
+      await loadPortfolio();
+      setLegalArchiveMessage(`${file.name} uploaded and connected to Legal Archive.`);
+    } catch (error) {
+      setLegalArchiveMessage(error instanceof Error ? error.message : "Legal Archive upload failed.");
+    } finally {
+      setIsLegalArchiveBusy(false);
+    }
   }
 
   function parseWithAi() {
@@ -3105,6 +3250,42 @@ export default function Home() {
         });
         return { ...bucket, artifacts };
       }),
+    [portfolioArtifacts]
+  );
+  const educationDayTicker = useMemo(() => {
+    const startYear = schoolYearStartYear(schoolYear);
+    const traditionalStart = `${startYear}-08-15`;
+    const traditionalEnd = `${startYear + 1}-06-15`;
+    const summerStart = `${startYear + 1}-06-16`;
+    const summerEnd = `${startYear + 1}-08-14`;
+    const dayTotals = new Map<string, number>();
+
+    allSavedActivities
+      .filter((activity) => activity.parentApproved && activity.schoolYear?.label === schoolYear)
+      .forEach((activity) => {
+        const day = activity.date.slice(0, 10);
+        dayTotals.set(day, (dayTotals.get(day) ?? 0) + activity.actualMinutes);
+      });
+
+    const meaningfulDays = Array.from(dayTotals.entries()).filter(([, minutes]) => minutes >= 90).map(([day]) => day);
+    return {
+      traditionalStart,
+      traditionalEnd,
+      summerStart,
+      summerEnd,
+      traditionalCount: meaningfulDays.filter((day) => day >= traditionalStart && day <= traditionalEnd).length,
+      summerCount: meaningfulDays.filter((day) => day >= summerStart && day <= summerEnd).length
+    };
+  }, [allSavedActivities, schoolYear]);
+  const activeLegalBucket = legalArchive.find((bucket) => bucket.bucketKey === activeLegalBucketKey);
+  const legalArtifactOptions = useMemo(
+    () =>
+      portfolioArtifacts.filter(
+        (artifact) =>
+          artifact.mimeType.includes("pdf") ||
+          isReportArtifact(artifact) ||
+          artifact.classification === "legal_archive"
+      ),
     [portfolioArtifacts]
   );
   const annualReviewSubjectTimeSummary = useMemo(() => {
@@ -4919,6 +5100,106 @@ export default function Home() {
             </section>
             ) : null}
 
+            {activeTab === "legal" ? (
+            <section className="panel legal-archive-panel" id="legal-archive">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Legal Archive</p>
+                  <h2>Legal file cabinet</h2>
+                  <p className="panel-note">Twice-yearly review dates are June 15 and December 15. Upload files here or connect existing PDFs from Reports and Portfolio.</p>
+                </div>
+                <button className="secondary-button" type="button" onClick={() => { void loadLegalArchive(); void loadPortfolio(); void loadAllSavedActivities(); }} disabled={isLegalArchiveBusy}>
+                  {isLegalArchiveBusy ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
+              <p className="status-line" role="status">{legalArchiveMessage}</p>
+              <div className="education-ticker-grid" aria-label="Meaningful education day counters">
+                <div className="education-ticker-card">
+                  <span>Traditional school year</span>
+                  <strong>{educationDayTicker.traditionalCount}</strong>
+                  <small>{formatUsDate(educationDayTicker.traditionalStart)} to {formatUsDate(educationDayTicker.traditionalEnd)}</small>
+                </div>
+                <div className="education-ticker-card">
+                  <span>Summer extension</span>
+                  <strong>{educationDayTicker.summerCount}</strong>
+                  <small>{formatUsDate(educationDayTicker.summerStart)} to {formatUsDate(educationDayTicker.summerEnd)}</small>
+                </div>
+                <div className="education-ticker-card">
+                  <span>Meaningful day rule</span>
+                  <strong>90 min</strong>
+                  <small>Approved activity time on one date</small>
+                </div>
+              </div>
+              <div className="legal-bucket-grid">
+                {legalArchiveBuckets.map((bucket) => {
+                  const savedBucket = legalArchive.find((item) => item.bucketKey === bucket.key);
+                  const statusValue = legalBucketStatus(savedBucket?.reviewedAt ?? null, schoolYear);
+                  const reviewWindow = currentLegalReviewWindow(schoolYear);
+                  return (
+                    <button
+                      className={activeLegalBucketKey === bucket.key ? "legal-bucket-button is-active" : "legal-bucket-button"}
+                      key={bucket.key}
+                      type="button"
+                      onClick={() => setActiveLegalBucketKey(bucket.key)}
+                    >
+                      <span className={`review-dot is-${statusValue}`} />
+                      <strong>{bucket.label}</strong>
+                      <small>{savedBucket?.links.length ?? 0} file{savedBucket?.links.length === 1 ? "" : "s"} · due {formatUsDate(reviewWindow.dueDate)}</small>
+                    </button>
+                  );
+                })}
+              </div>
+              <section className="legal-bucket-detail">
+                <div className="section-head compact-head">
+                  <div>
+                    <p className="eyebrow">Selected bucket</p>
+                    <h2>{legalArchiveBuckets.find((bucket) => bucket.key === activeLegalBucketKey)?.label}</h2>
+                    <p className="panel-note">
+                      Status: {legalBucketStatus(activeLegalBucket?.reviewedAt ?? null, schoolYear).replace("-", " ")}
+                      {activeLegalBucket?.reviewedAt ? ` · last reviewed ${formatUsDate(activeLegalBucket.reviewedAt)}` : ""}
+                    </p>
+                  </div>
+                  <button className="primary-button" type="button" onClick={() => void updateLegalArchive("review")} disabled={isLegalArchiveBusy}>
+                    Mark reviewed
+                  </button>
+                </div>
+                <div className="legal-connect-grid">
+                  <label className="file-picker legal-upload-picker">
+                    <span>Upload file to this bucket</span>
+                    <input type="file" onChange={(event) => void uploadLegalArchiveFile(activeLegalBucketKey, event)} disabled={isLegalArchiveBusy} />
+                  </label>
+                  <label>
+                    <span>Connect existing PDF or file</span>
+                    <select value={selectedLegalArtifactId} onChange={(event) => setSelectedLegalArtifactId(event.target.value)}>
+                      <option value="">Choose existing file</option>
+                      {legalArtifactOptions.map((artifact) => (
+                        <option key={artifact.id} value={artifact.id}>{artifact.originalName}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="secondary-button" type="button" onClick={() => void updateLegalArchive("connect")} disabled={isLegalArchiveBusy || !selectedLegalArtifactId}>
+                    Connect file
+                  </button>
+                </div>
+                <details className="report-bucket-card" open>
+                  <summary className="report-bucket-summary">
+                    <span>Files in this bucket</span>
+                    <strong>{activeLegalBucket?.links.length ?? 0}</strong>
+                  </summary>
+                  <div className="report-list">
+                    {activeLegalBucket?.links.length ? activeLegalBucket.links.map((link) => (
+                      <article className="report-list-row portfolio-archive-row" key={link.id}>
+                        <span><strong>{link.artifact.originalName}</strong><br />{dateLabel(link.artifact.createdAt)} · {link.artifact.recordStatus}</span>
+                        <span>{formatBytes(link.artifact.sizeBytes)}</span>
+                        <a className="download-link" href={`/api/artifacts/${link.artifact.id}/download`} target="_blank" rel="noreferrer">Open</a>
+                      </article>
+                    )) : <p className="muted">No files connected to this bucket yet.</p>}
+                  </div>
+                </details>
+              </section>
+            </section>
+            ) : null}
+
             {activeTab === "portfolio" ? (
             <section className="panel portfolio-panel" id="portfolio">
               <div className="section-head">
@@ -5292,7 +5573,7 @@ export default function Home() {
             ) : null}
           </section>
 
-          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" && activeTab !== "reports" ? (
+          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" && activeTab !== "reports" && activeTab !== "legal" ? (
           <aside className="side-column">
             {activeTab === "quarter" || activeTab === "tools" ? (
             <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
@@ -5319,7 +5600,7 @@ export default function Home() {
             </section>
             ) : null}
 
-            {activeTab === "legal" || activeTab === "tools" ? (
+            {activeTab === "tools" ? (
             <section className="panel" id="legal-panel">
               <p className="eyebrow">Texas legal coverage</p>
               <h2>Legal coverage panel</h2>
