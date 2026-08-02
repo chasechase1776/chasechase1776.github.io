@@ -76,6 +76,12 @@ function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "portfolio-list";
 }
 
+function formatUsDate(value: string) {
+  const [year, month, day] = value.slice(0, 10).split("-");
+  if (!year || !month || !day) return value || "No date listed";
+  return `${month}/${day}/${year}`;
+}
+
 async function schoolYearFor(studentName: string, schoolYearLabel: string) {
   const student = await prisma.student.upsert({
     where: { name: studentName },
@@ -107,11 +113,11 @@ async function buildPdf(input: z.infer<typeof pdfSchema>, artifactsById: Map<str
     y = 735;
   };
 
-  const drawLine = (text: string, options: { size?: number; heading?: boolean; gap?: number } = {}) => {
+  const drawLine = (text: string, options: { size?: number; heading?: boolean; gap?: number; indent?: number } = {}) => {
     const size = options.size ?? 11;
     if (y < 70) newPage();
     page.drawText(pdfText(text || " "), {
-      x: margin,
+      x: margin + (options.indent ?? 0),
       y,
       size,
       font: options.heading ? bold : regular,
@@ -130,7 +136,7 @@ async function buildPdf(input: z.infer<typeof pdfSchema>, artifactsById: Map<str
 
   input.entries.forEach((entry, index) => {
     if (input.category === "books") {
-      const completed = entry.completedDate || "No completion date";
+      const completed = entry.completedDate ? formatUsDate(entry.completedDate) : "No completion date";
       drawLine(`${index + 1}. ${entry.title || "Untitled book"}`, { heading: true });
       drawLine(`Author: ${entry.author || "Not listed"}`);
       drawLine(`Date completed: ${completed}`);
@@ -139,28 +145,34 @@ async function buildPdf(input: z.infer<typeof pdfSchema>, artifactsById: Map<str
     }
 
     if (input.category === "valuableFailures") {
-      drawLine(`${index + 1}. ${entry.date || "No date listed"} - ${entry.resolved ? "Resolved" : "Open"}`, { heading: true });
-      drawLine("Failure or setback", { heading: true });
-      wrapText(entry.narrative || "No event narrative entered.", 92).forEach((line) => drawLine(line));
-      drawLine("Initial response", { heading: true });
-      wrapText(entry.response || "No response entered.", 92).forEach((line) => drawLine(line));
-      drawLine("Reflection", { heading: true });
-      wrapText(entry.reflection || "No reflection entered.", 92).forEach((line) => drawLine(line));
-      drawLine("Plan", { heading: true });
-      wrapText(entry.plan || "No plan entered.", 92).forEach((line) => drawLine(line));
+      drawLine(`${index + 1}. ${entry.title || "Untitled setback"}`, { heading: true, size: 13, gap: 18 });
+      drawLine(`Date: ${formatUsDate(entry.date)} - ${entry.resolved ? "Resolved" : "Open"}`, { indent: 18, gap: 20 });
+      drawLine("Failure or setback", { heading: true, indent: 18 });
+      wrapText(entry.narrative || "No event narrative entered.", 86).forEach((line) => drawLine(line, { indent: 32 }));
+      y -= 8;
+      drawLine("Initial response", { heading: true, indent: 18 });
+      wrapText(entry.response || "No response entered.", 86).forEach((line) => drawLine(line, { indent: 32 }));
+      y -= 8;
+      drawLine("Reflection", { heading: true, indent: 18 });
+      wrapText(entry.reflection || "No reflection entered.", 86).forEach((line) => drawLine(line, { indent: 32 }));
+      y -= 8;
+      drawLine("Plan", { heading: true, indent: 18 });
+      wrapText(entry.plan || "No plan entered.", 86).forEach((line) => drawLine(line, { indent: 32 }));
       if (entry.followUps.length) {
-        drawLine("Follow-ups", { heading: true });
+        y -= 8;
+        drawLine("Follow-ups", { heading: true, indent: 18 });
         entry.followUps.forEach((followUp, followUpIndex) => {
-          drawLine(`  ${followUpIndex + 1}. ${followUp.date || "No date listed"} - ${followUp.resolved ? "Resolved" : "Open"}`, { heading: true });
-          wrapText(`Reattempt event: ${followUp.reattemptEvent || "Not entered."}`, 86).forEach((line) => drawLine(line));
-          wrapText(`Learning outcome: ${followUp.learningOutcome || "Not entered."}`, 86).forEach((line) => drawLine(line));
+          drawLine(`${followUpIndex + 1}. ${formatUsDate(followUp.date)} - ${followUp.resolved ? "Resolved" : "Open"}`, { heading: true, indent: 32 });
+          wrapText(`Reattempt event: ${followUp.reattemptEvent || "Not entered."}`, 80).forEach((line) => drawLine(line, { indent: 46 }));
+          wrapText(`Learning outcome: ${followUp.learningOutcome || "Not entered."}`, 80).forEach((line) => drawLine(line, { indent: 46 }));
+          y -= 6;
         });
       }
-      y -= 10;
+      y -= 16;
       return;
     }
 
-    drawLine(`${index + 1}. ${entry.date || "No date listed"}`, { heading: true });
+    drawLine(`${index + 1}. ${formatUsDate(entry.date)}`, { heading: true });
     wrapText(entry.narrative || "No narrative entered.", 92).forEach((line) => drawLine(line));
     const proofNames = entry.artifactIds.map((id) => artifactsById.get(id)?.originalName).filter(Boolean);
     if (proofNames.length) {

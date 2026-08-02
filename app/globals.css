@@ -1832,7 +1832,8 @@ details.skill-group[open] summary {
   gap: 10px;
 }
 
-.valuable-failure-main-grid label:nth-child(2) {
+.valuable-failure-title-field,
+.valuable-failure-main-grid label:nth-child(3) {
   grid-column: span 2;
 }
 

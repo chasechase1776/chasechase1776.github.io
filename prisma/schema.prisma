@@ -155,6 +155,7 @@ model BookListEntry {
 model PortfolioListEntry {
   id           String     @id @default(cuid())
   category     String
+  title        String     @default("")
   narrative    String
   response     String     @default("")
   reflection   String     @default("")

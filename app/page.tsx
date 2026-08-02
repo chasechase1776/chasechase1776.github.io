@@ -65,6 +65,7 @@ type ValuableFailureFollowUp = {
 
 type PortfolioListEntry = {
   id: string;
+  title: string;
   narrative: string;
   date: string;
   artifactIds: string[];
@@ -843,6 +844,7 @@ function nextSchoolYearLabel(value: string) {
 function blankPortfolioListEntry(category: PortfolioListCategory): PortfolioListEntry {
   return {
     id: `${category}-${Date.now()}`,
+    title: "",
     narrative: "",
     date: todayIso(),
     artifactIds: [],
@@ -1718,6 +1720,7 @@ export default function Home() {
             .filter((entry) => entry.narrative.trim())
             .map((entry) => ({
               narrative: entry.narrative.trim(),
+              title: entry.title.trim(),
               date: entry.date,
               artifactIds: entry.artifactIds,
               response: entry.response,
@@ -1763,6 +1766,7 @@ export default function Home() {
             .filter((entry) => entry.narrative.trim())
             .map((entry) => ({
               narrative: entry.narrative.trim(),
+              title: entry.title.trim(),
               date: entry.date,
               artifactIds: entry.artifactIds,
               response: entry.response,
@@ -1836,6 +1840,7 @@ export default function Home() {
             category: "valuableFailures",
             entries: unresolvedFailures.map((entry) => ({
               narrative: entry.narrative,
+              title: entry.title,
               date: entry.date,
               artifactIds: entry.artifactIds,
               response: entry.response,
@@ -5079,6 +5084,10 @@ export default function Home() {
                     {valuableFailureDisplayEntries().length ? valuableFailureDisplayEntries().map((entry) => (
                       <article className={entry.resolved ? "valuable-failure-card is-resolved" : "valuable-failure-card"} key={entry.id}>
                         <div className="valuable-failure-main-grid">
+                          <label className="valuable-failure-title-field">
+                            <span>Event title</span>
+                            <input value={entry.title} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { title: event.target.value })} />
+                          </label>
                           <label>
                             <span>Date</span>
                             <input type="date" value={entry.date} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { date: event.target.value })} />

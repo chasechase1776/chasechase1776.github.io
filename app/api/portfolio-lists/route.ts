@@ -13,6 +13,7 @@ const followUpSchema = z.object({
 });
 
 const entrySchema = z.object({
+  title: z.string().default(""),
   narrative: z.string().min(1),
   date: z.string().default(""),
   artifactIds: z.array(z.string()).default([]),
@@ -58,6 +59,7 @@ function safeFollowUps(value: string) {
 
 function formatEntry(entry: {
   id: string;
+  title: string;
   narrative: string;
   response: string;
   reflection: string;
@@ -69,6 +71,7 @@ function formatEntry(entry: {
 }) {
   return {
     id: entry.id,
+    title: entry.title,
     narrative: entry.narrative,
     date: entry.occurredAt ? entry.occurredAt.toISOString().slice(0, 10) : "",
     artifactIds: safeArtifactIds(entry.artifactIdsJson),
@@ -147,6 +150,7 @@ export async function POST(request: Request) {
         prisma.portfolioListEntry.createMany({
           data: input.entries.map((entry, index) => ({
             category: input.category,
+            title: entry.title,
             narrative: entry.narrative,
             response: entry.response,
             reflection: entry.reflection,
