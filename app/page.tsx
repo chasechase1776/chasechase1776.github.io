@@ -848,18 +848,7 @@ function formatUsDate(value: string) {
 }
 
 function defaultNarrationForType(activityType: string) {
-  if (activityType === "Language Arts") {
-    return "Today we completed chapter 1 of Story Weaver Level 1 Book 1. He read aloud, practiced spelling words, edited capitalization, and gave an oral narration.";
-  }
-  if (activityType === "Math") {
-    return "Today we practiced math using a short problem set and talked through the steps out loud.";
-  }
-  if (activityType === "Finance") {
-    return "Today we practiced money concepts, compared choices, and talked about earning, saving, spending, and giving.";
-  }
-  if (activityType === "Science Journal") {
-    return "Today we observed, drew, labeled, and described changes or patterns in the science journal.";
-  }
+  if (["Language Arts", "Math", "Finance", "Science Journal"].includes(activityType)) return "";
   if (activityType === "Foreign Language") {
     return "Today we practiced Spanish vocabulary, listened for familiar words, and used short spoken phrases.";
   }
