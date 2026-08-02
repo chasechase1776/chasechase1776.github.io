@@ -102,6 +102,7 @@ export const skillTaxonomy: Record<string, string[]> = {
     "Citizenship",
     "Culture",
     "Life Skills",
+    "Leadership",
     "Communication",
     "Business",
     "Philosophy",

@@ -259,6 +259,7 @@ const activityTypes = [
 ];
 
 const subjectSplitActivityTypes = [
+  "Language Arts",
   "Unit Study",
   "Writing Project",
   "Project Cycle",
