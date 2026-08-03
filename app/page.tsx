@@ -913,6 +913,36 @@ function addDaysIso(value: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+function isWeekdayIso(value: string) {
+  const day = new Date(`${value.slice(0, 10)}T00:00:00.000Z`).getUTCDay();
+  return day >= 1 && day <= 5;
+}
+
+function weekdaysInRange(startIso: string, endIso: string) {
+  let count = 0;
+  const cursor = new Date(`${startIso.slice(0, 10)}T00:00:00.000Z`);
+  const end = new Date(`${endIso.slice(0, 10)}T00:00:00.000Z`);
+  while (cursor <= end) {
+    const day = cursor.getUTCDay();
+    if (day >= 1 && day <= 5) count += 1;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
+}
+
+function meaningfulDaysInRange(activities: SavedActivity[], startIso: string, endIso: string) {
+  const dayTotals = new Map<string, number>();
+  activities
+    .filter((activity) => activity.parentApproved)
+    .forEach((activity) => {
+      const day = activity.date.slice(0, 10);
+      if (day < startIso || day > endIso) return;
+      dayTotals.set(day, (dayTotals.get(day) ?? 0) + activity.actualMinutes);
+    });
+
+  return Array.from(dayTotals.entries()).filter(([day, minutes]) => isWeekdayIso(day) && minutes >= 180).length;
+}
+
 function nextSchoolYearLabel(value: string) {
   const match = value.match(/^(\d{4})-(\d{4})$/);
   if (!match) return `${value} next`;
@@ -1518,6 +1548,17 @@ export default function Home() {
     parsedCardsTotalMinutes,
     actualMinutes,
     1
+  );
+  const dailyApprovedMinutes = useMemo(
+    () => savedActivities.filter((activity) => activity.parentApproved).reduce((sum, activity) => sum + activity.actualMinutes, 0),
+    [savedActivities]
+  );
+  const dailyMeaningfulTicker = useMemo(
+    () => ({
+      meaningfulDays: dailyApprovedMinutes >= 180 && isWeekdayIso(selectedDate) ? 1 : 0,
+      weekdays: isWeekdayIso(selectedDate) ? 1 : 0
+    }),
+    [dailyApprovedMinutes, selectedDate]
   );
 
   const canParse = useMemo(
@@ -2274,6 +2315,7 @@ export default function Home() {
       const data = await response.json().catch(() => ({ error: "Activity save failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Activity save failed.");
       await loadSavedActivities(selectedDate);
+      await loadAllSavedActivities();
       await loadPortfolio();
       setDuplicateApprovedActivities([]);
       setStatus(
@@ -3350,6 +3392,48 @@ export default function Home() {
       }),
     [portfolioArtifacts]
   );
+  const schoolYearActivities = useMemo(
+    () => allSavedActivities.filter((activity) => activity.schoolYear?.label === schoolYear),
+    [allSavedActivities, schoolYear]
+  );
+  const weeklyReviewTicker = useMemo(() => {
+    const start = weeklyStartDate;
+    const end = addDaysIso(weeklyStartDate, 6);
+    const activities = schoolYearActivities.filter((activity) => activity.date.slice(0, 10) >= start && activity.date.slice(0, 10) <= end);
+    const totalMinutes = activities.filter((activity) => activity.parentApproved).reduce((sum, activity) => sum + activity.actualMinutes, 0);
+    return {
+      totalMinutes,
+      meaningfulDays: meaningfulDaysInRange(activities, start, end),
+      weekdays: weekdaysInRange(start, end)
+    };
+  }, [schoolYearActivities, weeklyStartDate]);
+  const quarterReviewTicker = useMemo(() => {
+    const start = quarterStartDate;
+    const end = addDaysIso(quarterStartDate, 62);
+    const activities = schoolYearActivities.filter((activity) => activity.date.slice(0, 10) >= start && activity.date.slice(0, 10) <= end);
+    const totalMinutes = activities.filter((activity) => activity.parentApproved).reduce((sum, activity) => sum + activity.actualMinutes, 0);
+    return {
+      totalMinutes,
+      meaningfulDays: meaningfulDaysInRange(activities, start, end),
+      weekdays: weekdaysInRange(start, end)
+    };
+  }, [quarterStartDate, schoolYearActivities]);
+  const annualReviewTicker = useMemo(() => {
+    const startYear = schoolYearStartYear(schoolYear);
+    const start = `${startYear}-08-15`;
+    const end = `${startYear + 1}-06-15`;
+    const activities = schoolYearActivities.filter((activity) => activity.date.slice(0, 10) >= start && activity.date.slice(0, 10) <= end);
+    const totalMinutes = activities.filter((activity) => activity.parentApproved).reduce((sum, activity) => sum + activity.actualMinutes, 0);
+    return {
+      start,
+      end,
+      totalMinutes,
+      meaningfulDays: meaningfulDaysInRange(activities, start, end),
+      weekdays: weekdaysInRange(start, end),
+      activities: activities.filter((activity) => activity.parentApproved).length,
+      daysWithRecords: new Set(activities.filter((activity) => activity.parentApproved).map((activity) => activity.date.slice(0, 10))).size
+    };
+  }, [schoolYear, schoolYearActivities]);
   const educationDayTicker = useMemo(() => {
     const startYear = schoolYearStartYear(schoolYear);
     const traditionalStart = `${startYear}-08-15`;
@@ -3678,59 +3762,11 @@ export default function Home() {
                   {showDetails ? "Hide full details" : "Show full details"}
                 </button>
               </div>
+              <div className="review-metrics daily-record-ticker" aria-label="Daily record time ticker">
+                <div className="review-metric"><span>Total time today</span><strong>{formatMinutes(dailyApprovedMinutes)}</strong></div>
+                <div className="review-metric"><span>Meaningful days</span><strong>{dailyMeaningfulTicker.meaningfulDays} of {dailyMeaningfulTicker.weekdays}</strong></div>
+              </div>
             </section>
-
-            <section className="panel action-panel">
-              <div className="section-head">
-                <div>
-                  <p className="eyebrow">Step 3</p>
-                  <h2>Save now or parse for review</h2>
-                  <p className="panel-note">Manual save works without AI. Parse only prepares draft cards; it does not save permanent records.</p>
-                </div>
-              </div>
-              <div className="primary-action-row">
-                <button className="secondary-button" type="button" onClick={saveDraft} disabled={isSaving || !narration.trim()}>Save as Draft</button>
-                <button className="secondary-button" type="button" onClick={clearEntry}>Clear</button>
-                <button className="primary-button" type="button" disabled={!canParse} onClick={parseWithAi}>Parse with AI</button>
-                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={requestApprovedSave}>Save Approved</button>
-              </div>
-              <p className="status-line" role="status">{status}</p>
-            </section>
-
-            {duplicateApprovedActivities.length ? (
-              <div className="modal-backdrop" role="presentation">
-                <section className="decision-modal" role="dialog" aria-modal="true" aria-labelledby="duplicate-save-title">
-                  <div>
-                    <p className="eyebrow">Duplicate approved record</p>
-                    <h2 id="duplicate-save-title">Save another {selectedType} record?</h2>
-                    <p>
-                      {formatUsDate(selectedDate)} already has {duplicateApprovedActivities.length} approved {selectedType} record{duplicateApprovedActivities.length === 1 ? "" : "s"} totaling{" "}
-                      {duplicateApprovedActivities.reduce((sum, activity) => sum + activity.actualMinutes, 0)} minutes.
-                    </p>
-                  </div>
-                  <div className="duplicate-record-list">
-                    {duplicateApprovedActivities.map((activity) => (
-                      <div key={activity.id}>
-                        <strong>{activity.title}</strong>
-                        <span>{activity.actualMinutes} min</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="modal-actions">
-                    <button className="secondary-button" type="button" onClick={() => setDuplicateApprovedActivities([])} disabled={isSaving}>Cancel</button>
-                    <button className="secondary-button" type="button" onClick={() => void saveActivity(true, [])} disabled={isSaving}>Add to Existing</button>
-                    <button
-                      className="primary-button"
-                      type="button"
-                      onClick={() => void saveActivity(true, duplicateApprovedActivities.map((activity) => activity.id))}
-                      disabled={isSaving}
-                    >
-                      Replace Existing
-                    </button>
-                  </div>
-                </section>
-              </div>
-            ) : null}
 
             {showDetails ? (
               <>
@@ -3820,6 +3856,58 @@ export default function Home() {
                   ) : null}
                 </section>
               </>
+            ) : null}
+
+            <section className="panel action-panel">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Step 3</p>
+                  <h2>Save now or parse for review</h2>
+                  <p className="panel-note">Manual save works without AI. Parse only prepares draft cards; it does not save permanent records.</p>
+                </div>
+              </div>
+              <div className="primary-action-row">
+                <button className="secondary-button" type="button" onClick={saveDraft} disabled={isSaving || !narration.trim()}>Save as Draft</button>
+                <button className="secondary-button" type="button" onClick={clearEntry}>Clear</button>
+                <button className="primary-button" type="button" disabled={!canParse} onClick={parseWithAi}>Parse with AI</button>
+                <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={requestApprovedSave}>Save Approved</button>
+              </div>
+              <p className="status-line" role="status">{status}</p>
+            </section>
+
+            {duplicateApprovedActivities.length ? (
+              <div className="modal-backdrop" role="presentation">
+                <section className="decision-modal" role="dialog" aria-modal="true" aria-labelledby="duplicate-save-title">
+                  <div>
+                    <p className="eyebrow">Duplicate approved record</p>
+                    <h2 id="duplicate-save-title">Save another {selectedType} record?</h2>
+                    <p>
+                      {formatUsDate(selectedDate)} already has {duplicateApprovedActivities.length} approved {selectedType} record{duplicateApprovedActivities.length === 1 ? "" : "s"} totaling{" "}
+                      {duplicateApprovedActivities.reduce((sum, activity) => sum + activity.actualMinutes, 0)} minutes.
+                    </p>
+                  </div>
+                  <div className="duplicate-record-list">
+                    {duplicateApprovedActivities.map((activity) => (
+                      <div key={activity.id}>
+                        <strong>{activity.title}</strong>
+                        <span>{activity.actualMinutes} min</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="modal-actions">
+                    <button className="secondary-button" type="button" onClick={() => setDuplicateApprovedActivities([])} disabled={isSaving}>Cancel</button>
+                    <button className="secondary-button" type="button" onClick={() => void saveActivity(true, [])} disabled={isSaving}>Add to Existing</button>
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() => void saveActivity(true, duplicateApprovedActivities.map((activity) => activity.id))}
+                      disabled={isSaving}
+                    >
+                      Replace Existing
+                    </button>
+                  </div>
+                </section>
+              </div>
             ) : null}
 
             {draftCards.length ? (
@@ -4116,7 +4204,8 @@ export default function Home() {
               </div>
 
               <div className="review-metrics" aria-label="Weekly review generated metrics">
-                <div className="review-metric"><span>Total approved time</span><strong>{formatMinutes(weeklyData.totalApprovedLearningTime)}</strong></div>
+                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(weeklyReviewTicker.totalMinutes || weeklyData.totalApprovedLearningTime)}</strong></div>
+                <div className="review-metric"><span>Meaningful days</span><strong>{weeklyReviewTicker.meaningfulDays} of {weeklyReviewTicker.weekdays}</strong></div>
                 <div className="review-metric"><span>Activities logged</span><strong>{weeklyData.activitiesLogged}</strong></div>
                 <div className="review-metric"><span>Days logged</span><strong>{weeklyData.daysLogged}</strong></div>
                 <div className="review-metric"><span>Artifacts saved</span><strong>{weeklyData.artifactsSaved}</strong></div>
@@ -4369,7 +4458,8 @@ export default function Home() {
               </section>
 
               <div className="review-metrics" aria-label="Quarter review generated metrics">
-                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(quarterData.totalApprovedLearningTime)}</strong></div>
+                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(quarterReviewTicker.totalMinutes || quarterData.totalApprovedLearningTime)}</strong></div>
+                <div className="review-metric"><span>Meaningful days</span><strong>{quarterReviewTicker.meaningfulDays} of {quarterReviewTicker.weekdays}</strong></div>
                 <div className="review-metric"><span>Days with records</span><strong>{quarterData.daysWithRecords}</strong></div>
                 <div className="review-metric"><span>Activities</span><strong>{quarterData.activitiesLogged}</strong></div>
                 <div className="review-metric"><span>Weekly reviews</span><strong>{quarterData.weeklyReviewsLogged}</strong></div>
@@ -4985,9 +5075,10 @@ export default function Home() {
               {activeAnnualReviewSection === "summary" ? (
               <section className="weekly-subsection is-open">
               <div className="review-metrics">
-                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(Object.values(annualReviewSubjectTimeSummary).reduce((sum, minutes) => sum + minutes, 0))}</strong></div>
-                <div className="review-metric"><span>Days with records</span><strong>{new Set(portfolioArtifacts.map((artifact) => artifact.activity?.date).filter(Boolean)).size}</strong></div>
-                <div className="review-metric"><span>Activities</span><strong>{new Set(portfolioArtifacts.map((artifact) => artifact.activity?.id).filter(Boolean)).size}</strong></div>
+                <div className="review-metric"><span>Total time</span><strong>{formatMinutes(annualReviewTicker.totalMinutes)}</strong></div>
+                <div className="review-metric"><span>Meaningful days</span><strong>{annualReviewTicker.meaningfulDays} of {annualReviewTicker.weekdays}</strong></div>
+                <div className="review-metric"><span>Days with records</span><strong>{annualReviewTicker.daysWithRecords}</strong></div>
+                <div className="review-metric"><span>Activities</span><strong>{annualReviewTicker.activities}</strong></div>
                 <div className="review-metric"><span>Quarter reviews</span><strong>{quarterStatus === "finalized" ? 1 : 0}</strong></div>
                 <div className="review-metric"><span>Portfolio items</span><strong>{portfolioArtifacts.length}</strong></div>
               </div>
