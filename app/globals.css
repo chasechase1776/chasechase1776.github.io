@@ -1299,22 +1299,22 @@ details.skill-group[open] summary {
   display: grid;
   gap: 5px;
   min-height: 82px;
-  border: 1px solid var(--soft-line);
+  border: 1px solid var(--blue);
   border-radius: 8px;
-  background: #fff;
-  color: var(--ink);
+  background: var(--blue-soft);
+  color: var(--blue);
   padding: 14px 16px;
   text-align: center;
   place-items: center;
 }
 
 .unit-week-button strong {
-  font-size: 1.22rem;
+  font-size: 1.34rem;
 }
 
 .unit-week-button span {
-  color: var(--muted);
-  font-size: 0.78rem;
+  color: var(--blue);
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
@@ -1327,6 +1327,11 @@ details.skill-group[open] summary {
 .unit-week-button.is-complete {
   border-color: var(--green);
   background: var(--green-soft);
+  color: var(--green);
+}
+
+.unit-week-button.is-complete span {
+  color: var(--green);
 }
 
 .unit-day-columns {
@@ -1403,7 +1408,7 @@ details.skill-group[open] summary {
 }
 
 .unit-day-activity-card {
-  border: 2px solid #9ec3d1;
+  border: 3px solid #17657d;
   border-radius: 8px;
   background: #f8fcfd;
   padding: 14px;
@@ -1460,6 +1465,18 @@ details.skill-group[open] summary {
 
 .activity-shopping-disclosure {
   background: #fbfcfc;
+}
+
+.compiled-shopping-list {
+  display: grid;
+  gap: 5px;
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.compiled-shopping-list li {
+  color: var(--ink);
+  line-height: 1.35;
 }
 
 .review-alert-card {

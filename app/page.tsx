@@ -3033,6 +3033,17 @@ export default function Home() {
     }));
   }
 
+  function startPlannerUnit() {
+    updatePlanner((planner) => ({ ...planner, startMonday: todayIso(), status: "active" }));
+    setUnitPlanRows((current) =>
+      current.map((row) => {
+        if (plannerKey(row.title) === activePlannerUnitKey) return { ...row, status: "active" };
+        if (row.status === "active") return { ...row, status: "upcoming" };
+        return row;
+      })
+    );
+  }
+
   function completePlannerUnit() {
     updatePlanner((planner) => ({ ...planner, status: "complete" }));
     setUnitPlanRows((current) => current.map((row) => (plannerKey(row.title) === activePlannerUnitKey ? { ...row, status: "complete" } : row)));
@@ -3817,7 +3828,7 @@ export default function Home() {
       ? null
       : activePlanner.weeks[Math.min(activePlannerWeekIndex, activePlanner.weeks.length - 1)] ?? activePlanner.weeks[0];
   const activePlannerDay = activePlannerWeek && expandedPlannerDayIndex !== null ? activePlannerWeek.days[expandedPlannerDayIndex] ?? null : null;
-  const activePlannerActivityShoppingList =
+  const activePlannerActivityShoppingItems =
     activePlannerWeek
       ? activePlannerWeek.days
           .flatMap((day) =>
@@ -3825,8 +3836,7 @@ export default function Home() {
               .flatMap((activity) => activity.shoppingList.split(/\r?\n/).map((item) => item.trim()).filter(Boolean))
               .filter(Boolean)
           )
-          .join("\n")
-      : "";
+      : [];
   const reportBucketRows = useMemo(
     () =>
       reportBuckets.map((bucket) => {
@@ -4077,6 +4087,9 @@ export default function Home() {
                   <button className="secondary-button" type="button" onClick={() => void saveAnnualPlan("active", "Unit Study Planner saved with Annual Plan data.")} disabled={isAnnualPlanSaving}>
                     Save Planner Draft
                   </button>
+                  <button className="secondary-button" type="button" onClick={startPlannerUnit}>
+                    Start Unit
+                  </button>
                   <button className="primary-button" type="button" onClick={completePlannerUnit}>
                     Complete Unit Study
                   </button>
@@ -4158,7 +4171,13 @@ export default function Home() {
                       <label><span>Weekly shopping list</span><textarea rows={2} value={activePlannerWeek.shoppingList} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "shoppingList", event.target.value)} /></label>
                       <div className="record-link">
                         <strong>From activity cards</strong>
-                        <span>{activePlannerActivityShoppingList || "Activity shopping-list items will appear here as you add them below."}</span>
+                        {activePlannerActivityShoppingItems.length ? (
+                          <ul className="compiled-shopping-list">
+                            {activePlannerActivityShoppingItems.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+                          </ul>
+                        ) : (
+                          <span>Activity shopping-list items will appear here as you add them below.</span>
+                        )}
                       </div>
                     </details>
                   </div>
