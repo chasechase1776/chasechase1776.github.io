@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createExportSnapshot } from "@/lib/snapshots";
 
 const categorySchema = z.enum(["achievements", "accolades", "projects", "fieldTrips", "valuableFailures"]);
 
@@ -172,6 +173,15 @@ export async function POST(request: Request) {
       where: { schoolYearId: schoolYear.id, category: input.category },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
     });
+    await createExportSnapshot({
+      schoolYearId: schoolYear.id,
+      type: "portfolio_list_save",
+      label: `${input.category} saved (${entries.length} entries)`,
+      payload: {
+        category: input.category,
+        entries: entries.map(formatEntry)
+      }
+    }).catch(() => null);
 
     return NextResponse.json({ entries: entries.map(formatEntry) });
   } catch (error) {

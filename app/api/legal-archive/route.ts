@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createExportSnapshot } from "@/lib/snapshots";
 
 const bucketKeys = [
   "homeschool-charter",
@@ -101,6 +102,17 @@ export async function POST(request: Request) {
         create: { bucketId: bucket.id, artifactId: input.artifactId }
       });
     }
+    await createExportSnapshot({
+      schoolYearId: schoolYear.id,
+      type: "legal_archive_update",
+      label: `Legal Archive ${input.action}: ${input.bucketKey}`,
+      payload: {
+        action: input.action,
+        bucketKey: input.bucketKey,
+        artifactId: input.artifactId ?? null,
+        updatedAt: new Date().toISOString()
+      }
+    }).catch(() => null);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

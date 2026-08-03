@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createExportSnapshot } from "@/lib/snapshots";
 
 const annualPlanSchema = z.object({
   studentName: z.string().min(1).default("Bennett C. Claypool"),
@@ -87,6 +88,17 @@ export async function POST(request: Request) {
         schoolYearId: schoolYear.id
       }
     });
+    await createExportSnapshot({
+      schoolYearId: schoolYear.id,
+      type: "annual_plan_save",
+      label: `Annual Plan ${input.status}`,
+      payload: {
+        planId: plan.id,
+        status: input.status,
+        recordStatus: input.recordStatus,
+        data: input.data
+      }
+    }).catch(() => null);
 
     return NextResponse.json({ plan, data: input.data });
   } catch (error) {

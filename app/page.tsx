@@ -64,6 +64,23 @@ type LegalArchiveBucket = {
   }[];
 };
 
+type ExportSnapshotRecord = {
+  id: string;
+  type: string;
+  label: string;
+  filePath: string;
+  createdAt: string;
+};
+
+type SnapshotCounts = {
+  activities: number;
+  artifacts: number;
+  weeklyReviews: number;
+  quarterReviews: number;
+  annualPlans: number;
+  legalBuckets: number;
+};
+
 type BookListEntry = {
   id: string;
   title: string;
@@ -1439,7 +1456,17 @@ export default function Home() {
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
   const [isAnnualPlanSaving, setIsAnnualPlanSaving] = useState(false);
   const [isAnnualPlanLoading, setIsAnnualPlanLoading] = useState(false);
-  const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Waiting for generated snapshots. Database records remain the source of truth.");
+  const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Records & Snapshots runs in the background. Open this archive only when you need to retrieve a checkpoint.");
+  const [snapshots, setSnapshots] = useState<ExportSnapshotRecord[]>([]);
+  const [snapshotCounts, setSnapshotCounts] = useState<SnapshotCounts>({
+    activities: 0,
+    artifacts: 0,
+    weeklyReviews: 0,
+    quarterReviews: 0,
+    annualPlans: 0,
+    legalBuckets: 0
+  });
+  const [isSnapshotBusy, setIsSnapshotBusy] = useState(false);
   const [annualPlanBigPicture, setAnnualPlanBigPicture] = useState<AnnualPlanBigPicture>(initialAnnualPlanBigPicture);
   const [curriculumSpines, setCurriculumSpines] = useState<CurriculumSpine[]>(initialCurriculumSpines);
   const [editingSpineId, setEditingSpineId] = useState<string | null>(null);
@@ -1565,6 +1592,58 @@ export default function Home() {
     }
   }, [schoolYear, schoolYearStatus, student]);
 
+  const loadSnapshots = useCallback(async () => {
+    if (!student || !schoolYear) return;
+    setIsSnapshotBusy(true);
+    try {
+      const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear, schoolYearStatus });
+      const response = await fetch(`/api/snapshots?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load snapshot archive.");
+      setSnapshots(data.snapshots ?? []);
+      setSnapshotCounts(data.counts ?? {
+        activities: 0,
+        artifacts: 0,
+        weeklyReviews: 0,
+        quarterReviews: 0,
+        annualPlans: 0,
+        legalBuckets: 0
+      });
+      setRecordsSnapshotMessage(data.snapshots?.length ? "Background snapshot archive loaded." : "No background snapshots yet. They will appear after saves and PDF exports.");
+    } catch (error) {
+      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Could not load snapshot archive.");
+    } finally {
+      setIsSnapshotBusy(false);
+    }
+  }, [schoolYear, schoolYearStatus, student]);
+
+  const createManualSnapshot = useCallback(async () => {
+    if (!student || !schoolYear) return;
+    setIsSnapshotBusy(true);
+    try {
+      const response = await fetch("/api/snapshots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          type: "manual_checkpoint",
+          label: "Manual school-year checkpoint",
+          note: `Manual checkpoint created from Records & Snapshots for ${selectedDate}.`
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Manual snapshot failed.");
+      setRecordsSnapshotMessage("Manual checkpoint saved to the snapshot archive.");
+      await loadSnapshots();
+    } catch (error) {
+      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Manual snapshot failed.");
+    } finally {
+      setIsSnapshotBusy(false);
+    }
+  }, [loadSnapshots, schoolYear, schoolYearStatus, selectedDate, student]);
+
   const loadBookList = useCallback(async () => {
     if (!student || !schoolYear) return;
     setIsBookListBusy(true);
@@ -1643,6 +1722,10 @@ export default function Home() {
   useEffect(() => {
     void loadLegalArchive();
   }, [loadLegalArchive]);
+
+  useEffect(() => {
+    void loadSnapshots();
+  }, [loadSnapshots]);
 
   useEffect(() => {
     void loadBookList();
@@ -5021,40 +5104,71 @@ export default function Home() {
               <div className="section-head">
                 <div>
                   <p className="eyebrow">Records & Snapshots</p>
-                  <h2>Unit retrieval and generated Markdown records</h2>
-                  <p className="panel-note">This is the right workspace for unit study retrieval and snapshot/export concepts. Database records remain the source of truth; Markdown is a readable archive layer.</p>
+                  <h2>Background backup archive</h2>
+                  <p className="panel-note">This workspace runs mostly in the background. It keeps downloadable checkpoints after important saves and report exports, while the database remains the source of truth.</p>
                 </div>
                 <div className="primary-action-row">
-                  <button className="secondary-button" type="button" onClick={() => setRecordsSnapshotMessage(`Manual snapshot regeneration: regenerated Markdown snapshots from current database records for ${selectedDate}.`)}>Regenerate snapshots</button>
-                  <button className="secondary-button" type="button">Open records folder</button>
+                  <button className="secondary-button" type="button" onClick={() => void loadSnapshots()} disabled={isSnapshotBusy}>
+                    {isSnapshotBusy ? "Loading..." : "Refresh Archive"}
+                  </button>
+                  <button className="secondary-button" type="button" onClick={() => void createManualSnapshot()} disabled={isSnapshotBusy}>
+                    Create Snapshot Now
+                  </button>
                 </div>
               </div>
               <p className="status-line" role="status">{recordsSnapshotMessage}</p>
-              <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Unit study retrieval</p><h2>{unitStudy} unit study</h2></div><div className="mini-tabs"><button className="utility-button" type="button">Activities</button><button className="utility-button" type="button">Artifacts</button><button className="utility-button" type="button">Skills covered</button><button className="utility-button" type="button">Subject time</button><button className="utility-button" type="button">Export options</button></div></div>
-                <p className="panel-note">A unit page should retrieve activities, artifacts, time records, skills, legal tags, notes, reports, weekly summaries, and a unit summary from saved activity records.</p>
-              </section>
-              <div className="records-grid">
-                <div className="record-link"><strong>Daily record</strong><span>records/{schoolYear}/days/2026-09-08.md</span></div>
-                <div className="record-link"><strong>Weekly summary</strong><span>records/{schoolYear}/weeks/2026-W37.md</span></div>
-                <div className="record-link"><strong>Quarter review</strong><span>records/{schoolYear}/quarter-reviews/quarter-1.md + PDF</span></div>
-                <div className="record-link"><strong>Annual review</strong><span>records/{schoolYear}/annual-review.md + PDFs</span></div>
-                <div className="record-link"><strong>Unit activities</strong><span>records/{schoolYear}/units/{unitStudy.toLowerCase().replace(/\s+/g, "-")}/activities.md</span></div>
-                <div className="record-link"><strong>Legal summary</strong><span>records/{schoolYear}/legal-summary.md</span></div>
+              <div className="snapshot-count-grid">
+                <div className="education-ticker-card"><span>Activities</span><strong>{snapshotCounts.activities}</strong><small>Saved records</small></div>
+                <div className="education-ticker-card"><span>Artifacts</span><strong>{snapshotCounts.artifacts}</strong><small>Files and generated PDFs</small></div>
+                <div className="education-ticker-card"><span>Weekly Reviews</span><strong>{snapshotCounts.weeklyReviews}</strong><small>Drafts and finalized reviews</small></div>
+                <div className="education-ticker-card"><span>Quarter Reviews</span><strong>{snapshotCounts.quarterReviews}</strong><small>Quarter records</small></div>
+                <div className="education-ticker-card"><span>Annual Plans</span><strong>{snapshotCounts.annualPlans}</strong><small>Saved plan records</small></div>
+                <div className="education-ticker-card"><span>Legal Buckets</span><strong>{snapshotCounts.legalBuckets}</strong><small>File-cabinet sections</small></div>
               </div>
-              <pre>{`/records
-  /${schoolYear}
-    annual-plan.md
-    annual-review.md
-    legal-summary.md
-    /days
-    /weeks
-    /quarter-reviews
-    /units
-      /${unitStudy.toLowerCase().replace(/\s+/g, "-")}
-        activities.md
-        skills-covered.md
-        artifacts.md`}</pre>
+              <details className="snapshot-automation-card" open>
+                <summary>
+                  <div>
+                    <p className="eyebrow">Automatic Backup Rules</p>
+                    <h3>Runs after important saves</h3>
+                  </div>
+                  <span className="tag">Passive</span>
+                </summary>
+                <div className="records-grid">
+                  <div className="record-link"><strong>Daily records</strong><span>Creates a checkpoint after approved activity saves.</span></div>
+                  <div className="record-link"><strong>Reviews</strong><span>Creates checkpoints after weekly and quarter review saves.</span></div>
+                  <div className="record-link"><strong>Reports</strong><span>Links generated daily, weekly, quarter, annual plan, and portfolio PDFs.</span></div>
+                  <div className="record-link"><strong>Portfolio lists</strong><span>Backs up book list, awards, projects, field trips, and setbacks.</span></div>
+                  <div className="record-link"><strong>Legal Archive</strong><span>Records review and file connection actions.</span></div>
+                  <div className="record-link"><strong>Manual fallback</strong><span>Use Create Snapshot Now before a major clean-up or close-out.</span></div>
+                </div>
+              </details>
+              <details className="snapshot-automation-card" open>
+                <summary>
+                  <div>
+                    <p className="eyebrow">Snapshot Archive</p>
+                    <h3>{snapshots.length} recent checkpoint{snapshots.length === 1 ? "" : "s"}</h3>
+                  </div>
+                  <span className="tag">Newest first</span>
+                </summary>
+                <div className="report-list">
+                  {snapshots.length ? snapshots.map((snapshot) => (
+                    <article className="report-list-row" key={snapshot.id}>
+                      <div>
+                        <strong>{snapshot.label}</strong>
+                        <span>{snapshot.type.replace(/_/g, " ")} - {dateLabel(snapshot.createdAt)}</span>
+                        {!snapshot.filePath.startsWith("/api/") ? <span>{snapshot.filePath}</span> : null}
+                      </div>
+                      {snapshot.filePath.startsWith("/api/") ? (
+                        <a className="secondary-button" href={snapshot.filePath} target="_blank" rel="noreferrer">Open</a>
+                      ) : (
+                        <span className="tag">Markdown path</span>
+                      )}
+                    </article>
+                  )) : (
+                    <p className="muted">No checkpoints yet. Save a record, generate a PDF, or use Create Snapshot Now.</p>
+                  )}
+                </div>
+              </details>
             </section>
             ) : null}
 

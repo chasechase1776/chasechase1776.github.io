@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createArtifactSnapshot } from "@/lib/snapshots";
 import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -423,6 +424,12 @@ export async function POST(request: Request) {
         })
       }
     });
+    await createArtifactSnapshot({
+      schoolYearId: review.schoolYearId,
+      type: "weekly_review_pdf",
+      label: `Weekly Review PDF ${weekKey(review.weekStartDate)}`,
+      artifactId: artifact.id
+    }).catch(() => null);
 
     return NextResponse.json({ artifact });
   } catch (error) {

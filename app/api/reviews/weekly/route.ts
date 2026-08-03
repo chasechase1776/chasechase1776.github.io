@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createExportSnapshot } from "@/lib/snapshots";
 
 const weeklySaveSchema = z.object({
   reviewId: z.string().min(1),
@@ -24,6 +25,18 @@ export async function POST(request: Request) {
         recordStatus: parsed.data.recordStatus
       }
     });
+    await createExportSnapshot({
+      schoolYearId: review.schoolYearId,
+      type: "weekly_review_save",
+      label: `Weekly Review ${review.weekStartDate.toISOString().slice(0, 10)} ${parsed.data.status}`,
+      payload: {
+        reviewId: review.id,
+        weekStartDate: review.weekStartDate.toISOString().slice(0, 10),
+        weekEndDate: review.weekEndDate.toISOString().slice(0, 10),
+        status: parsed.data.status,
+        data: parsed.data.data
+      }
+    }).catch(() => null);
 
     return NextResponse.json({ review, data: parsed.data.data });
   } catch (error) {

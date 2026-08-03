@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createExportSnapshot } from "@/lib/snapshots";
 
 const bookEntrySchema = z.object({
   title: z.string().min(1),
@@ -96,6 +97,14 @@ export async function POST(request: Request) {
       where: { schoolYearId: schoolYear.id },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }]
     });
+    await createExportSnapshot({
+      schoolYearId: schoolYear.id,
+      type: "book_list_save",
+      label: `Book List saved (${entries.length} entries)`,
+      payload: {
+        entries: entries.map(formatBookEntry)
+      }
+    }).catch(() => null);
 
     return NextResponse.json({ entries: entries.map(formatBookEntry) });
   } catch (error) {

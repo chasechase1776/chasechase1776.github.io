@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { createArtifactSnapshot } from "@/lib/snapshots";
 import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -333,6 +334,12 @@ export async function POST(request: Request) {
         })
       }
     });
+    await createArtifactSnapshot({
+      schoolYearId: activities[0].schoolYearId,
+      type: "daily_summary_pdf",
+      label: `Daily Summary PDF ${input.date.slice(0, 10)}`,
+      artifactId: artifact.id
+    }).catch(() => null);
 
     return NextResponse.json({ artifact });
   } catch (error) {

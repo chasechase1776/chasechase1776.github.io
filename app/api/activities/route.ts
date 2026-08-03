@@ -3,6 +3,7 @@ import { z } from "zod";
 import { defaultRecordStatus, inferSubject, suggestLegalTags } from "@/lib/domain";
 import { regenerateMarkdownForActivity } from "@/lib/markdown";
 import { prisma } from "@/lib/prisma";
+import { createExportSnapshot } from "@/lib/snapshots";
 
 const activitySchema = z.object({
   title: z.string().min(1),
@@ -179,6 +180,18 @@ export async function POST(request: Request) {
     }
 
     const markdownFiles = input.parentApproved ? await regenerateMarkdownForActivity(activity.id).catch(() => []) : [];
+    if (input.parentApproved) {
+      await createExportSnapshot({
+        schoolYearId: schoolYear.id,
+        type: "activity_save",
+        label: `Approved activity: ${activity.title}`,
+        payload: {
+          activity,
+          markdownFiles,
+          savedAt: new Date().toISOString()
+        }
+      }).catch(() => null);
+    }
 
     return NextResponse.json({ activity, markdownFiles }, { status: 201 });
   } catch (error) {

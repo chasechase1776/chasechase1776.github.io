@@ -1905,6 +1905,12 @@ details.skill-group[open] summary {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.snapshot-count-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .education-ticker-card {
   display: grid;
   gap: 4px;
@@ -1922,6 +1928,36 @@ details.skill-group[open] summary {
 
 .education-ticker-card strong {
   font-size: 1.65rem;
+}
+
+.snapshot-automation-card {
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.snapshot-automation-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+  padding: 14px;
+}
+
+.snapshot-automation-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.snapshot-automation-card[open] summary {
+  border-bottom: 1px solid var(--soft-line);
+}
+
+.snapshot-automation-card .records-grid,
+.snapshot-automation-card .report-list {
+  padding: 14px;
 }
 
 .legal-bucket-grid {
@@ -2254,6 +2290,7 @@ details.skill-group[open] summary {
     .valuable-failure-main-grid,
     .valuable-failure-actions,
     .valuable-follow-up-row,
+    .snapshot-count-grid,
     .education-ticker-grid,
     .legal-bucket-grid,
     .legal-connect-grid,

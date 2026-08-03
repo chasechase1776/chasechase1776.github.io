@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { createArtifactSnapshot } from "@/lib/snapshots";
 import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -337,6 +338,26 @@ export async function POST(request: Request) {
         })
       }
     });
+    const student = await prisma.student.upsert({
+      where: { name: parsed.data.student },
+      update: {},
+      create: { name: parsed.data.student }
+    });
+    const schoolYear = await prisma.schoolYear.upsert({
+      where: { studentId_label: { studentId: student.id, label: parsed.data.schoolYear } },
+      update: { status: parsed.data.status },
+      create: {
+        label: parsed.data.schoolYear,
+        status: parsed.data.status,
+        studentId: student.id
+      }
+    });
+    await createArtifactSnapshot({
+      schoolYearId: schoolYear.id,
+      type: "annual_plan_pdf",
+      label: `Annual Plan PDF ${parsed.data.schoolYear}`,
+      artifactId: artifact.id
+    }).catch(() => null);
 
     return NextResponse.json({ artifact });
   } catch (error) {
