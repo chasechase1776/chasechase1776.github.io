@@ -1636,8 +1636,8 @@ export default function Home() {
     Object.fromEntries(initialUnitPlanRows.map((row) => [plannerKey(row.title), makeUnitPlanner(row)]))
   );
   const [activePlannerUnitKey, setActivePlannerUnitKey] = useState(plannerKey(initialUnitPlanRows[0].title));
-  const [activePlannerWeekIndex, setActivePlannerWeekIndex] = useState(0);
-  const [expandedPlannerDayIndex, setExpandedPlannerDayIndex] = useState<number | null>(0);
+  const [activePlannerWeekIndex, setActivePlannerWeekIndex] = useState<number | null>(null);
+  const [expandedPlannerDayIndex, setExpandedPlannerDayIndex] = useState<number | null>(null);
   const [journalPortfolioCards, setJournalPortfolioCards] = useState<JournalPortfolioCard[]>(initialJournalPortfolioCards);
   const [editingJournalPortfolioId, setEditingJournalPortfolioId] = useState<string | null>(null);
   const [annualRecordCards, setAnnualRecordCards] = useState<AnnualRecordCard[]>(initialAnnualRecordCards);
@@ -1949,9 +1949,10 @@ export default function Home() {
   }
 
   function buttonState(type: string) {
-    if (type === selectedType) return "selected";
     const matching = savedActivities.filter((activity) => activity.activityType === type);
     const hasApproved = matching.some((activity) => activity.parentApproved);
+    if (type === selectedType && hasApproved) return "selected-completed";
+    if (type === selectedType) return "selected";
     if (hasApproved) return "completed";
     const hasNeedsReview = matching.some((activity) => !activity.parentApproved || activity.reviewStatus === "needs_review");
     if (hasNeedsReview) return "needs-review";
@@ -2892,21 +2893,6 @@ export default function Home() {
     }));
   }
 
-  function setPlannerWeekCount(value: number) {
-    const nextCount = Math.max(1, value || 1);
-    updatePlanner((planner) => {
-      const weeks = [...planner.weeks];
-      while (weeks.length < nextCount) weeks.push(makePlannerWeek(weeks.length, planner.unitTitle));
-      return {
-        ...planner,
-        weeksExpected: nextCount,
-        weeks: weeks.slice(0, nextCount)
-      };
-    });
-    setActivePlannerWeekIndex((current) => Math.min(current, nextCount - 1));
-    setExpandedPlannerDayIndex(null);
-  }
-
   function updatePlannerActivity(weekIndex: number, dayIndex: number, activityId: string, patch: Partial<UnitPlannerActivity>) {
     updatePlanner((planner) => ({
       ...planner,
@@ -2965,6 +2951,29 @@ export default function Home() {
                   ? { ...day, complete: false, activities: day.activities.filter((activity) => activity.id !== activityId) }
                   : day
               )
+            }
+          : week
+      )
+    }));
+  }
+
+  function reorderPlannerActivity(weekIndex: number, dayIndex: number, activityId: string, direction: -1 | 1) {
+    updatePlanner((planner) => ({
+      ...planner,
+      weeks: planner.weeks.map((week, weekPosition) =>
+        weekPosition === weekIndex
+          ? {
+              ...week,
+              complete: false,
+              days: week.days.map((day, dayPosition) => {
+                if (dayPosition !== dayIndex) return day;
+                const currentIndex = day.activities.findIndex((activity) => activity.id === activityId);
+                const nextIndex = currentIndex + direction;
+                if (currentIndex < 0 || nextIndex < 0 || nextIndex >= day.activities.length) return day;
+                const activities = [...day.activities];
+                [activities[currentIndex], activities[nextIndex]] = [activities[nextIndex], activities[currentIndex]];
+                return { ...day, complete: false, activities };
+              })
             }
           : week
       )
@@ -3080,6 +3089,94 @@ export default function Home() {
       isCurrent = false;
     };
   }, [applyAnnualPlanData, schoolYear, student]);
+
+  useEffect(() => {
+    setUnitStudyPlanners((current) => {
+      let changed = false;
+      const next = { ...current };
+      unitPlanRows.forEach((row) => {
+        const key = plannerKey(row.title);
+        const currentPlanner = next[key] ?? makeUnitPlanner(row);
+        const weeksExpected = Math.max(1, Number.parseInt(row.weeks, 10) || currentPlanner.weeksExpected || 4);
+        const weeks = [...currentPlanner.weeks];
+        while (weeks.length < weeksExpected) weeks.push(makePlannerWeek(weeks.length, row.title));
+        const syncedPlanner: UnitStudyPlanner = {
+          ...currentPlanner,
+          unitTitle: row.title,
+          weeksExpected,
+          unitQuestion: row.guidingQuestion || currentPlanner.unitQuestion,
+          weeks: weeks.slice(0, weeksExpected)
+        };
+        const didChange =
+          !next[key] ||
+          currentPlanner.unitTitle !== syncedPlanner.unitTitle ||
+          currentPlanner.weeksExpected !== syncedPlanner.weeksExpected ||
+          currentPlanner.unitQuestion !== syncedPlanner.unitQuestion ||
+          currentPlanner.weeks.length !== syncedPlanner.weeks.length;
+        if (didChange) {
+          changed = true;
+          next[key] = syncedPlanner;
+        }
+      });
+      return changed ? next : current;
+    });
+  }, [unitPlanRows]);
+
+  useEffect(() => {
+    if (activeTab !== "unit-planner" || isAnnualPlanLoading) return;
+    const timer = window.setTimeout(async () => {
+      setIsAnnualPlanSaving(true);
+      try {
+        const response = await fetch("/api/annual-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentName: student,
+            schoolYearLabel: schoolYear,
+            schoolYearStatus,
+            officialHomeschoolStartDate: officialStartDate,
+            status: annualPlanStatus,
+            recordStatus: schoolYearStatus,
+            data: {
+              annualPlanBigPicture,
+              curriculumSpines,
+              weeklyRhythmDays,
+              unitPlanRows,
+              unitStudyPlanners,
+              journalPortfolioCards,
+              annualRecordCards,
+              finalizedAnnualPlanSections
+            }
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Unit Study Planner autosave failed.");
+        setAnnualPlanStatus(data.plan.status);
+        setAnnualPlanMessage("Unit Study Planner autosaved with Annual Plan data.");
+      } catch (error) {
+        setAnnualPlanMessage(error instanceof Error ? error.message : "Unit Study Planner autosave failed.");
+      } finally {
+        setIsAnnualPlanSaving(false);
+      }
+    }, 1400);
+    return () => window.clearTimeout(timer);
+  }, [
+    activeTab,
+    annualPlanBigPicture,
+    annualPlanStatus,
+    annualRecordCards,
+    curriculumSpines,
+    finalizedAnnualPlanSections,
+    isAnnualPlanLoading,
+    journalPortfolioCards,
+    officialStartDate,
+    schoolYear,
+    schoolYearStatus,
+    student,
+    unitPlanRows,
+    unitStudyPlanners,
+    weeklyRhythmDays
+  ]);
 
   function updateAnnualPlanBigPicture<K extends keyof AnnualPlanBigPicture>(key: K, value: AnnualPlanBigPicture[K]) {
     setAnnualPlanBigPicture((current) => ({ ...current, [key]: value }));
@@ -3715,15 +3812,21 @@ export default function Home() {
   const activeWorkspace = workspaceTabs.find((tab) => tab.key === activeTab) ?? workspaceTabs[0];
   const activePlannerRow = unitPlanRows.find((row) => plannerKey(row.title) === activePlannerUnitKey) ?? unitPlanRows[0];
   const activePlanner = unitStudyPlanners[activePlannerUnitKey] ?? makeUnitPlanner(activePlannerRow);
-  const activePlannerWeek = activePlanner.weeks[Math.min(activePlannerWeekIndex, activePlanner.weeks.length - 1)] ?? activePlanner.weeks[0];
-  const activePlannerDay = expandedPlannerDayIndex === null ? null : activePlannerWeek?.days[expandedPlannerDayIndex] ?? null;
-  const activePlannerActivityShoppingList = activePlannerWeek?.days
-    .flatMap((day, dayIndex) =>
-      day.activities
-        .map((activity) => activity.shoppingList.trim() ? `Day ${dayIndex + 1} - ${activity.title}: ${activity.shoppingList.trim()}` : "")
-        .filter(Boolean)
-    )
-    .join("\n");
+  const activePlannerWeek =
+    activePlannerWeekIndex === null
+      ? null
+      : activePlanner.weeks[Math.min(activePlannerWeekIndex, activePlanner.weeks.length - 1)] ?? activePlanner.weeks[0];
+  const activePlannerDay = activePlannerWeek && expandedPlannerDayIndex !== null ? activePlannerWeek.days[expandedPlannerDayIndex] ?? null : null;
+  const activePlannerActivityShoppingList =
+    activePlannerWeek
+      ? activePlannerWeek.days
+          .flatMap((day, dayIndex) =>
+            day.activities
+              .map((activity) => activity.shoppingList.trim() ? `Day ${dayIndex + 1} - ${activity.title}: ${activity.shoppingList.trim()}` : "")
+              .filter(Boolean)
+          )
+          .join("\n")
+      : "";
   const reportBucketRows = useMemo(
     () =>
       reportBuckets.map((bucket) => {
@@ -3906,7 +4009,7 @@ export default function Home() {
                   onClick={() => {
                     setActiveTab("unit-planner");
                     setActivePlannerUnitKey(plannerKey(row.title));
-                    setActivePlannerWeekIndex(0);
+                    setActivePlannerWeekIndex(null);
                     setExpandedPlannerDayIndex(null);
                     setUnitStudy(row.title);
                   }}
@@ -3980,19 +4083,31 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="quick-entry-grid unit-planner-unit-fields">
-                <label><span>Expected weeks</span><input type="number" min="1" value={activePlanner.weeksExpected} onChange={(event) => setPlannerWeekCount(Number(event.target.value))} /></label>
+              <div className="unit-planner-landing-summary">
+                <div>
+                  <span>Expected weeks</span>
+                  <strong>{activePlanner.weeksExpected}</strong>
+                </div>
+                <div>
+                  <span>Unit study question</span>
+                  <strong>{activePlanner.unitQuestion || activePlannerRow.guidingQuestion || "Set in Annual Plan Section 4"}</strong>
+                </div>
                 <label><span>Optional start Monday</span><input type="date" value={activePlanner.startMonday} onChange={(event) => updatePlannerField("startMonday", event.target.value)} /></label>
                 <label><span>Unit status</span>
                   <select value={activePlanner.status} onChange={(event) => updatePlannerField("status", event.target.value as UnitPlanStatus)}>
                     {unitStatusOptions.map((statusOption) => <option key={statusOption}>{statusOption}</option>)}
                   </select>
                 </label>
-                <label><span>Unit Question</span><input value={activePlanner.unitQuestion} onChange={(event) => updatePlannerField("unitQuestion", event.target.value)} /></label>
-                <label><span>Unit Writing Topics</span><textarea value={activePlanner.unitWritingTopics} onChange={(event) => updatePlannerField("unitWritingTopics", event.target.value)} /></label>
-                <label><span>Unit Presentation Topics</span><textarea value={activePlanner.unitPresentationTopics} onChange={(event) => updatePlannerField("unitPresentationTopics", event.target.value)} /></label>
-                <label><span>Unit Project</span><textarea value={activePlanner.unitProject} onChange={(event) => updatePlannerField("unitProject", event.target.value)} /></label>
               </div>
+
+              <details className="guidance-disclosure">
+                <summary>Guidance</summary>
+                <div className="guidance-field-stack">
+                  <label><span>Unit Writing Topics</span><input value={activePlanner.unitWritingTopics} onChange={(event) => updatePlannerField("unitWritingTopics", event.target.value)} /></label>
+                  <label><span>Unit Presentation Topics</span><input value={activePlanner.unitPresentationTopics} onChange={(event) => updatePlannerField("unitPresentationTopics", event.target.value)} /></label>
+                  <label><span>Unit Project</span><input value={activePlanner.unitProject} onChange={(event) => updatePlannerField("unitProject", event.target.value)} /></label>
+                </div>
+              </details>
 
               <div className="unit-week-tabs" aria-label="Unit study weeks">
                 {activePlanner.weeks.map((week, weekIndex) => (
@@ -4015,25 +4130,34 @@ export default function Home() {
                 <section className="unit-week-panel">
                   <div className="section-head">
                     <div>
-                      <p className="eyebrow">Week {activePlannerWeekIndex + 1}</p>
+                      <p className="eyebrow">Week {(activePlannerWeekIndex ?? 0) + 1}</p>
                       <h2>Weekly plan</h2>
                     </div>
-                    <button className="primary-button" type="button" onClick={() => completePlannerWeek(activePlannerWeekIndex)}>
+                    <button className="primary-button" type="button" onClick={() => completePlannerWeek(activePlannerWeekIndex ?? 0)}>
                       Complete Week
                     </button>
                   </div>
 
-                  <div className="quick-entry-grid unit-planner-week-fields">
-                    <label><span>Weekly question</span><input value={activePlannerWeek.weeklyQuestion} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex, "weeklyQuestion", event.target.value)} /></label>
-                    <label><span>Weekly writing topics</span><textarea value={activePlannerWeek.writingTopics} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex, "writingTopics", event.target.value)} /></label>
-                    <label><span>Weekly presentation</span><textarea value={activePlannerWeek.presentationTopic} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex, "presentationTopic", event.target.value)} /></label>
-                    <label><span>Weekly project</span><textarea value={activePlannerWeek.project} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex, "project", event.target.value)} /></label>
-                    <label><span>Resources</span><textarea value={activePlannerWeek.resources} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex, "resources", event.target.value)} /></label>
-                    <label><span>Shopping list</span><textarea value={activePlannerWeek.shoppingList} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex, "shoppingList", event.target.value)} /></label>
-                  </div>
-                  <div className="record-link">
-                    <strong>Compiled activity shopping list</strong>
-                    <span>{activePlannerActivityShoppingList || "Activity shopping-list items will appear here as you add them below."}</span>
+                  <details className="guidance-disclosure">
+                    <summary>Guidance</summary>
+                    <div className="guidance-field-stack">
+                      <label><span>Weekly question</span><input value={activePlannerWeek.weeklyQuestion} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "weeklyQuestion", event.target.value)} /></label>
+                      <label><span>Weekly writing topics</span><input value={activePlannerWeek.writingTopics} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "writingTopics", event.target.value)} /></label>
+                      <label><span>Weekly presentation</span><input value={activePlannerWeek.presentationTopic} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "presentationTopic", event.target.value)} /></label>
+                      <label><span>Weekly project</span><input value={activePlannerWeek.project} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "project", event.target.value)} /></label>
+                    </div>
+                  </details>
+
+                  <div className="weekly-planner-reference-grid">
+                    <label><span>Resources</span><textarea rows={2} value={activePlannerWeek.resources} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "resources", event.target.value)} /></label>
+                    <details className="shopping-disclosure">
+                      <summary>Shopping List</summary>
+                      <label><span>Weekly shopping list</span><textarea rows={2} value={activePlannerWeek.shoppingList} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "shoppingList", event.target.value)} /></label>
+                      <div className="record-link">
+                        <strong>From activity cards</strong>
+                        <span>{activePlannerActivityShoppingList || "Activity shopping-list items will appear here as you add them below."}</span>
+                      </div>
+                    </details>
                   </div>
 
                   <div className="unit-day-columns">
@@ -4055,42 +4179,60 @@ export default function Home() {
                     ))}
                   </div>
                 </section>
-              ) : null}
+              ) : (
+                <div className="planner-empty-state">
+                  <strong>Pick a week to open its plan.</strong>
+                  <span>The weekly guide and day columns stay hidden until you choose a week.</span>
+                </div>
+              )}
 
               {activePlannerDay !== null && expandedPlannerDayIndex !== null ? (
                 <section className="unit-day-detail-panel">
                   <div className="section-head">
                     <div>
-                      <p className="eyebrow">Week {activePlannerWeekIndex + 1} Day {expandedPlannerDayIndex + 1}</p>
+                      <p className="eyebrow">Week {(activePlannerWeekIndex ?? 0) + 1} Day {expandedPlannerDayIndex + 1}</p>
                       <h2>Expanded teaching guide</h2>
                     </div>
                     <div className="primary-action-row">
-                      <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex)}>Add Activity</button>
-                      <button className="secondary-button" type="button" onClick={() => completePlannerDay(activePlannerWeekIndex, expandedPlannerDayIndex)} disabled={!activePlannerDay.activities.every(activityIsDone)}>Complete Day</button>
-                      <button className="primary-button" type="button" onClick={() => sendPlannerDayToDailyRecords(activePlannerWeekIndex, expandedPlannerDayIndex)}>Send Day to Daily Records</button>
+                      <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex)}>Add Activity</button>
+                      <button className="secondary-button" type="button" onClick={() => completePlannerDay(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex)} disabled={!activePlannerDay.activities.every(activityIsDone)}>Complete Day</button>
+                      <button className="primary-button" type="button" onClick={() => sendPlannerDayToDailyRecords(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex)}>Send Day to Daily Records</button>
                     </div>
                   </div>
 
                   <div className="unit-day-activity-list">
-                    {activePlannerDay.activities.map((activity) => (
+                    {activePlannerDay.activities.map((activity, activityIndex) => (
                       <article className="unit-day-activity-card" key={activity.id}>
-                        <div className="activity-card-header">
-                          <label><span>Activity title</span><input value={activity.title} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { title: event.target.value })} /></label>
-                          <label><span>Expected time</span><input type="number" min="0" value={activity.expectedMinutes} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { expectedMinutes: Number(event.target.value) })} /></label>
-                          <label><span>Start time</span><input type="time" value={activity.startTime} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { startTime: event.target.value })} /></label>
-                          <label><span>Finish time</span><input type="time" value={activity.finishTime} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { finishTime: event.target.value })} /></label>
+                        <div className="unit-activity-title-row">
+                          <label><span>Activity title</span><input value={activity.title} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { title: event.target.value })} /></label>
+                          <span className={`tag ${activity.status === "complete" ? "good" : activity.status === "planned" ? "planned" : ""}`}>{activity.status}</span>
                         </div>
-                        <div className="unit-day-activity-fields">
-                          <label><span>Activity description</span><textarea value={activity.description} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { description: event.target.value })} /></label>
-                          <label><span>Prep notes</span><textarea value={activity.prepNotes} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { prepNotes: event.target.value })} /></label>
-                          <label><span>Shopping list</span><textarea value={activity.shoppingList} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { shoppingList: event.target.value })} /></label>
+                        <div className="unit-activity-body">
+                          <div className="activity-card-header">
+                            <label><span>Expected time</span><input type="number" min="0" value={activity.expectedMinutes} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { expectedMinutes: Number(event.target.value) })} /></label>
+                            <label><span>Start time</span><input type="time" value={activity.startTime} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { startTime: event.target.value })} /></label>
+                            <label><span>Finish time</span><input type="time" value={activity.finishTime} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { finishTime: event.target.value })} /></label>
+                          </div>
+                          <div className="unit-day-activity-fields">
+                            <label><span>Activity description</span><textarea rows={2} value={activity.description} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { description: event.target.value })} /></label>
+                            <label><span>Prep notes</span><textarea rows={2} value={activity.prepNotes} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { prepNotes: event.target.value })} /></label>
+                          </div>
+                          <details className="shopping-disclosure activity-shopping-disclosure">
+                            <summary>Shopping List</summary>
+                            <label><span>Activity shopping list</span><textarea rows={2} value={activity.shoppingList} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { shoppingList: event.target.value })} /></label>
+                          </details>
                         </div>
                         <div className="primary-action-row">
-                          <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { status: "complete" })}>Complete Activity</button>
-                          <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id, { status: "skipped" })}>Skip</button>
-                          <button className="secondary-button" type="button" onClick={() => movePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id)}>Move</button>
-                          <button className="text-button" type="button" onClick={() => deletePlannerActivity(activePlannerWeekIndex, expandedPlannerDayIndex, activity.id)}>Delete</button>
-                          <span className={`tag ${activity.status === "complete" ? "good" : activity.status === "planned" ? "planned" : ""}`}>{activity.status}</span>
+                          {activity.status === "complete" ? (
+                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { status: "planned" })}>Undo Complete</button>
+                          ) : (
+                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { status: "complete" })}>Complete Activity</button>
+                          )}
+                          <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { status: "skipped" })}>Skip</button>
+                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, -1)} disabled={activityIndex === 0}>Move Up</button>
+                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, 1)} disabled={activityIndex === activePlannerDay.activities.length - 1}>Move Down</button>
+                          <button className="secondary-button" type="button" onClick={() => movePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id)}>Move Day</button>
+                          <button className="text-button" type="button" onClick={() => deletePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id)}>Delete</button>
                         </div>
                       </article>
                     ))}
@@ -4131,7 +4273,7 @@ export default function Home() {
                 {activityTypes.map((type) => (
                   <button className={`activity-type-button is-${buttonState(type)}`} type="button" key={type} onClick={() => selectActivityType(type)}>
                     <strong>{type}</strong>
-                    <span>{buttonState(type) === "completed" ? "completed" : buttonState(type) === "needs-review" ? "needs review" : buttonState(type) === "selected" ? "selected" : "not logged"}</span>
+                    <span>{buttonState(type) === "completed" || buttonState(type) === "selected-completed" ? "completed" : buttonState(type) === "needs-review" ? "needs review" : buttonState(type) === "selected" ? "selected" : "not logged"}</span>
                   </button>
                 ))}
               </div>

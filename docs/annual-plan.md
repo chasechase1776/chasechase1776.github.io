@@ -124,6 +124,19 @@ Default 2nd grade units:
 - Transportation.
 - Outdoor Adventure and Stewardship.
 
+## Unit Study Planner
+
+The Unit Studies links in the left menu open a planning workspace for the selected unit. This workspace is for planning only; planned items do not count toward daily records, reports, meaningful education days, or legal archive totals until a planner day is sent to Daily Records and saved there.
+
+Planner behavior:
+
+- Expected weeks and the unit study question come from Annual Plan Section 4.
+- Unit-level writing topics, presentation topics, and project notes live inside the Guidance button.
+- A weekly plan stays hidden until a week button is selected.
+- Weekly guidance, resources, and shopping lists are editable. Activity shopping-list entries also roll up into the weekly shopping-list view.
+- Planner changes autosave with Annual Plan data while the Unit Study Planner is open.
+- Sending a day to Daily Records creates an editable Unit Study daily draft. The Unit Study activity button turns green only after the Daily Record card is approved and saved.
+
 ## Year-End Capstone
 
 Fields:

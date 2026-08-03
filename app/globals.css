@@ -411,6 +411,12 @@ textarea {
   background: var(--green-soft);
 }
 
+.activity-type-button.is-selected-completed {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
 .activity-type-button.is-needs-review {
   border-color: #e8c97d;
   background: var(--gold-soft);
@@ -1184,34 +1190,123 @@ details.skill-group[open] summary {
 .unit-day-activity-list,
 .unit-day-activity-card {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
-.unit-planner-unit-fields {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.unit-planner-landing-summary {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.42fr) minmax(240px, 1fr) minmax(150px, 0.5fr) minmax(140px, 0.42fr);
+  gap: 10px;
+  align-items: end;
 }
 
-.unit-planner-unit-fields label:nth-child(n + 5),
-.unit-planner-week-fields label {
-  grid-column: span 2;
+.unit-planner-landing-summary > div {
+  display: grid;
+  gap: 5px;
+  min-height: 54px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fbfcfc;
+  padding: 9px 10px;
+}
+
+.unit-planner-landing-summary span,
+.guidance-field-stack span,
+.weekly-planner-reference-grid span,
+.shopping-disclosure span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.unit-planner-landing-summary strong {
+  color: var(--ink);
+  font-size: 0.94rem;
+  line-height: 1.25;
+}
+
+.guidance-disclosure,
+.shopping-disclosure,
+.planner-empty-state {
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.guidance-disclosure summary,
+.shopping-disclosure summary {
+  cursor: pointer;
+  color: var(--accent-strong);
+  font-weight: 900;
+  padding: 10px 12px;
+}
+
+.guidance-field-stack {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.guidance-field-stack label {
+  display: grid;
+  gap: 5px;
+}
+
+.weekly-planner-reference-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.weekly-planner-reference-grid > label {
+  display: grid;
+  gap: 6px;
+}
+
+.shopping-disclosure label {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+
+.shopping-disclosure .record-link {
+  margin: 0 12px 12px;
+}
+
+.planner-empty-state {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  padding: 18px;
+  text-align: center;
+}
+
+.planner-empty-state span {
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .unit-week-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 190px));
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0 4px;
 }
 
 .unit-week-button {
   display: grid;
-  gap: 3px;
-  min-width: 116px;
+  gap: 5px;
+  min-height: 82px;
   border: 1px solid var(--soft-line);
   border-radius: 8px;
   background: #fff;
   color: var(--ink);
-  padding: 10px 12px;
-  text-align: left;
+  padding: 14px 16px;
+  text-align: center;
+  place-items: center;
 }
 
 .unit-week-button span {
@@ -1241,7 +1336,7 @@ details.skill-group[open] summary {
   display: grid;
   gap: 10px;
   align-content: start;
-  min-height: 250px;
+  min-height: 190px;
   border: 1px solid var(--soft-line);
   border-radius: 8px;
   background: #fff;
@@ -1305,22 +1400,62 @@ details.skill-group[open] summary {
 }
 
 .unit-day-activity-card {
-  border: 1px solid var(--soft-line);
+  border: 1px solid #b7d3df;
   border-radius: 8px;
-  background: #fff;
+  background: #f8fcfd;
   padding: 12px;
+}
+
+.unit-activity-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  border-bottom: 1px solid var(--soft-line);
+  padding-bottom: 10px;
+}
+
+.unit-activity-title-row label {
+  display: grid;
+  gap: 4px;
+}
+
+.unit-activity-title-row input {
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent-strong);
+  font-size: 1.05rem;
+  font-weight: 900;
+  padding-left: 0;
+}
+
+.unit-activity-body {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
 }
 
 .activity-card-header {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(110px, 0.45fr));
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
   gap: 10px;
 }
 
 .unit-day-activity-fields {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 10px;
+}
+
+.unit-day-activity-fields textarea,
+.weekly-planner-reference-grid textarea,
+.activity-shopping-disclosure textarea {
+  field-sizing: content;
+  min-height: 64px;
+}
+
+.activity-shopping-disclosure {
+  background: #fbfcfc;
 }
 
 .review-alert-card {
@@ -2445,8 +2580,8 @@ details.skill-group[open] summary {
     .education-ticker-grid,
     .legal-bucket-grid,
     .legal-connect-grid,
-    .unit-planner-unit-fields,
-    .unit-planner-week-fields,
+    .unit-planner-landing-summary,
+    .weekly-planner-reference-grid,
     .unit-day-columns,
     .activity-card-header,
     .unit-day-activity-fields,
@@ -2468,9 +2603,8 @@ details.skill-group[open] summary {
     grid-template-columns: 1fr;
   }
 
-  .unit-planner-unit-fields label:nth-child(n + 5),
-  .unit-planner-week-fields label {
-    grid-column: auto;
+  .unit-activity-body {
+    padding-left: 0;
   }
 
   .file-list-header {
