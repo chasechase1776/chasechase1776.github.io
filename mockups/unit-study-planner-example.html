@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Unit Study Planner Mockup</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #182226;
+        --muted: #607079;
+        --line: #d5dde1;
+        --soft-line: #e9eef1;
+        --panel: #ffffff;
+        --surface: #f5f7f3;
+        --accent: #236a72;
+        --accent-strong: #174b52;
+        --accent-soft: #e4f0ef;
+        --green: #2f6f4f;
+        --green-soft: #e6f2ea;
+        --blue: #315f8c;
+        --blue-soft: #e8eff8;
+        --gold: #8a5a12;
+        --gold-soft: #fff3d8;
+        --red: #8b3a2b;
+        --red-soft: #f8e8e4;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--ink);
+        background: var(--surface);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .mockup-shell {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow: auto;
+        border-right: 1px solid var(--line);
+        background: #fbfcfb;
+        padding: 18px;
+      }
+
+      .brand {
+        border-bottom: 1px solid var(--soft-line);
+        padding-bottom: 16px;
+        margin-bottom: 14px;
+      }
+
+      .eyebrow {
+        margin: 0 0 5px;
+        color: var(--accent-strong);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 0;
+        font-size: 1.55rem;
+        line-height: 1.12;
+      }
+
+      h2 {
+        margin-bottom: 0;
+        font-size: 1.18rem;
+        line-height: 1.2;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 1rem;
+      }
+
+      .tree-title {
+        margin: 14px 0 8px;
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .tree,
+      .tree ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tree li {
+        margin: 2px 0;
+      }
+
+      .tree button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 34px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--ink);
+        padding: 7px 8px;
+        text-align: left;
+      }
+
+      .tree button:hover,
+      .tree .is-active {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-weight: 700;
+      }
+
+      .content {
+        padding: 22px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .panel-note,
+      .muted {
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.35;
+      }
+
+      .primary-action-row,
+      .week-tabs,
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .primary-button,
+      .secondary-button,
+      .text-button {
+        min-height: 34px;
+        border-radius: 6px;
+        padding: 7px 12px;
+        font-weight: 700;
+      }
+
+      .primary-button {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .secondary-button {
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .text-button {
+        border: 0;
+        background: transparent;
+        color: var(--accent-strong);
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--muted);
+        padding: 5px 9px;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .tag.good {
+        border-color: #b8d8c4;
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .tag.planned {
+        border-color: #b9cde0;
+        background: var(--blue-soft);
+        color: var(--blue);
+      }
+
+      .quick-entry-grid,
+      .day-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      label {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #bdcbd2;
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        padding: 8px;
+      }
+
+      textarea {
+        min-height: 82px;
+        resize: vertical;
+      }
+
+      .week-tabs button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 10px 12px;
+        text-align: left;
+      }
+
+      .week-tabs button.is-active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .planner-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      details.day-card {
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fff;
+        overflow: hidden;
+      }
+
+      details.day-card[open] {
+        border-color: var(--accent);
+      }
+
+      .day-card summary {
+        display: grid;
+        grid-template-columns: minmax(130px, 0.35fr) minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        list-style: none;
+        padding: 12px;
+      }
+
+      .day-card summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .activity-title-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .activity-title-pill {
+        border: 1px solid #c7d9df;
+        border-radius: 999px;
+        background: #f6fbfc;
+        color: var(--accent-strong);
+        padding: 5px 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+
+      .day-detail {
+        display: grid;
+        gap: 12px;
+        border-top: 1px solid var(--soft-line);
+        padding: 14px;
+      }
+
+      .activity-row {
+        display: grid;
+        gap: 12px;
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 12px;
+      }
+
+      .activity-row-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .activity-row-fields {
+        display: grid;
+        grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) repeat(3, minmax(90px, 0.55fr));
+        gap: 10px;
+      }
+
+      .materials-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .deferred-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        border: 1px solid var(--soft-line);
+        border-radius: 8px;
+        background: #fbfcfc;
+        padding: 10px;
+      }
+
+      @media (max-width: 900px) {
+        .mockup-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          height: auto;
+        }
+
+        .quick-entry-grid,
+        .day-detail-grid,
+        .activity-row-fields,
+        .materials-grid,
+        .day-card summary {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="mockup-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <p class="eyebrow">Private Homeschool Records</p>
+          <h1>Bennett Homeschool</h1>
+        </div>
+        <nav>
+          <p class="tree-title">School Years</p>
+          <ul class="tree">
+            <li>
+              <button class="is-active" type="button">2026-2027 <span>Trial / Active</span></button>
+              <ul>
+                <li><button type="button">Annual Plan</button></li>
+                <li><button type="button">Daily Records</button></li>
+                <li><button class="is-active" type="button">Unit Studies</button></li>
+                <li><button type="button">Weekly Reviews</button></li>
+                <li><button type="button">Reports</button></li>
+              </ul>
+            </li>
+          </ul>
+          <p class="tree-title">Unit Studies</p>
+          <ul class="tree">
+            <li><button class="is-active" type="button">Off the Land <span>planned</span></button></li>
+            <li><button type="button">Construction <span>active</span></button></li>
+            <li><button type="button">Weather & Water <span>planned</span></button></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <section class="content">
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Unit Study Planner</p>
+              <h2>Off the Land</h2>
+              <p class="panel-note">Planning only. These activities do not count toward records, reports, meaningful days, or legal archive until converted to Daily Records.</p>
+            </div>
+            <div class="primary-action-row">
+              <button class="secondary-button" type="button">Save Planner Draft</button>
+              <button class="primary-button" type="button">Promote to Active Unit</button>
+            </div>
+          </div>
+          <div class="quick-entry-grid">
+            <label>
+              Expected weeks
+              <input type="number" min="1" value="4">
+            </label>
+            <label>
+              Optional start Monday
+              <input type="date" value="">
+            </label>
+            <label>
+              Unit status
+              <select>
+                <option>planned</option>
+                <option>active</option>
+                <option>paused</option>
+                <option>complete</option>
+                <option>skipped</option>
+              </select>
+            </label>
+            <label>
+              Weekly rhythm template
+              <select>
+                <option>Flexible scaffold</option>
+                <option>Harbor & Sprout style</option>
+                <option>Parent-designed</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Project Calendar</p>
+              <h2>Four-week planning view</h2>
+            </div>
+            <div class="week-tabs" aria-label="Select week">
+              <button class="is-active" type="button" data-week="1"><strong>Week 1</strong><br><span class="muted">Orientation</span></button>
+              <button type="button" data-week="2"><strong>Week 2</strong><br><span class="muted">Field work</span></button>
+              <button type="button" data-week="3"><strong>Week 3</strong><br><span class="muted">Build and compare</span></button>
+              <button type="button" data-week="4"><strong>Week 4</strong><br><span class="muted">Final Friday</span></button>
+            </div>
+          </div>
+
+          <div class="planner-grid" id="planner-grid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Deferred Item Bucket</p>
+              <h2>Keep ideas without scheduling them yet</h2>
+            </div>
+            <button class="secondary-button" type="button">Add deferred item</button>
+          </div>
+          <div class="deferred-row">
+            <div>
+              <strong>Compare old farming tools to modern garden tools</strong>
+              <p class="muted">Possible hands-on activity if we have extra time.</p>
+            </div>
+            <button class="secondary-button" type="button">Move to selected day</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const weeks = {
+        1: [
+          ["Monday", ["Unit launch narration", "Read first chapter", "Start field notebook"]],
+          ["Tuesday", ["Map food sources", "Kitchen measurement activity"]],
+          ["Wednesday", ["Garden observation", "Sketch useful plants"]],
+          ["Thursday", ["Compare store vs homemade costs", "Vocabulary review"]],
+          ["Friday", ["Weekly narration", "Portfolio photo pick"]]
+        ],
+        2: [
+          ["Monday", ["Read about soil", "Start compost model"]],
+          ["Tuesday", ["Measure garden bed", "Math: area and perimeter"]],
+          ["Wednesday", ["Field trip: local farm market"]],
+          ["Thursday", ["Write market comparison", "Finance: unit pricing"]],
+          ["Friday", ["Final Friday mini-share"]]
+        ],
+        3: [
+          ["Monday", ["Food preservation reading", "Narration card"]],
+          ["Tuesday", ["Hands-on: drying herbs", "Science observation"]],
+          ["Wednesday", ["History of trade routes", "Map work"]],
+          ["Thursday", ["Recipe cost breakdown", "Spelling edit"]],
+          ["Friday", ["Build comparison chart"]]
+        ],
+        4: [
+          ["Monday", ["Capstone planning", "Choose final product"]],
+          ["Tuesday", ["Draft survival garden guide"]],
+          ["Wednesday", ["Add drawings and labels"]],
+          ["Thursday", ["Practice presentation"]],
+          ["Friday", ["Final Friday capstone", "Convert highlights to Daily Records"]]
+        ]
+      };
+
+      const grid = document.querySelector("#planner-grid");
+      const weekButtons = document.querySelectorAll("[data-week]");
+
+      function renderWeek(weekNumber) {
+        grid.innerHTML = "";
+        weeks[weekNumber].forEach(([day, activities], index) => {
+          const detail = document.createElement("details");
+          detail.className = "day-card";
+          if (index === 0) detail.open = true;
+          detail.innerHTML = `
+            <summary>
+              <div>
+                <p class="eyebrow">Week ${weekNumber}</p>
+                <h3>${day}</h3>
+              </div>
+              <div class="activity-title-stack">
+                ${activities.map((activity) => `<span class="activity-title-pill">${activity}</span>`).join("")}
+              </div>
+              <span class="tag planned">${activities.length} planned</span>
+            </summary>
+            <div class="day-detail">
+              <div class="primary-action-row">
+                <button class="secondary-button" type="button">Add activity</button>
+                <button class="secondary-button" type="button">Copy day</button>
+                <button class="secondary-button" type="button">Move day</button>
+                <button class="primary-button" type="button">Convert selected to Daily Record</button>
+              </div>
+              ${activities.map((activity, activityIndex) => `
+                <article class="activity-row">
+                  <div class="activity-row-head">
+                    <strong>${activity}</strong>
+                    <div class="tag-row">
+                      <span class="tag planned">planned</span>
+                      <button class="text-button" type="button">Move</button>
+                      <button class="text-button" type="button">Delete</button>
+                    </div>
+                  </div>
+                  <div class="activity-row-fields">
+                    <label>Activity title<input value="${activity}"></label>
+                    <label>Activity type<select><option>Unit Study</option><option>Language Arts</option><option>Math</option><option>Science Journal</option><option>Field Trip</option></select></label>
+                    <label>Expected minutes<input type="number" value="${activityIndex === 0 ? 30 : 20}"></label>
+                    <label>Start time<input type="time"></label>
+                    <label>Finish time<input type="time"></label>
+                  </div>
+                  <div class="materials-grid">
+                    <label>Resources/materials<textarea>${activityIndex === 0 ? "Unit book, notebook, pencils" : ""}</textarea></label>
+                    <label>Notes<textarea>Planning note only. Does not become a record until converted.</textarea></label>
+                  </div>
+                </article>
+              `).join("")}
+            </div>
+          `;
+          grid.appendChild(detail);
+        });
+      }
+
+      weekButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          weekButtons.forEach((item) => item.classList.remove("is-active"));
+          button.classList.add("is-active");
+          renderWeek(button.dataset.week);
+        });
+      });
+
+      renderWeek("1");
+    </script>
+  </body>
+</html>
