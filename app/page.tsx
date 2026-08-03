@@ -3820,9 +3820,9 @@ export default function Home() {
   const activePlannerActivityShoppingList =
     activePlannerWeek
       ? activePlannerWeek.days
-          .flatMap((day, dayIndex) =>
+          .flatMap((day) =>
             day.activities
-              .map((activity) => activity.shoppingList.trim() ? `Day ${dayIndex + 1} - ${activity.title}: ${activity.shoppingList.trim()}` : "")
+              .flatMap((activity) => activity.shoppingList.split(/\r?\n/).map((item) => item.trim()).filter(Boolean))
               .filter(Boolean)
           )
           .join("\n")
@@ -4149,7 +4149,10 @@ export default function Home() {
                   </details>
 
                   <div className="weekly-planner-reference-grid">
-                    <label><span>Resources</span><textarea rows={2} value={activePlannerWeek.resources} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "resources", event.target.value)} /></label>
+                    <details className="resource-disclosure">
+                      <summary>Resources</summary>
+                      <label><span>Weekly resources</span><textarea rows={2} value={activePlannerWeek.resources} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "resources", event.target.value)} /></label>
+                    </details>
                     <details className="shopping-disclosure">
                       <summary>Shopping List</summary>
                       <label><span>Weekly shopping list</span><textarea rows={2} value={activePlannerWeek.shoppingList} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "shoppingList", event.target.value)} /></label>

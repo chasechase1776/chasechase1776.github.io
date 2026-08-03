@@ -1213,6 +1213,7 @@ details.skill-group[open] summary {
 .unit-planner-landing-summary span,
 .guidance-field-stack span,
 .weekly-planner-reference-grid span,
+.resource-disclosure span,
 .shopping-disclosure span {
   color: var(--muted);
   font-size: 0.74rem;
@@ -1227,6 +1228,7 @@ details.skill-group[open] summary {
 }
 
 .guidance-disclosure,
+.resource-disclosure,
 .shopping-disclosure,
 .planner-empty-state {
   border: 1px solid var(--soft-line);
@@ -1235,6 +1237,7 @@ details.skill-group[open] summary {
 }
 
 .guidance-disclosure summary,
+.resource-disclosure summary,
 .shopping-disclosure summary {
   cursor: pointer;
   color: var(--accent-strong);
@@ -1260,11 +1263,7 @@ details.skill-group[open] summary {
   align-items: start;
 }
 
-.weekly-planner-reference-grid > label {
-  display: grid;
-  gap: 6px;
-}
-
+.resource-disclosure label,
 .shopping-disclosure label {
   display: grid;
   gap: 6px;
@@ -1307,6 +1306,10 @@ details.skill-group[open] summary {
   padding: 14px 16px;
   text-align: center;
   place-items: center;
+}
+
+.unit-week-button strong {
+  font-size: 1.22rem;
 }
 
 .unit-week-button span {
@@ -1400,10 +1403,10 @@ details.skill-group[open] summary {
 }
 
 .unit-day-activity-card {
-  border: 1px solid #b7d3df;
+  border: 2px solid #9ec3d1;
   border-radius: 8px;
   background: #f8fcfd;
-  padding: 12px;
+  padding: 14px;
 }
 
 .unit-activity-title-row {
@@ -1424,7 +1427,7 @@ details.skill-group[open] summary {
   border-color: transparent;
   background: transparent;
   color: var(--accent-strong);
-  font-size: 1.05rem;
+  font-size: 1.24rem;
   font-weight: 900;
   padding-left: 0;
 }
@@ -1449,6 +1452,7 @@ details.skill-group[open] summary {
 
 .unit-day-activity-fields textarea,
 .weekly-planner-reference-grid textarea,
+.resource-disclosure textarea,
 .activity-shopping-disclosure textarea {
   field-sizing: content;
   min-height: 64px;
