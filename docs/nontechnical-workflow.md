@@ -83,6 +83,14 @@ Portfolio closeout behavior:
 - Compile running portfolio lists to PDF before resetting them.
 - Ask whether unresolved `Valuable Setbacks & Failure` items should carry forward to the next school year.
 - Keep unresolved Valuable Setbacks & Failure items open at the top of the list and move resolved threads to the bottom.
+- Create a full school-year backup before any closeout step clears running lists.
+
+Records & Snapshots backup behavior:
+
+- Everyday saves should create small automatic snapshot checkpoints.
+- Records & Snapshots should create one full school-year backup bundle per calendar month when the archive loads.
+- The manual full backup button should create a complete school-year JSON bundle with saved record data and file references.
+- Full backups should run before risky cleanup, delete, reset, or closeout workflows.
 
 Before large feature work, Codex should confirm:
 

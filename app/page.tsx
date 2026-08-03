@@ -1617,7 +1617,7 @@ export default function Home() {
     }
   }, [schoolYear, schoolYearStatus, student]);
 
-  const createManualSnapshot = useCallback(async () => {
+  const createFullBackupSnapshot = useCallback(async (label = "Manual Full School-Year Backup") => {
     if (!student || !schoolYear) return;
     setIsSnapshotBusy(true);
     try {
@@ -1628,17 +1628,17 @@ export default function Home() {
           studentName: student,
           schoolYearLabel: schoolYear,
           schoolYearStatus,
-          type: "manual_checkpoint",
-          label: "Manual school-year checkpoint",
-          note: `Manual checkpoint created from Records & Snapshots for ${selectedDate}.`
+          type: "full_school_year_backup",
+          label,
+          note: `Full school-year backup created from Records & Snapshots for ${selectedDate}.`
         })
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Manual snapshot failed.");
-      setRecordsSnapshotMessage("Manual checkpoint saved to the snapshot archive.");
+      if (!response.ok) throw new Error(data.error ?? "Full backup failed.");
+      setRecordsSnapshotMessage("Full school-year backup saved to the snapshot archive.");
       await loadSnapshots();
     } catch (error) {
-      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Manual snapshot failed.");
+      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Full backup failed.");
     } finally {
       setIsSnapshotBusy(false);
     }
@@ -2069,6 +2069,21 @@ export default function Home() {
         const exported = await compilePortfolioPdf(section);
         if (!exported) throw new Error("Closeout stopped because one PDF could not be created.");
       }
+
+      const backupResponse = await fetch("/api/snapshots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          type: "full_school_year_backup",
+          label: `Pre-Closeout Full Backup ${schoolYear}`,
+          note: "Automatic full backup created before closing out the prior school year."
+        })
+      });
+      const backupData = await backupResponse.json();
+      if (!backupResponse.ok) throw new Error(backupData.error ?? "Closeout stopped because the full backup could not be created.");
 
       await fetch("/api/book-list", {
         method: "POST",
@@ -5111,8 +5126,8 @@ export default function Home() {
                   <button className="secondary-button" type="button" onClick={() => void loadSnapshots()} disabled={isSnapshotBusy}>
                     {isSnapshotBusy ? "Loading..." : "Refresh Archive"}
                   </button>
-                  <button className="secondary-button" type="button" onClick={() => void createManualSnapshot()} disabled={isSnapshotBusy}>
-                    Create Snapshot Now
+                  <button className="secondary-button" type="button" onClick={() => void createFullBackupSnapshot()} disabled={isSnapshotBusy}>
+                    Create Full Backup Now
                   </button>
                 </div>
               </div>
@@ -5139,7 +5154,9 @@ export default function Home() {
                   <div className="record-link"><strong>Reports</strong><span>Links generated daily, weekly, quarter, annual plan, and portfolio PDFs.</span></div>
                   <div className="record-link"><strong>Portfolio lists</strong><span>Backs up book list, awards, projects, field trips, and setbacks.</span></div>
                   <div className="record-link"><strong>Legal Archive</strong><span>Records review and file connection actions.</span></div>
-                  <div className="record-link"><strong>Manual fallback</strong><span>Use Create Snapshot Now before a major clean-up or close-out.</span></div>
+                  <div className="record-link"><strong>Monthly full backup</strong><span>Creates one full school-year bundle each month when this archive loads.</span></div>
+                  <div className="record-link"><strong>Manual fallback</strong><span>Use Create Full Backup Now before experimenting or major clean-up.</span></div>
+                  <div className="record-link"><strong>Close-out safeguard</strong><span>Creates a full backup before prior-year running lists are cleared.</span></div>
                 </div>
               </details>
               <details className="snapshot-automation-card" open>
@@ -5165,7 +5182,7 @@ export default function Home() {
                       )}
                     </article>
                   )) : (
-                    <p className="muted">No checkpoints yet. Save a record, generate a PDF, or use Create Snapshot Now.</p>
+                    <p className="muted">No checkpoints yet. Save a record, generate a PDF, or use Create Full Backup Now.</p>
                   )}
                 </div>
               </details>
