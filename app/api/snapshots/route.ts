@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { buildFullSchoolYearBackup, createExportSnapshot } from "@/lib/snapshots";
+import { createExportSnapshot, createFullSchoolYearBackupPackage } from "@/lib/snapshots";
 
 const snapshotSchema = z.object({
   studentName: z.string().min(1).default("Bennett C. Claypool"),
@@ -35,6 +35,10 @@ async function snapshotCounts(schoolYearId: string) {
     prisma.activity.count({ where: { schoolYearId } }),
     prisma.evidenceArtifact.count({
       where: {
+        NOT: [
+          { classification: "snapshot_backup" },
+          { classification: "full_backup_package" }
+        ],
         OR: [
           { activity: { schoolYearId } },
           { tagsJson: { contains: "schoolYear" } }
@@ -55,17 +59,10 @@ function monthStart(date = new Date()) {
 }
 
 async function createFullSchoolYearSnapshot(schoolYearId: string, label: string, note: string) {
-  const fullBackup = await buildFullSchoolYearBackup(schoolYearId);
-  if (!fullBackup) return null;
-
-  return createExportSnapshot({
+  return createFullSchoolYearBackupPackage({
     schoolYearId,
-    type: "full_school_year_backup",
     label,
-    payload: {
-      note,
-      ...fullBackup
-    }
+    note
   });
 }
 

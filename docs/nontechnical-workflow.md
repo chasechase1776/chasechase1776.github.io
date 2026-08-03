@@ -89,7 +89,7 @@ Records & Snapshots backup behavior:
 
 - Everyday saves should create small automatic snapshot checkpoints.
 - Records & Snapshots should create one full school-year backup bundle per calendar month when the archive loads.
-- The manual full backup button should create a complete school-year JSON bundle with saved record data and file references.
+- The manual full backup button should create a complete school-year ZIP package with saved record data, file references, and copies of available uploaded/generated files.
 - Full backups should run before risky cleanup, delete, reset, or closeout workflows.
 
 Before large feature work, Codex should confirm:

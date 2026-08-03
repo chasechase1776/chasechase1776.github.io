@@ -1,5 +1,6 @@
+import JSZip from "jszip";
 import { prisma } from "./prisma";
-import { saveGeneratedFile } from "./storage";
+import { readStoredFile, saveGeneratedFile } from "./storage";
 
 type SnapshotInput = {
   schoolYearId: string;
@@ -19,6 +20,10 @@ function schoolYearStartYear(label: string) {
 
 function dateKey(date: Date) {
   return date.toISOString().slice(0, 10);
+}
+
+function safePathPart(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "file";
 }
 
 function countMeaningfulDays(activities: { date: Date; actualMinutes: number; parentApproved: boolean }[], start: string, end: string) {
@@ -118,7 +123,10 @@ export async function buildFullSchoolYearBackup(schoolYearId: string) {
   });
   const artifacts = await prisma.evidenceArtifact.findMany({
     where: {
-      classification: { not: "snapshot_backup" },
+      NOT: [
+        { classification: "snapshot_backup" },
+        { classification: "full_backup_package" }
+      ],
       OR: [
         { activity: { schoolYearId } },
         { tagsJson: { contains: schoolYear.label } }
@@ -193,6 +201,105 @@ export async function buildFullSchoolYearBackup(schoolYearId: string) {
       legalArchiveBuckets: schoolYear.legalArchiveBuckets.length
     }
   };
+}
+
+function folderForArtifact(artifact: { classification: string | null; mimeType: string; activityId: string | null }) {
+  if (artifact.classification?.includes("report") || artifact.classification?.includes("annual_plan") || artifact.mimeType === "application/pdf") {
+    return "files/reports";
+  }
+  if (artifact.classification === "legal_archive") return "files/legal-archive";
+  if (artifact.activityId) return "files/proof-of-learning";
+  return "files/other";
+}
+
+export async function createFullSchoolYearBackupPackage(input: {
+  schoolYearId: string;
+  label: string;
+  note: string;
+}) {
+  const backup = await buildFullSchoolYearBackup(input.schoolYearId);
+  const schoolYear = await prisma.schoolYear.findUnique({
+    where: { id: input.schoolYearId },
+    include: { student: true }
+  });
+
+  if (!backup || !schoolYear) return null;
+
+  const createdAt = new Date();
+  const zip = new JSZip();
+  const manifest: {
+    createdAt: string;
+    note: string;
+    includedFiles: { artifactId: string; originalName: string; zipPath: string; mimeType: string; sizeBytes: number }[];
+    missingFiles: { artifactId: string; originalName: string; reason: string }[];
+  } = {
+    createdAt: createdAt.toISOString(),
+    note: input.note,
+    includedFiles: [],
+    missingFiles: []
+  };
+
+  zip.file("school-year-backup.json", JSON.stringify({ note: input.note, ...backup }, null, 2));
+  zip.file(
+    "README.txt",
+    [
+      "Bennett Homeschool full school-year backup package",
+      "",
+      "school-year-backup.json contains the app records.",
+      "The files folder contains copies of available uploaded proof files, legal archive files, generated PDFs, and other stored artifacts.",
+      "A future restore tool can use this package to rebuild records and reconnect files."
+    ].join("\n")
+  );
+
+  for (const artifact of backup.records.artifacts) {
+    try {
+      const bytes = await readStoredFile(artifact.storagePath);
+      const zipPath = `${folderForArtifact(artifact)}/${safePathPart(artifact.id)}-${safePathPart(artifact.originalName)}`;
+      zip.file(zipPath, bytes);
+      manifest.includedFiles.push({
+        artifactId: artifact.id,
+        originalName: artifact.originalName,
+        zipPath,
+        mimeType: artifact.mimeType,
+        sizeBytes: artifact.sizeBytes
+      });
+    } catch (error) {
+      manifest.missingFiles.push({
+        artifactId: artifact.id,
+        originalName: artifact.originalName,
+        reason: error instanceof Error ? error.message : "Stored file could not be read."
+      });
+    }
+  }
+
+  zip.file("file-manifest.json", JSON.stringify(manifest, null, 2));
+  const bytes = Buffer.from(await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
+  const fileName = `${slug("full-school-year-backup")}-${slug(schoolYear.label)}-${createdAt.toISOString().replace(/[:.]/g, "-")}.zip`;
+  const savedFile = await saveGeneratedFile(bytes, fileName, "application/zip");
+  const artifact = await prisma.evidenceArtifact.create({
+    data: {
+      ...savedFile,
+      recordStatus: schoolYear.status,
+      classification: "full_backup_package",
+      tagsJson: JSON.stringify({
+        schoolYear: schoolYear.label,
+        student: schoolYear.student.name,
+        snapshotType: "full_school_year_backup",
+        snapshotLabel: input.label,
+        includedFileCount: manifest.includedFiles.length,
+        missingFileCount: manifest.missingFiles.length
+      })
+    }
+  });
+
+  return prisma.exportSnapshot.create({
+    data: {
+      type: "full_school_year_backup",
+      label: input.label,
+      filePath: `/api/artifacts/${artifact.id}/download`,
+      schoolYearId: schoolYear.id
+    }
+  });
 }
 
 export async function createArtifactSnapshot(input: {

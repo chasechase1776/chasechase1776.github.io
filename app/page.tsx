@@ -5120,7 +5120,7 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Records & Snapshots</p>
                   <h2>Background backup archive</h2>
-                  <p className="panel-note">This workspace runs mostly in the background. It keeps downloadable checkpoints after important saves and report exports, while the database remains the source of truth.</p>
+                  <p className="panel-note">This workspace runs mostly in the background. It keeps small checkpoints after important saves and full ZIP backup packages for disaster recovery.</p>
                 </div>
                 <div className="primary-action-row">
                   <button className="secondary-button" type="button" onClick={() => void loadSnapshots()} disabled={isSnapshotBusy}>
@@ -5154,9 +5154,9 @@ export default function Home() {
                   <div className="record-link"><strong>Reports</strong><span>Links generated daily, weekly, quarter, annual plan, and portfolio PDFs.</span></div>
                   <div className="record-link"><strong>Portfolio lists</strong><span>Backs up book list, awards, projects, field trips, and setbacks.</span></div>
                   <div className="record-link"><strong>Legal Archive</strong><span>Records review and file connection actions.</span></div>
-                  <div className="record-link"><strong>Monthly full backup</strong><span>Creates one full school-year bundle each month when this archive loads.</span></div>
+                  <div className="record-link"><strong>Monthly full backup</strong><span>Creates one ZIP package each month with records plus available file copies.</span></div>
                   <div className="record-link"><strong>Manual fallback</strong><span>Use Create Full Backup Now before experimenting or major clean-up.</span></div>
-                  <div className="record-link"><strong>Close-out safeguard</strong><span>Creates a full backup before prior-year running lists are cleared.</span></div>
+                  <div className="record-link"><strong>Close-out safeguard</strong><span>Creates a full ZIP backup before prior-year running lists are cleared.</span></div>
                 </div>
               </details>
               <details className="snapshot-automation-card" open>
