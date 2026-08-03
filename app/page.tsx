@@ -918,6 +918,11 @@ function isWeekdayIso(value: string) {
   return day >= 1 && day <= 5;
 }
 
+function isWeekendIso(value: string) {
+  const day = new Date(`${value.slice(0, 10)}T00:00:00.000Z`).getUTCDay();
+  return day === 0 || day === 6;
+}
+
 function weekdaysInRange(startIso: string, endIso: string) {
   let count = 0;
   const cursor = new Date(`${startIso.slice(0, 10)}T00:00:00.000Z`);
@@ -941,6 +946,19 @@ function meaningfulDaysInRange(activities: SavedActivity[], startIso: string, en
     });
 
   return Array.from(dayTotals.entries()).filter(([day, minutes]) => isWeekdayIso(day) && minutes >= 180).length;
+}
+
+function weekendMeaningfulDaysInRange(activities: SavedActivity[], startIso: string, endIso: string) {
+  const dayTotals = new Map<string, number>();
+  activities
+    .filter((activity) => activity.parentApproved)
+    .forEach((activity) => {
+      const day = activity.date.slice(0, 10);
+      if (day < startIso || day > endIso) return;
+      dayTotals.set(day, (dayTotals.get(day) ?? 0) + activity.actualMinutes);
+    });
+
+  return Array.from(dayTotals.entries()).filter(([day, minutes]) => isWeekendIso(day) && minutes >= 180).length;
 }
 
 function nextSchoolYearLabel(value: string) {
@@ -1556,6 +1574,7 @@ export default function Home() {
   const dailyMeaningfulTicker = useMemo(
     () => ({
       meaningfulDays: dailyApprovedMinutes >= 180 && isWeekdayIso(selectedDate) ? 1 : 0,
+      weekendDays: dailyApprovedMinutes >= 180 && isWeekendIso(selectedDate) ? 1 : 0,
       weekdays: isWeekdayIso(selectedDate) ? 1 : 0
     }),
     [dailyApprovedMinutes, selectedDate]
@@ -3404,6 +3423,7 @@ export default function Home() {
     return {
       totalMinutes,
       meaningfulDays: meaningfulDaysInRange(activities, start, end),
+      weekendDays: weekendMeaningfulDaysInRange(activities, start, end),
       weekdays: weekdaysInRange(start, end)
     };
   }, [schoolYearActivities, weeklyStartDate]);
@@ -3415,6 +3435,7 @@ export default function Home() {
     return {
       totalMinutes,
       meaningfulDays: meaningfulDaysInRange(activities, start, end),
+      weekendDays: weekendMeaningfulDaysInRange(activities, start, end),
       weekdays: weekdaysInRange(start, end)
     };
   }, [quarterStartDate, schoolYearActivities]);
@@ -3429,6 +3450,7 @@ export default function Home() {
       end,
       totalMinutes,
       meaningfulDays: meaningfulDaysInRange(activities, start, end),
+      weekendDays: weekendMeaningfulDaysInRange(activities, start, end),
       weekdays: weekdaysInRange(start, end),
       activities: activities.filter((activity) => activity.parentApproved).length,
       daysWithRecords: new Set(activities.filter((activity) => activity.parentApproved).map((activity) => activity.date.slice(0, 10))).size
@@ -3765,6 +3787,7 @@ export default function Home() {
               <div className="review-metrics daily-record-ticker" aria-label="Daily record time ticker">
                 <div className="review-metric"><span>Total time today</span><strong>{formatMinutes(dailyApprovedMinutes)}</strong></div>
                 <div className="review-metric"><span>Meaningful days</span><strong>{dailyMeaningfulTicker.meaningfulDays} of {dailyMeaningfulTicker.weekdays}</strong></div>
+                <div className="review-metric"><span>Weekend +1 days</span><strong>{dailyMeaningfulTicker.weekendDays}</strong></div>
               </div>
             </section>
 
@@ -4206,6 +4229,7 @@ export default function Home() {
               <div className="review-metrics" aria-label="Weekly review generated metrics">
                 <div className="review-metric"><span>Total time</span><strong>{formatMinutes(weeklyReviewTicker.totalMinutes || weeklyData.totalApprovedLearningTime)}</strong></div>
                 <div className="review-metric"><span>Meaningful days</span><strong>{weeklyReviewTicker.meaningfulDays} of {weeklyReviewTicker.weekdays}</strong></div>
+                <div className="review-metric"><span>Weekend +1 days</span><strong>{weeklyReviewTicker.weekendDays}</strong></div>
                 <div className="review-metric"><span>Activities logged</span><strong>{weeklyData.activitiesLogged}</strong></div>
                 <div className="review-metric"><span>Days logged</span><strong>{weeklyData.daysLogged}</strong></div>
                 <div className="review-metric"><span>Artifacts saved</span><strong>{weeklyData.artifactsSaved}</strong></div>
@@ -4460,6 +4484,7 @@ export default function Home() {
               <div className="review-metrics" aria-label="Quarter review generated metrics">
                 <div className="review-metric"><span>Total time</span><strong>{formatMinutes(quarterReviewTicker.totalMinutes || quarterData.totalApprovedLearningTime)}</strong></div>
                 <div className="review-metric"><span>Meaningful days</span><strong>{quarterReviewTicker.meaningfulDays} of {quarterReviewTicker.weekdays}</strong></div>
+                <div className="review-metric"><span>Weekend +1 days</span><strong>{quarterReviewTicker.weekendDays}</strong></div>
                 <div className="review-metric"><span>Days with records</span><strong>{quarterData.daysWithRecords}</strong></div>
                 <div className="review-metric"><span>Activities</span><strong>{quarterData.activitiesLogged}</strong></div>
                 <div className="review-metric"><span>Weekly reviews</span><strong>{quarterData.weeklyReviewsLogged}</strong></div>
@@ -5077,6 +5102,7 @@ export default function Home() {
               <div className="review-metrics">
                 <div className="review-metric"><span>Total time</span><strong>{formatMinutes(annualReviewTicker.totalMinutes)}</strong></div>
                 <div className="review-metric"><span>Meaningful days</span><strong>{annualReviewTicker.meaningfulDays} of {annualReviewTicker.weekdays}</strong></div>
+                <div className="review-metric"><span>Weekend +1 days</span><strong>{annualReviewTicker.weekendDays}</strong></div>
                 <div className="review-metric"><span>Days with records</span><strong>{annualReviewTicker.daysWithRecords}</strong></div>
                 <div className="review-metric"><span>Activities</span><strong>{annualReviewTicker.activities}</strong></div>
                 <div className="review-metric"><span>Quarter reviews</span><strong>{quarterStatus === "finalized" ? 1 : 0}</strong></div>
