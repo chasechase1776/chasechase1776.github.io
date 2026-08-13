@@ -6549,6 +6549,12 @@ export default function Home() {
                   <div className="valuable-failure-list">
                     {valuableFailureDisplayEntries().length ? valuableFailureDisplayEntries().map((entry) => (
                       <article className={entry.resolved ? "valuable-failure-card is-resolved" : "valuable-failure-card"} key={entry.id}>
+                        {entry.resolved ? (
+                          <div className="valuable-failure-history-summary">
+                            <strong>{entry.title.trim() || "Resolved event"}</strong>
+                            <span>{dateLabel(entry.date)}</span>
+                          </div>
+                        ) : null}
                         <div className="valuable-failure-main-grid">
                           <label className="valuable-failure-title-field">
                             <span>Event title</span>

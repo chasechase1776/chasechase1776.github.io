@@ -2308,6 +2308,31 @@ details.skill-group[open] summary {
   background: #f4f6f7;
 }
 
+.valuable-failure-history-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.valuable-failure-history-summary strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.valuable-failure-history-summary span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.valuable-failure-card.is-resolved .valuable-failure-main-grid,
+.valuable-failure-card.is-resolved .valuable-failure-actions,
+.valuable-failure-card.is-resolved .valuable-follow-up-list {
+  display: none;
+}
+
 .valuable-failure-main-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
