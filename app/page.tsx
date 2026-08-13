@@ -154,7 +154,7 @@ const portfolioListLabels: Record<PortfolioListCategory, string> = {
   accolades: "Accolades",
   projects: "Major Projects",
   fieldTrips: "Field Trips",
-  valuableFailures: "Valuable Setbacks & Failure"
+  valuableFailures: "Valuable Setbacks & Failures"
 };
 
 const portfolioArchiveClassifications: Record<PortfolioSection, string> = {
@@ -2257,7 +2257,7 @@ export default function Home() {
   }
 
   async function closeOutPriorSchoolYear() {
-    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, field trips, and valuable setbacks & failure, then clear those running lists for the selected school year.`);
+    const confirmed = window.confirm(`Close out ${schoolYear}? This will save PDFs for the book list, achievements, accolades, major projects, field trips, and valuable setbacks & failures, then clear those running lists for the selected school year.`);
     if (!confirmed) return;
     const unresolvedFailures = portfolioListEntries.valuableFailures.filter((entry) => !entry.resolved);
     const carryForwardFailures = unresolvedFailures.length
@@ -2330,8 +2330,8 @@ export default function Home() {
         projects: `${schoolYear} major projects archived and reset.`,
         fieldTrips: `${schoolYear} field trips archived and reset.`,
         valuableFailures: carryForwardFailures
-          ? `${schoolYear} valuable setbacks & failure archived and unresolved items copied to ${nextSchoolYearLabel(schoolYear)}.`
-          : `${schoolYear} valuable setbacks & failure archived and reset.`
+          ? `${schoolYear} valuable setbacks & failures archived and unresolved items copied to ${nextSchoolYearLabel(schoolYear)}.`
+          : `${schoolYear} valuable setbacks & failures archived and reset.`
       });
       await loadPortfolio();
     } catch (error) {
@@ -6297,7 +6297,7 @@ export default function Home() {
                   ["accolades", "Accolades", "Save praise, recognition, and outside feedback."],
                   ["projects", "Major Projects", "Track major project milestones and outcomes."],
                   ["fieldTrips", "Field trips", "Track field trip dates, narratives, and proof files."],
-                  ["valuableFailures", "Valuable Setbacks & Failure", "Track setbacks, responses, reflections, plans, and follow-ups."]
+                  ["valuableFailures", "Valuable Setbacks & Failures", "Track setbacks, responses, reflections, plans, and follow-ups."]
                 ].map(([key, label, description]) => (
                   <button
                     className={activePortfolioSection === key ? "weekly-section-button is-active" : "weekly-section-button"}
@@ -6531,8 +6531,8 @@ export default function Home() {
                 <section className="book-list-panel valuable-failures-panel">
                   <div className="section-head">
                     <div>
-                      <p className="eyebrow">Valuable Setbacks & Failure</p>
-                      <h2>Valuable Setbacks & Failure</h2>
+                      <p className="eyebrow">Valuable Setbacks & Failures</p>
+                      <h2>Valuable Setbacks & Failures</h2>
                       <p className="panel-note">Open items stay at the top. Once an event is resolved, the full thread moves to the bottom.</p>
                     </div>
                     <div className="primary-action-row">
@@ -6554,25 +6554,25 @@ export default function Home() {
                             <span>Event title</span>
                             <input value={entry.title} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { title: event.target.value })} />
                           </label>
-                          <label>
+                          <label className="valuable-failure-date-field">
                             <span>Date</span>
                             <input type="date" value={entry.date} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { date: event.target.value })} />
                           </label>
-                          <label>
+                          <label className="valuable-failure-narrative-field">
                             <span>Failure or setback</span>
-                            <textarea value={entry.narrative} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { narrative: event.target.value })} />
+                            <textarea rows={4} value={entry.narrative} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { narrative: event.target.value })} />
                           </label>
-                          <label>
+                          <label className="valuable-failure-narrative-field">
                             <span>Response</span>
-                            <textarea value={entry.response} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { response: event.target.value })} />
+                            <textarea rows={4} value={entry.response} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { response: event.target.value })} />
                           </label>
-                          <label>
+                          <label className="valuable-failure-narrative-field">
                             <span>Reflection</span>
-                            <textarea value={entry.reflection} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { reflection: event.target.value })} />
+                            <textarea rows={4} value={entry.reflection} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { reflection: event.target.value })} />
                           </label>
-                          <label>
+                          <label className="valuable-failure-narrative-field">
                             <span>Plan</span>
-                            <textarea value={entry.plan} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { plan: event.target.value })} />
+                            <textarea rows={4} value={entry.plan} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { plan: event.target.value })} />
                           </label>
                         </div>
                         <div className="valuable-failure-actions">
@@ -6627,11 +6627,11 @@ export default function Home() {
                           </div>
                         ) : null}
                       </article>
-                    )) : <p className="muted">No valuable setbacks & failure added yet.</p>}
+                    )) : <p className="muted">No valuable setbacks & failures added yet.</p>}
                   </div>
                   <details className="report-bucket-card">
                     <summary className="report-bucket-summary">
-                      <span>Past Valuable Setbacks & Failure</span>
+                      <span>Past Valuable Setbacks & Failures</span>
                       <strong>{portfolioArchiveArtifacts("valuableFailures").length}</strong>
                     </summary>
                     <div className="report-list">
@@ -6641,7 +6641,7 @@ export default function Home() {
                           <span>{formatBytes(artifact.sizeBytes)}</span>
                           <a className="download-link" href={`/api/artifacts/${artifact.id}/download`} target="_blank" rel="noreferrer">Open</a>
                         </article>
-                      )) : <p className="muted">No past valuable setbacks & failure PDFs yet.</p>}
+                      )) : <p className="muted">No past valuable setbacks & failures PDFs yet.</p>}
                     </div>
                   </details>
                 </section>

@@ -2310,18 +2310,26 @@ details.skill-group[open] summary {
 
 .valuable-failure-main-grid {
   display: grid;
-  grid-template-columns: 160px repeat(2, minmax(0, 1fr));
+  grid-template-columns: 160px repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
-.valuable-failure-title-field,
-.valuable-failure-main-grid label:nth-child(3) {
-  grid-column: span 2;
+.valuable-failure-title-field {
+  grid-column: span 4;
+}
+
+.valuable-failure-date-field {
+  grid-column: span 1;
+}
+
+.valuable-failure-narrative-field {
+  grid-column: span 1;
 }
 
 .valuable-failure-main-grid textarea,
 .valuable-follow-up-row textarea {
-  min-height: 86px;
+  min-height: 116px;
+  field-sizing: content;
 }
 
 .valuable-failure-actions {
