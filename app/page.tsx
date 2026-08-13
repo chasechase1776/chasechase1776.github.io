@@ -3010,7 +3010,7 @@ export default function Home() {
           let activities = isSource ? day.activities.filter((item) => item.id !== activityId) : [...day.activities];
           if (isTarget) {
             const boundedIndex = Math.min(Math.max(targetIndex, 0), activities.length);
-            activities = [...activities.slice(0, boundedIndex), { ...activity, status: isSource ? activity.status : "moved" }, ...activities.slice(boundedIndex)];
+            activities = [...activities.slice(0, boundedIndex), activity, ...activities.slice(boundedIndex)];
           }
           return isSource || isTarget ? { ...day, complete: false, activities } : day;
         })
@@ -3020,6 +3020,7 @@ export default function Home() {
   }
 
   function handlePlannerActivityDragStart(event: DragEvent<HTMLButtonElement>, weekIndex: number, dayIndex: number, activityId: string) {
+    event.stopPropagation();
     event.dataTransfer.setData("text/plain", JSON.stringify({ weekIndex, dayIndex, activityId }));
     event.dataTransfer.effectAllowed = "move";
   }
@@ -3029,13 +3030,37 @@ export default function Home() {
     const payload = event.dataTransfer.getData("text/plain");
     if (!payload) return;
     try {
-      const parsed = JSON.parse(payload) as SelectedPlannerActivity;
+      const parsed = JSON.parse(payload) as SelectedPlannerActivity & { kind?: string };
+      if (parsed.kind === "day") {
+        if (parsed.weekIndex === targetWeekIndex && typeof parsed.dayIndex === "number") reorderPlannerDay(targetWeekIndex, parsed.dayIndex, targetDayIndex);
+        return;
+      }
       if (typeof parsed.weekIndex !== "number" || typeof parsed.dayIndex !== "number" || !parsed.activityId) return;
       const targetActivities = unitStudyPlanners[activePlannerUnitKey]?.weeks[targetWeekIndex]?.days[targetDayIndex]?.activities ?? [];
       movePlannerActivityToPosition(parsed.weekIndex, parsed.dayIndex, parsed.activityId, targetWeekIndex, targetDayIndex, targetIndex ?? targetActivities.length);
     } catch {
       return;
     }
+  }
+
+  function reorderPlannerDay(weekIndex: number, sourceDayIndex: number, targetDayIndex: number) {
+    if (sourceDayIndex === targetDayIndex) return;
+    updatePlanner((planner) => ({
+      ...planner,
+      weeks: planner.weeks.map((week, index) => {
+        if (index !== weekIndex) return week;
+        const days = [...week.days];
+        const [movedDay] = days.splice(sourceDayIndex, 1);
+        days.splice(targetDayIndex, 0, movedDay);
+        return { ...week, complete: false, days: days.map((day) => ({ ...day, complete: false })) };
+      })
+    }));
+    setSelectedPlannerActivity(null);
+  }
+
+  function handlePlannerDayDragStart(event: DragEvent<HTMLElement>, weekIndex: number, dayIndex: number) {
+    event.dataTransfer.setData("text/plain", JSON.stringify({ kind: "day", weekIndex, dayIndex }));
+    event.dataTransfer.effectAllowed = "move";
   }
 
   function movePlannerActivityToDate(weekIndex: number, dayIndex: number, activityId: string, targetDate: string) {
@@ -4274,7 +4299,9 @@ export default function Home() {
                     {activePlannerWeek.days.map((day, dayIndex) => (
                       <article
                         className={day.complete ? "unit-day-column is-complete" : "unit-day-column"}
+                        draggable
                         key={day.id}
+                        onDragStart={(event) => handlePlannerDayDragStart(event, activePlannerWeekIndex ?? 0, dayIndex)}
                         onDragOver={(event) => event.preventDefault()}
                         onDrop={(event) => handlePlannerActivityDrop(event, activePlannerWeekIndex ?? 0, dayIndex)}
                       >
@@ -4324,11 +4351,17 @@ export default function Home() {
               )}
 
               {selectedPlannerActivityCard && selectedPlannerActivityDay && selectedPlannerActivity ? (
-                <section className="unit-day-detail-panel">
+                <div
+                  className="unit-planner-modal-backdrop"
+                  onClick={(event) => {
+                    if (event.target === event.currentTarget) setSelectedPlannerActivity(null);
+                  }}
+                >
+                <section className="unit-day-detail-panel unit-planner-modal" role="dialog" aria-modal="true" aria-labelledby="selected-planner-activity-title">
                   <div className="section-head">
                     <div>
                       <p className="eyebrow">Week {selectedPlannerActivity.weekIndex + 1} {plannerWeekdayLabels[selectedPlannerActivity.dayIndex]}</p>
-                      <h2>Selected activity</h2>
+                      <h2 id="selected-planner-activity-title">Selected activity</h2>
                     </div>
                     <div className="primary-action-row">
                       <button className="secondary-button" type="button" onClick={() => completePlannerDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)} disabled={!selectedPlannerActivityDay.activities.every(activityIsDone)}>Complete Day</button>
@@ -4378,6 +4411,7 @@ export default function Home() {
                       </article>
                   </div>
                 </section>
+                </div>
               ) : null}
             </section>
             ) : null}
