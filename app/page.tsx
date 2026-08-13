@@ -1645,7 +1645,7 @@ export default function Home() {
   const [activePlannerUnitKey, setActivePlannerUnitKey] = useState(plannerKey(initialUnitPlanRows[0].title));
   const [activePlannerWeekIndex, setActivePlannerWeekIndex] = useState<number | null>(null);
   const [selectedPlannerActivity, setSelectedPlannerActivity] = useState<SelectedPlannerActivity | null>(null);
-  const [plannerMoveDate, setPlannerMoveDate] = useState("");
+  const [plannerMoveTarget, setPlannerMoveTarget] = useState({ week: "", day: "" });
   const [journalPortfolioCards, setJournalPortfolioCards] = useState<JournalPortfolioCard[]>(initialJournalPortfolioCards);
   const [editingJournalPortfolioId, setEditingJournalPortfolioId] = useState<string | null>(null);
   const [annualRecordCards, setAnnualRecordCards] = useState<AnnualRecordCard[]>(initialAnnualRecordCards);
@@ -2948,7 +2948,7 @@ export default function Home() {
       )
     }));
     setSelectedPlannerActivity({ weekIndex, dayIndex, activityId: newActivity.id });
-    setPlannerMoveDate("");
+    setPlannerMoveTarget({ week: "", day: "" });
   }
 
   function deletePlannerActivity(weekIndex: number, dayIndex: number, activityId: string) {
@@ -3039,21 +3039,24 @@ export default function Home() {
     event.dataTransfer.effectAllowed = "move";
   }
 
-  function movePlannerActivityToDate(weekIndex: number, dayIndex: number, activityId: string, targetDate: string) {
-    if (!activePlanner.startMonday || !targetDate) return;
-    const start = new Date(`${activePlanner.startMonday}T00:00:00.000Z`).getTime();
-    const target = new Date(`${targetDate}T00:00:00.000Z`).getTime();
-    const dayOffset = Math.round((target - start) / 86400000);
-    const targetWeekIndex = Math.floor(dayOffset / 7);
-    const targetDayIndex = dayOffset % 7;
-    if (dayOffset < 0 || targetWeekIndex < 0 || targetWeekIndex >= activePlanner.weeks.length || targetDayIndex < 0 || targetDayIndex > 4) {
-      setAnnualPlanMessage("Choose a Monday-Friday date inside this unit's planned weeks.");
+  function movePlannerActivityToWeekDay(weekIndex: number, dayIndex: number, activityId: string, targetWeek: string, targetDay: string) {
+    const targetWeekIndex = Number.parseInt(targetWeek, 10) - 1;
+    const targetDayIndex = Number.parseInt(targetDay, 10) - 1;
+    if (
+      !Number.isInteger(targetWeekIndex) ||
+      !Number.isInteger(targetDayIndex) ||
+      targetWeekIndex < 0 ||
+      targetWeekIndex >= activePlanner.weeks.length ||
+      targetDayIndex < 0 ||
+      targetDayIndex > 4
+    ) {
+      setAnnualPlanMessage(`Choose a week from 1-${activePlanner.weeks.length} and a day from 1-5 inside this unit.`);
       return;
     }
     const targetActivities = activePlanner.weeks[targetWeekIndex]?.days[targetDayIndex]?.activities ?? [];
     movePlannerActivityToPosition(weekIndex, dayIndex, activityId, targetWeekIndex, targetDayIndex, targetActivities.length);
     setActivePlannerWeekIndex(targetWeekIndex);
-    setPlannerMoveDate("");
+    setPlannerMoveTarget({ week: "", day: "" });
   }
 
   function movePlannerActivity(weekIndex: number, dayIndex: number, activityId: string) {
@@ -4104,7 +4107,7 @@ export default function Home() {
                     setActivePlannerUnitKey(plannerKey(row.title));
                     setActivePlannerWeekIndex(null);
                     setSelectedPlannerActivity(null);
-                    setPlannerMoveDate("");
+                    setPlannerMoveTarget({ week: "", day: "" });
                     setUnitStudy(row.title);
                   }}
                 >
@@ -4215,7 +4218,7 @@ export default function Home() {
                     onClick={() => {
                       setActivePlannerWeekIndex(weekIndex);
                       setSelectedPlannerActivity(null);
-                      setPlannerMoveDate("");
+                      setPlannerMoveTarget({ week: "", day: "" });
                     }}
                   >
                     <strong>Week {weekIndex + 1}</strong>
@@ -4295,7 +4298,7 @@ export default function Home() {
                               type="button"
                               onClick={() => {
                                 setSelectedPlannerActivity({ weekIndex: activePlannerWeekIndex ?? 0, dayIndex, activityId: activity.id });
-                                setPlannerMoveDate("");
+                                setPlannerMoveTarget({ week: "", day: "" });
                               }}
                               onDragStart={(event) => handlePlannerActivityDragStart(event, activePlannerWeekIndex ?? 0, dayIndex, activity.id)}
                               onDragOver={(event) => event.preventDefault()}
@@ -4363,9 +4366,9 @@ export default function Home() {
                           </details>
                         </div>
                         <div className="unit-planner-move-date-row">
-                          <label><span>Move activity to mm/dd</span><input type="date" value={plannerMoveDate} onChange={(event) => setPlannerMoveDate(event.target.value)} /></label>
-                          <button className="secondary-button" type="button" onClick={() => movePlannerActivityToDate(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, plannerMoveDate)} disabled={!plannerMoveDate || !activePlanner.startMonday}>Move to Date</button>
-                          {!activePlanner.startMonday ? <span className="status-line">Start Unit first so dates can map to weeks.</span> : null}
+                          <label><span>Move to week #</span><input type="number" min="1" max={activePlanner.weeks.length} value={plannerMoveTarget.week} onChange={(event) => setPlannerMoveTarget((current) => ({ ...current, week: event.target.value }))} /></label>
+                          <label><span>Move to day #</span><input type="number" min="1" max="5" value={plannerMoveTarget.day} onChange={(event) => setPlannerMoveTarget((current) => ({ ...current, day: event.target.value }))} /></label>
+                          <button className="secondary-button" type="button" onClick={() => movePlannerActivityToWeekDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, plannerMoveTarget.week, plannerMoveTarget.day)} disabled={!plannerMoveTarget.week || !plannerMoveTarget.day}>Move Activity</button>
                         </div>
                         <div className="primary-action-row">
                           {selectedPlannerActivityCard.status === "complete" ? (
