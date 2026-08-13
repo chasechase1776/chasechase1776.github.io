@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { skillTaxonomy } from "@/lib/domain";
 
@@ -352,6 +352,12 @@ type UnitStudyPlanner = {
   weeks: UnitPlannerWeek[];
 };
 
+type SelectedPlannerActivity = {
+  weekIndex: number;
+  dayIndex: number;
+  activityId: string;
+};
+
 type AnnualPlanSaveData = {
   annualPlanBigPicture: AnnualPlanBigPicture;
   curriculumSpines: CurriculumSpine[];
@@ -683,6 +689,7 @@ const initialAnnualPlanBigPicture: AnnualPlanBigPicture = {
 const unitFormatOptions = ["Harbor & Sprout Template", "Open-and-Go Published Unit", "Minimal Structure / Parent-Designed"];
 const weeklyRhythmOverrideOptions = ["Use full rhythm", "None", "Light overlay", "Use Thursday heavily", "Finance daily", "Cooking Friday", "Context Wednesday focus", "Meaning Thursday focus", "Creating Friday capstone"];
 const unitStatusOptions: UnitPlanStatus[] = ["active", "upcoming", "planned", "complete", "skipped"];
+const plannerWeekdayLabels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 const annualPlanSections: { id: AnnualPlanSectionId; label: string; summary: string }[] = [
   { id: "section-1", label: "Section 1", summary: "Big Picture Framework" },
@@ -1637,7 +1644,8 @@ export default function Home() {
   );
   const [activePlannerUnitKey, setActivePlannerUnitKey] = useState(plannerKey(initialUnitPlanRows[0].title));
   const [activePlannerWeekIndex, setActivePlannerWeekIndex] = useState<number | null>(null);
-  const [expandedPlannerDayIndex, setExpandedPlannerDayIndex] = useState<number | null>(null);
+  const [selectedPlannerActivity, setSelectedPlannerActivity] = useState<SelectedPlannerActivity | null>(null);
+  const [plannerMoveDate, setPlannerMoveDate] = useState("");
   const [journalPortfolioCards, setJournalPortfolioCards] = useState<JournalPortfolioCard[]>(initialJournalPortfolioCards);
   const [editingJournalPortfolioId, setEditingJournalPortfolioId] = useState<string | null>(null);
   const [annualRecordCards, setAnnualRecordCards] = useState<AnnualRecordCard[]>(initialAnnualRecordCards);
@@ -2916,6 +2924,9 @@ export default function Home() {
   }
 
   function addPlannerActivity(weekIndex: number, dayIndex: number) {
+    const planner = unitStudyPlanners[activePlannerUnitKey];
+    const activityCount = planner?.weeks[weekIndex]?.days[dayIndex]?.activities.length ?? 0;
+    const newActivity = newPlannerActivity(weekIndex, dayIndex, activityCount);
     updatePlanner((planner) => ({
       ...planner,
       weeks: planner.weeks.map((week, weekPosition) =>
@@ -2928,7 +2939,7 @@ export default function Home() {
                   ? {
                       ...day,
                       complete: false,
-                      activities: [...day.activities, newPlannerActivity(weekIndex, dayIndex, day.activities.length)]
+                      activities: [...day.activities, newActivity]
                     }
                   : day
               )
@@ -2936,6 +2947,8 @@ export default function Home() {
           : week
       )
     }));
+    setSelectedPlannerActivity({ weekIndex, dayIndex, activityId: newActivity.id });
+    setPlannerMoveDate("");
   }
 
   function deletePlannerActivity(weekIndex: number, dayIndex: number, activityId: string) {
@@ -2955,6 +2968,7 @@ export default function Home() {
           : week
       )
     }));
+    setSelectedPlannerActivity((current) => (current?.activityId === activityId ? null : current));
   }
 
   function reorderPlannerActivity(weekIndex: number, dayIndex: number, activityId: string, direction: -1 | 1) {
@@ -2978,6 +2992,67 @@ export default function Home() {
           : week
       )
     }));
+  }
+
+  function movePlannerActivityToPosition(sourceWeekIndex: number, sourceDayIndex: number, activityId: string, targetWeekIndex: number, targetDayIndex: number, targetIndex: number) {
+    const planner = unitStudyPlanners[activePlannerUnitKey];
+    const activity = planner?.weeks[sourceWeekIndex]?.days[sourceDayIndex]?.activities.find((item) => item.id === activityId);
+    if (!planner || !activity) return;
+
+    updatePlanner((currentPlanner) => ({
+      ...currentPlanner,
+      weeks: currentPlanner.weeks.map((week, weekPosition) => ({
+        ...week,
+        complete: false,
+        days: week.days.map((day, dayPosition) => {
+          const isSource = weekPosition === sourceWeekIndex && dayPosition === sourceDayIndex;
+          const isTarget = weekPosition === targetWeekIndex && dayPosition === targetDayIndex;
+          let activities = isSource ? day.activities.filter((item) => item.id !== activityId) : [...day.activities];
+          if (isTarget) {
+            const boundedIndex = Math.min(Math.max(targetIndex, 0), activities.length);
+            activities = [...activities.slice(0, boundedIndex), { ...activity, status: isSource ? activity.status : "moved" }, ...activities.slice(boundedIndex)];
+          }
+          return isSource || isTarget ? { ...day, complete: false, activities } : day;
+        })
+      }))
+    }));
+    setSelectedPlannerActivity({ weekIndex: targetWeekIndex, dayIndex: targetDayIndex, activityId });
+  }
+
+  function handlePlannerActivityDragStart(event: DragEvent<HTMLButtonElement>, weekIndex: number, dayIndex: number, activityId: string) {
+    event.dataTransfer.setData("text/plain", JSON.stringify({ weekIndex, dayIndex, activityId }));
+    event.dataTransfer.effectAllowed = "move";
+  }
+
+  function handlePlannerActivityDrop(event: DragEvent<HTMLElement>, targetWeekIndex: number, targetDayIndex: number, targetIndex?: number) {
+    event.preventDefault();
+    const payload = event.dataTransfer.getData("text/plain");
+    if (!payload) return;
+    try {
+      const parsed = JSON.parse(payload) as SelectedPlannerActivity;
+      if (typeof parsed.weekIndex !== "number" || typeof parsed.dayIndex !== "number" || !parsed.activityId) return;
+      const targetActivities = unitStudyPlanners[activePlannerUnitKey]?.weeks[targetWeekIndex]?.days[targetDayIndex]?.activities ?? [];
+      movePlannerActivityToPosition(parsed.weekIndex, parsed.dayIndex, parsed.activityId, targetWeekIndex, targetDayIndex, targetIndex ?? targetActivities.length);
+    } catch {
+      return;
+    }
+  }
+
+  function movePlannerActivityToDate(weekIndex: number, dayIndex: number, activityId: string, targetDate: string) {
+    if (!activePlanner.startMonday || !targetDate) return;
+    const start = new Date(`${activePlanner.startMonday}T00:00:00.000Z`).getTime();
+    const target = new Date(`${targetDate}T00:00:00.000Z`).getTime();
+    const dayOffset = Math.round((target - start) / 86400000);
+    const targetWeekIndex = Math.floor(dayOffset / 7);
+    const targetDayIndex = dayOffset % 7;
+    if (dayOffset < 0 || targetWeekIndex < 0 || targetWeekIndex >= activePlanner.weeks.length || targetDayIndex < 0 || targetDayIndex > 4) {
+      setAnnualPlanMessage("Choose a Monday-Friday date inside this unit's planned weeks.");
+      return;
+    }
+    const targetActivities = activePlanner.weeks[targetWeekIndex]?.days[targetDayIndex]?.activities ?? [];
+    movePlannerActivityToPosition(weekIndex, dayIndex, activityId, targetWeekIndex, targetDayIndex, targetActivities.length);
+    setActivePlannerWeekIndex(targetWeekIndex);
+    setPlannerMoveDate("");
   }
 
   function movePlannerActivity(weekIndex: number, dayIndex: number, activityId: string) {
@@ -3827,7 +3902,16 @@ export default function Home() {
     activePlannerWeekIndex === null
       ? null
       : activePlanner.weeks[Math.min(activePlannerWeekIndex, activePlanner.weeks.length - 1)] ?? activePlanner.weeks[0];
-  const activePlannerDay = activePlannerWeek && expandedPlannerDayIndex !== null ? activePlannerWeek.days[expandedPlannerDayIndex] ?? null : null;
+  const selectedPlannerActivityWeek = selectedPlannerActivity ? activePlanner.weeks[selectedPlannerActivity.weekIndex] ?? null : null;
+  const selectedPlannerActivityDay = selectedPlannerActivityWeek && selectedPlannerActivity ? selectedPlannerActivityWeek.days[selectedPlannerActivity.dayIndex] ?? null : null;
+  const selectedPlannerActivityCard =
+    selectedPlannerActivityDay && selectedPlannerActivity
+      ? selectedPlannerActivityDay.activities.find((activity) => activity.id === selectedPlannerActivity.activityId) ?? null
+      : null;
+  const selectedPlannerActivityIndex =
+    selectedPlannerActivityDay && selectedPlannerActivity
+      ? selectedPlannerActivityDay.activities.findIndex((activity) => activity.id === selectedPlannerActivity.activityId)
+      : -1;
   const activePlannerActivityShoppingItems =
     activePlannerWeek
       ? activePlannerWeek.days
@@ -3837,6 +3921,8 @@ export default function Home() {
               .filter(Boolean)
           )
       : [];
+  const plannerDateForDay = (weekIndex: number, dayIndex: number) =>
+    activePlanner.startMonday ? addDaysIso(activePlanner.startMonday, weekIndex * 7 + dayIndex) : "";
   const reportBucketRows = useMemo(
     () =>
       reportBuckets.map((bucket) => {
@@ -4020,7 +4106,8 @@ export default function Home() {
                     setActiveTab("unit-planner");
                     setActivePlannerUnitKey(plannerKey(row.title));
                     setActivePlannerWeekIndex(null);
-                    setExpandedPlannerDayIndex(null);
+                    setSelectedPlannerActivity(null);
+                    setPlannerMoveDate("");
                     setUnitStudy(row.title);
                   }}
                 >
@@ -4130,7 +4217,8 @@ export default function Home() {
                     key={week.id}
                     onClick={() => {
                       setActivePlannerWeekIndex(weekIndex);
-                      setExpandedPlannerDayIndex(null);
+                      setSelectedPlannerActivity(null);
+                      setPlannerMoveDate("");
                     }}
                   >
                     <strong>Week {weekIndex + 1}</strong>
@@ -4184,18 +4272,45 @@ export default function Home() {
 
                   <div className="unit-day-columns">
                     {activePlannerWeek.days.map((day, dayIndex) => (
-                      <article className={day.complete ? "unit-day-column is-complete" : "unit-day-column"} key={day.id}>
+                      <article
+                        className={day.complete ? "unit-day-column is-complete" : "unit-day-column"}
+                        key={day.id}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => handlePlannerActivityDrop(event, activePlannerWeekIndex ?? 0, dayIndex)}
+                      >
                         <div className="unit-day-head">
-                          <strong>Day {dayIndex + 1}</strong>
+                          <strong>{plannerWeekdayLabels[dayIndex]}</strong>
                           <span className={day.complete ? "tag good" : "tag planned"}>{day.complete ? "complete" : "planned"}</span>
                         </div>
+                        <p className="unit-day-date">{plannerDateForDay(activePlannerWeekIndex ?? 0, dayIndex) || `Day ${dayIndex + 1}`}</p>
                         <div className="unit-activity-pill-stack">
-                          {day.activities.map((activity) => (
-                            <span className={`unit-activity-pill is-${activity.status}`} key={activity.id}>{activity.title || "Untitled"}</span>
+                          {day.activities.map((activity, activityIndex) => (
+                            <button
+                              className={[
+                                "unit-activity-pill",
+                                `is-${activity.status}`,
+                                selectedPlannerActivity?.weekIndex === (activePlannerWeekIndex ?? 0) && selectedPlannerActivity.dayIndex === dayIndex && selectedPlannerActivity.activityId === activity.id ? "is-selected" : ""
+                              ].filter(Boolean).join(" ")}
+                              draggable
+                              key={activity.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPlannerActivity({ weekIndex: activePlannerWeekIndex ?? 0, dayIndex, activityId: activity.id });
+                                setPlannerMoveDate("");
+                              }}
+                              onDragStart={(event) => handlePlannerActivityDragStart(event, activePlannerWeekIndex ?? 0, dayIndex, activity.id)}
+                              onDragOver={(event) => event.preventDefault()}
+                              onDrop={(event) => {
+                                event.stopPropagation();
+                                handlePlannerActivityDrop(event, activePlannerWeekIndex ?? 0, dayIndex, activityIndex);
+                              }}
+                            >
+                              {activity.title || "Untitled"}
+                            </button>
                           ))}
                         </div>
-                        <button className="secondary-button" type="button" onClick={() => setExpandedPlannerDayIndex(expandedPlannerDayIndex === dayIndex ? null : dayIndex)}>
-                          {expandedPlannerDayIndex === dayIndex ? "Collapse" : "Expand"}
+                        <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, dayIndex)}>
+                          Create Activity
                         </button>
                       </article>
                     ))}
@@ -4208,56 +4323,59 @@ export default function Home() {
                 </div>
               )}
 
-              {activePlannerDay !== null && expandedPlannerDayIndex !== null ? (
+              {selectedPlannerActivityCard && selectedPlannerActivityDay && selectedPlannerActivity ? (
                 <section className="unit-day-detail-panel">
                   <div className="section-head">
                     <div>
-                      <p className="eyebrow">Week {(activePlannerWeekIndex ?? 0) + 1} Day {expandedPlannerDayIndex + 1}</p>
-                      <h2>Expanded teaching guide</h2>
+                      <p className="eyebrow">Week {selectedPlannerActivity.weekIndex + 1} {plannerWeekdayLabels[selectedPlannerActivity.dayIndex]}</p>
+                      <h2>Selected activity</h2>
                     </div>
                     <div className="primary-action-row">
-                      <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex)}>Add Activity</button>
-                      <button className="secondary-button" type="button" onClick={() => completePlannerDay(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex)} disabled={!activePlannerDay.activities.every(activityIsDone)}>Complete Day</button>
-                      <button className="primary-button" type="button" onClick={() => sendPlannerDayToDailyRecords(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex)}>Send Day to Daily Records</button>
+                      <button className="secondary-button" type="button" onClick={() => completePlannerDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)} disabled={!selectedPlannerActivityDay.activities.every(activityIsDone)}>Complete Day</button>
+                      <button className="primary-button" type="button" onClick={() => sendPlannerDayToDailyRecords(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)}>Send Day to Daily Records</button>
                     </div>
                   </div>
 
                   <div className="unit-day-activity-list">
-                    {activePlannerDay.activities.map((activity, activityIndex) => (
-                      <article className="unit-day-activity-card" key={activity.id}>
+                      <article className="unit-day-activity-card" key={selectedPlannerActivityCard.id}>
                         <div className="unit-activity-title-row">
-                          <label><span>Activity title</span><input value={activity.title} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { title: event.target.value })} /></label>
-                          <span className={`tag ${activity.status === "complete" ? "good" : activity.status === "planned" ? "planned" : ""}`}>{activity.status}</span>
+                          <label><span>Activity title</span><input value={selectedPlannerActivityCard.title} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { title: event.target.value })} /></label>
+                          <span className={`tag ${selectedPlannerActivityCard.status === "complete" ? "good" : selectedPlannerActivityCard.status === "planned" ? "planned" : ""}`}>{selectedPlannerActivityCard.status}</span>
                         </div>
                         <div className="unit-activity-body">
                           <div className="activity-card-header">
-                            <label><span>Expected time</span><input type="number" min="0" value={activity.expectedMinutes} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { expectedMinutes: Number(event.target.value) })} /></label>
-                            <label><span>Start time</span><input type="time" value={activity.startTime} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { startTime: event.target.value })} /></label>
-                            <label><span>Finish time</span><input type="time" value={activity.finishTime} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { finishTime: event.target.value })} /></label>
+                            <label><span>Expected time</span><input type="number" min="0" value={selectedPlannerActivityCard.expectedMinutes} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { expectedMinutes: Number(event.target.value) })} /></label>
+                            <label><span>Start time</span><input type="time" value={selectedPlannerActivityCard.startTime} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { startTime: event.target.value })} /></label>
+                            <label><span>Finish time</span><input type="time" value={selectedPlannerActivityCard.finishTime} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { finishTime: event.target.value })} /></label>
                           </div>
                           <div className="unit-day-activity-fields">
-                            <label><span>Activity description</span><textarea rows={2} value={activity.description} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { description: event.target.value })} /></label>
-                            <label><span>Prep notes</span><textarea rows={2} value={activity.prepNotes} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { prepNotes: event.target.value })} /></label>
+                            <label><span>Activity description</span><textarea rows={2} value={selectedPlannerActivityCard.description} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { description: event.target.value })} /></label>
+                            <label><span>Prep notes</span><textarea rows={2} value={selectedPlannerActivityCard.prepNotes} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { prepNotes: event.target.value })} /></label>
                           </div>
                           <details className="shopping-disclosure activity-shopping-disclosure">
                             <summary>Shopping List</summary>
-                            <label><span>Activity shopping list</span><textarea rows={2} value={activity.shoppingList} onChange={(event) => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { shoppingList: event.target.value })} /></label>
+                            <label><span>Activity shopping list</span><textarea rows={2} value={selectedPlannerActivityCard.shoppingList} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { shoppingList: event.target.value })} /></label>
                           </details>
                         </div>
+                        <div className="unit-planner-move-date-row">
+                          <label><span>Move activity to mm/dd</span><input type="date" value={plannerMoveDate} onChange={(event) => setPlannerMoveDate(event.target.value)} /></label>
+                          <button className="secondary-button" type="button" onClick={() => movePlannerActivityToDate(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, plannerMoveDate)} disabled={!plannerMoveDate || !activePlanner.startMonday}>Move to Date</button>
+                          {!activePlanner.startMonday ? <span className="status-line">Start Unit first so dates can map to weeks.</span> : null}
+                        </div>
                         <div className="primary-action-row">
-                          {activity.status === "complete" ? (
-                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { status: "planned" })}>Undo Complete</button>
+                          {selectedPlannerActivityCard.status === "complete" ? (
+                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "planned" })}>Undo Complete</button>
                           ) : (
-                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { status: "complete" })}>Complete Activity</button>
+                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "complete" })}>Complete Activity</button>
                           )}
-                          <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, { status: "skipped" })}>Skip</button>
-                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, -1)} disabled={activityIndex === 0}>Move Up</button>
-                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id, 1)} disabled={activityIndex === activePlannerDay.activities.length - 1}>Move Down</button>
-                          <button className="secondary-button" type="button" onClick={() => movePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id)}>Move Day</button>
-                          <button className="text-button" type="button" onClick={() => deletePlannerActivity(activePlannerWeekIndex ?? 0, expandedPlannerDayIndex, activity.id)}>Delete</button>
+                          <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "skipped" })}>Skip</button>
+                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, -1)} disabled={selectedPlannerActivityIndex <= 0}>Move Up</button>
+                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, 1)} disabled={selectedPlannerActivityIndex < 0 || selectedPlannerActivityIndex === selectedPlannerActivityDay.activities.length - 1}>Move Down</button>
+                          <button className="secondary-button" type="button" onClick={() => movePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}>Move Week/Day</button>
+                          <button className="secondary-button" type="button" onClick={() => setSelectedPlannerActivity(null)}>Close / Save</button>
+                          <button className="text-button" type="button" onClick={() => deletePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}>Delete</button>
                         </div>
                       </article>
-                    ))}
                   </div>
                 </section>
               ) : null}

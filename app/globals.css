@@ -1363,6 +1363,13 @@ details.skill-group[open] summary {
   gap: 8px;
 }
 
+.unit-day-date {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .unit-activity-pill-stack {
   display: flex;
   flex-direction: column;
@@ -1371,6 +1378,7 @@ details.skill-group[open] summary {
 
 .unit-activity-pill {
   display: block;
+  width: 100%;
   max-width: 100%;
   border: 1px solid var(--blue);
   border-radius: 999px;
@@ -1379,7 +1387,18 @@ details.skill-group[open] summary {
   padding: 6px 9px;
   font-size: 0.78rem;
   font-weight: 800;
+  text-align: left;
   overflow-wrap: anywhere;
+  cursor: grab;
+}
+
+.unit-activity-pill:active {
+  cursor: grabbing;
+}
+
+.unit-activity-pill.is-selected {
+  border-width: 2px;
+  box-shadow: 0 0 0 2px rgba(36, 116, 138, 0.18);
 }
 
 .unit-activity-pill.is-complete {
@@ -1465,6 +1484,19 @@ details.skill-group[open] summary {
 
 .activity-shopping-disclosure {
   background: #fbfcfc;
+}
+
+.unit-planner-move-date-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.45fr) auto minmax(160px, 1fr);
+  gap: 10px;
+  align-items: end;
+  padding-left: 18px;
+}
+
+.unit-planner-move-date-row label {
+  display: grid;
+  gap: 5px;
 }
 
 .compiled-shopping-list {
@@ -2606,6 +2638,7 @@ details.skill-group[open] summary {
     .unit-day-columns,
     .activity-card-header,
     .unit-day-activity-fields,
+    .unit-planner-move-date-row,
     .skill-rating-row,
     .portfolio-grid,
     .annual-section-hub,
