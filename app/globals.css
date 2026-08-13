@@ -121,6 +121,57 @@ a {
   text-transform: uppercase;
 }
 
+.tree-section,
+.tree-subsection {
+  margin-top: 8px;
+}
+
+.tree-section > summary,
+.tree-subsection > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  list-style: none;
+  padding: 7px 8px;
+  text-transform: uppercase;
+}
+
+.tree-subsection > summary {
+  color: var(--ink);
+  font-size: 0.78rem;
+  text-transform: none;
+}
+
+.tree-section > summary::-webkit-details-marker,
+.tree-subsection > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tree-section > summary::after,
+.tree-subsection > summary::after {
+  color: var(--muted);
+  content: "+";
+  font-weight: 900;
+  margin-left: 8px;
+}
+
+.tree-section[open] > summary::after,
+.tree-subsection[open] > summary::after {
+  content: "-";
+}
+
+.tree-section > summary:hover,
+.tree-subsection > summary:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
 .tree,
 .tree ul {
   margin: 0;

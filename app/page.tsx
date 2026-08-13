@@ -3151,6 +3151,15 @@ export default function Home() {
     setStatus(`Week ${weekIndex + 1} Day ${dayIndex + 1} planner content was sent to Daily Records as a Unit Study draft. Edit subject time, proof, and narration before saving.`);
   }
 
+  function openUnitPlanner(row: UnitPlanRow) {
+    setActiveTab("unit-planner");
+    setActivePlannerUnitKey(plannerKey(row.title));
+    setActivePlannerWeekIndex(null);
+    setSelectedPlannerActivity(null);
+    setPlannerMoveTarget({ week: "", day: "" });
+    setUnitStudy(row.title);
+  }
+
   useEffect(() => {
     if (!student || !schoolYear) return;
     let isCurrent = true;
@@ -4057,6 +4066,7 @@ export default function Home() {
   const annualReviewSkillRows = Object.keys(annualReviewSubjectTimeSummary).length
     ? Object.keys(annualReviewSubjectTimeSummary).slice(0, 8)
     : ["Language Arts", "Math", "Science", "Social Studies"];
+  const activeUnitStudyRow = unitPlanRows.find((row) => row.status === "active") ?? unitPlanRows[0];
 
   return (
     <main className="mockup-shell">
@@ -4067,64 +4077,107 @@ export default function Home() {
         </div>
 
         <nav>
-          <p className="tree-title">School Years</p>
+          <p className="tree-title">Active School Year</p>
           <ul className="tree">
             <li>
-              <button className="tree-button is-context" type="button">
-                2026-2027 <span>Trial / Active</span>
-              </button>
-              <ul>
-                {workspaceTabs
-                  .filter((tab) => tab.key !== "tools")
-                  .map((tab) => (
-                    <li key={tab.key}>
-                      <button className={activeTab === tab.key ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab(tab.key)}>
-                        {tab.label}
-                        {tab.key === "quarter" && quarterAlert.label !== "No reminder" && quarterAlert.label !== "Complete" ? (
-                          <span className="alert-sidebar-badge">{quarterAlert.label}</span>
-                        ) : null}
-                      </button>
-                    </li>
-                  ))}
-              </ul>
-            </li>
-            <li>
-              <button className="tree-button" type="button" onClick={() => setActiveTab("daily")}>
-                2027-2028 <span>Planned</span>
+              <button className="tree-button is-context" type="button" onClick={() => setActiveTab("daily")}>
+                {schoolYear} <span>2nd Grade</span>
               </button>
             </li>
           </ul>
 
-          <p className="tree-title">Unit Studies</p>
-          <ul className="tree">
-            {unitPlanRows.slice(0, 6).map((row) => (
-              <li key={row.id}>
-                <button
-                  className={activeTab === "unit-planner" && activePlannerUnitKey === plannerKey(row.title) ? "tree-button is-active" : row.status === "active" ? "tree-button is-context" : "tree-button"}
-                  type="button"
-                  onClick={() => {
-                    setActiveTab("unit-planner");
-                    setActivePlannerUnitKey(plannerKey(row.title));
-                    setActivePlannerWeekIndex(null);
-                    setSelectedPlannerActivity(null);
-                    setPlannerMoveTarget({ week: "", day: "" });
-                    setUnitStudy(row.title);
-                  }}
-                >
-                  {row.title} <span>{row.status}</span>
+          <details className="tree-section" open>
+            <summary>Daily Rhythm</summary>
+            <ul className="tree">
+              <li><button className={activeTab === "daily" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("daily")}>Daily Records</button></li>
+              <li>
+                <button className={activeTab === "unit-planner" && activePlannerUnitKey === plannerKey(activeUnitStudyRow.title) ? "tree-button is-active" : "tree-button"} type="button" onClick={() => openUnitPlanner(activeUnitStudyRow)}>
+                  Active Unit Study <span>{activeUnitStudyRow.title}</span>
                 </button>
               </li>
-            ))}
-          </ul>
+              <li><button className={activeTab === "weekly" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("weekly")}>Weekly Reviews</button></li>
+              <li><button className={activeTab === "portfolio" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("portfolio")}>Portfolio</button></li>
+            </ul>
+          </details>
 
-          <p className="tree-title">Workspace</p>
-          <ul className="tree">
-            <li>
-              <button className={activeTab === "tools" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("tools")}>
-                Workspace Tools
-              </button>
-            </li>
-          </ul>
+          <details className="tree-section">
+            <summary>Unit Study Planner</summary>
+            <ul className="tree">
+              <li>
+                <details className="tree-subsection">
+                  <summary>Current Year Planned Units</summary>
+                  <ul>
+                    {unitPlanRows.slice(0, 6).map((row) => (
+                      <li key={row.id}>
+                        <button
+                          className={activeTab === "unit-planner" && activePlannerUnitKey === plannerKey(row.title) ? "tree-button is-active" : row.status === "active" ? "tree-button is-context" : "tree-button"}
+                          type="button"
+                          onClick={() => openUnitPlanner(row)}
+                        >
+                          {row.title} <span>{row.status}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </details>
+
+          <details className="tree-section">
+            <summary>
+              Admin Files
+              {quarterAlert.label !== "No reminder" && quarterAlert.label !== "Complete" ? <span className="alert-sidebar-badge">{quarterAlert.label}</span> : null}
+            </summary>
+            <ul className="tree">
+              <li>
+                <button className={activeTab === "quarter" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("quarter")}>
+                  Quarterly Review
+                  {quarterAlert.label !== "No reminder" && quarterAlert.label !== "Complete" ? <span className="alert-sidebar-badge">{quarterAlert.label}</span> : null}
+                </button>
+              </li>
+              <li><button className={activeTab === "annual-plan" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("annual-plan")}>Annual Plan</button></li>
+              <li><button className={activeTab === "annual-review" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("annual-review")}>Annual Review</button></li>
+              <li><button className={activeTab === "reports" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("reports")}>Reports</button></li>
+              <li><button className={activeTab === "legal" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("legal")}>Legal Archive</button></li>
+              <li><button className={activeTab === "records" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("records")}>Records & Snapshots</button></li>
+              <li><button className={activeTab === "tools" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("tools")}>Workspace Tools</button></li>
+            </ul>
+          </details>
+
+          <details className="tree-section">
+            <summary>School Years</summary>
+            <ul className="tree">
+              <li>
+                <details className="tree-subsection">
+                  <summary>Next School Year</summary>
+                  <ul>
+                    <li>
+                      <button
+                        className={schoolYear === "2027-2028" ? "tree-button is-context" : "tree-button"}
+                        type="button"
+                        onClick={() => {
+                          setSchoolYear("2027-2028");
+                          setSchoolYearStatus("planned");
+                          setActiveTab("annual-plan");
+                        }}
+                      >
+                        Future Year Planned Units <span>2027-2028</span>
+                      </button>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+              <li>
+                <details className="tree-subsection">
+                  <summary>Past School Years</summary>
+                  <ul>
+                    <li><button className="tree-button" type="button">2025-2026 <span>archive</span></button></li>
+                  </ul>
+                </details>
+              </li>
+            </ul>
+          </details>
         </nav>
       </aside>
 
