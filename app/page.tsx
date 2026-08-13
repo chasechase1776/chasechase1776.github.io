@@ -2971,29 +2971,6 @@ export default function Home() {
     setSelectedPlannerActivity((current) => (current?.activityId === activityId ? null : current));
   }
 
-  function reorderPlannerActivity(weekIndex: number, dayIndex: number, activityId: string, direction: -1 | 1) {
-    updatePlanner((planner) => ({
-      ...planner,
-      weeks: planner.weeks.map((week, weekPosition) =>
-        weekPosition === weekIndex
-          ? {
-              ...week,
-              complete: false,
-              days: week.days.map((day, dayPosition) => {
-                if (dayPosition !== dayIndex) return day;
-                const currentIndex = day.activities.findIndex((activity) => activity.id === activityId);
-                const nextIndex = currentIndex + direction;
-                if (currentIndex < 0 || nextIndex < 0 || nextIndex >= day.activities.length) return day;
-                const activities = [...day.activities];
-                [activities[currentIndex], activities[nextIndex]] = [activities[nextIndex], activities[currentIndex]];
-                return { ...day, complete: false, activities };
-              })
-            }
-          : week
-      )
-    }));
-  }
-
   function movePlannerActivityToPosition(sourceWeekIndex: number, sourceDayIndex: number, activityId: string, targetWeekIndex: number, targetDayIndex: number, targetIndex: number) {
     const planner = unitStudyPlanners[activePlannerUnitKey];
     const activity = planner?.weeks[sourceWeekIndex]?.days[sourceDayIndex]?.activities.find((item) => item.id === activityId);
@@ -3016,7 +2993,6 @@ export default function Home() {
         })
       }))
     }));
-    setSelectedPlannerActivity({ weekIndex: targetWeekIndex, dayIndex: targetDayIndex, activityId });
   }
 
   function handlePlannerActivityDragStart(event: DragEvent<HTMLButtonElement>, weekIndex: number, dayIndex: number, activityId: string) {
@@ -3933,10 +3909,6 @@ export default function Home() {
     selectedPlannerActivityDay && selectedPlannerActivity
       ? selectedPlannerActivityDay.activities.find((activity) => activity.id === selectedPlannerActivity.activityId) ?? null
       : null;
-  const selectedPlannerActivityIndex =
-    selectedPlannerActivityDay && selectedPlannerActivity
-      ? selectedPlannerActivityDay.activities.findIndex((activity) => activity.id === selectedPlannerActivity.activityId)
-      : -1;
   const activePlannerActivityShoppingItems =
     activePlannerWeek
       ? activePlannerWeek.days
@@ -4402,10 +4374,8 @@ export default function Home() {
                             <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "complete" })}>Complete Activity</button>
                           )}
                           <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "skipped" })}>Skip</button>
-                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, -1)} disabled={selectedPlannerActivityIndex <= 0}>Move Up</button>
-                          <button className="secondary-button" type="button" onClick={() => reorderPlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, 1)} disabled={selectedPlannerActivityIndex < 0 || selectedPlannerActivityIndex === selectedPlannerActivityDay.activities.length - 1}>Move Down</button>
                           <button className="secondary-button" type="button" onClick={() => movePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}>Move Week/Day</button>
-                          <button className="secondary-button" type="button" onClick={() => setSelectedPlannerActivity(null)}>Close / Save</button>
+                          <button className="success-button" type="button" onClick={() => setSelectedPlannerActivity(null)}>Close / Save</button>
                           <button className="text-button" type="button" onClick={() => deletePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}>Delete</button>
                         </div>
                       </article>
