@@ -1618,6 +1618,7 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [isDailyEntryModalOpen, setIsDailyEntryModalOpen] = useState(false);
   const [annualPlanStatus, setAnnualPlanStatus] = useState<"draft" | "active" | "finalized" | "archived">("active");
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
   const [isAnnualPlanSaving, setIsAnnualPlanSaving] = useState(false);
@@ -1954,13 +1955,14 @@ export default function Home() {
     setUploadedArtifacts([]);
     setSelectedProof([]);
     setStatus(`${type} selected. Entry text is separate for each activity type.`);
+    setIsDailyEntryModalOpen(true);
   }
 
   function buttonState(type: string) {
     const matching = savedActivities.filter((activity) => activity.activityType === type);
     const hasApproved = matching.some((activity) => activity.parentApproved);
-    if (type === selectedType && hasApproved) return "selected-completed";
-    if (type === selectedType) return "selected";
+    if (type === selectedType && isDailyEntryModalOpen && hasApproved) return "selected-completed";
+    if (type === selectedType && isDailyEntryModalOpen) return "selected";
     if (hasApproved) return "completed";
     const hasNeedsReview = matching.some((activity) => !activity.parentApproved || activity.reviewStatus === "needs_review");
     if (hasNeedsReview) return "needs-review";
@@ -2486,6 +2488,10 @@ export default function Home() {
           : `Draft saved with ${uploadedArtifacts.length} proof item${uploadedArtifacts.length === 1 ? "" : "s"}. ${selectedType} will show yellow for ${selectedDate} unless an approved record also exists.`
       );
       setUploadedArtifacts([]);
+      if (parentApproved) {
+        setIsDailyEntryModalOpen(false);
+        setShowDetails(false);
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Activity save failed.");
     } finally {
@@ -4450,17 +4456,6 @@ export default function Home() {
 
             {activeTab === "daily" ? (
               <>
-            <section className="review-alert-card trial-banner">
-              <div className="alert-head">
-                <div>
-                  <p className="eyebrow">Pre-launch status</p>
-                  <h2>Trial Mode</h2>
-                  <p>Practice records stay separate from official reporting unless you choose to include them later.</p>
-                </div>
-                <span className="alert-status">Trial</span>
-              </div>
-            </section>
-
             <section className="panel quick-log-panel">
               <div className="section-head">
                 <div>
@@ -4487,6 +4482,23 @@ export default function Home() {
                 Completion states are calculated from saved database records for the selected date. Changing the date reloads historical activity states without deleting prior records.
               </p>
             </section>
+
+            {isDailyEntryModalOpen ? (
+              <div
+                className="daily-entry-modal-backdrop"
+                role="presentation"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) setIsDailyEntryModalOpen(false);
+                }}
+              >
+                <div className="daily-entry-modal" role="dialog" aria-modal="true" aria-labelledby="daily-entry-modal-title">
+                  <div className="section-head daily-entry-modal-head">
+                    <div>
+                      <p className="eyebrow">Daily record entry</p>
+                      <h2 id="daily-entry-modal-title">{selectedType}</h2>
+                    </div>
+                    <button className="secondary-button" type="button" onClick={() => setIsDailyEntryModalOpen(false)}>Close</button>
+                  </div>
 
             <section className="panel quick-log-panel">
               <div className="section-head">
@@ -4966,6 +4978,10 @@ export default function Home() {
                 </div>
               </div>
             </details>
+
+                </div>
+              </div>
+            ) : null}
 
               </>
             ) : null}

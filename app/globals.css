@@ -826,6 +826,40 @@ textarea {
   line-height: 1.45;
 }
 
+.daily-entry-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: start center;
+  overflow: auto;
+  background: rgba(10, 23, 29, 0.42);
+  padding: 20px;
+}
+
+.daily-entry-modal {
+  display: grid;
+  gap: 14px;
+  width: min(1080px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbfc;
+  box-shadow: 0 24px 70px rgba(10, 23, 29, 0.28);
+  padding: 16px;
+}
+
+.daily-entry-modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
 .duplicate-record-list {
   display: grid;
   gap: 8px;
