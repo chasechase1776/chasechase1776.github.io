@@ -4101,26 +4101,19 @@ export default function Home() {
           </details>
 
           <details className="tree-section">
-            <summary>Unit Study Planner</summary>
+            <summary>Current Year Unit Planner</summary>
             <ul className="tree">
-              <li>
-                <details className="tree-subsection">
-                  <summary>Current Year Planned Units</summary>
-                  <ul>
-                    {unitPlanRows.slice(0, 6).map((row) => (
-                      <li key={row.id}>
-                        <button
-                          className={activeTab === "unit-planner" && activePlannerUnitKey === plannerKey(row.title) ? "tree-button is-active" : row.status === "active" ? "tree-button is-context" : "tree-button"}
-                          type="button"
-                          onClick={() => openUnitPlanner(row)}
-                        >
-                          {row.title} <span>{row.status}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </li>
+              {unitPlanRows.slice(0, 6).map((row) => (
+                <li key={row.id}>
+                  <button
+                    className={activeTab === "unit-planner" && activePlannerUnitKey === plannerKey(row.title) ? "tree-button is-active" : row.status === "active" ? "tree-button is-context" : "tree-button"}
+                    type="button"
+                    onClick={() => openUnitPlanner(row)}
+                  >
+                    {row.title} <span>{row.status}</span>
+                  </button>
+                </li>
+              ))}
             </ul>
           </details>
 
@@ -4150,7 +4143,7 @@ export default function Home() {
             <ul className="tree">
               <li>
                 <details className="tree-subsection">
-                  <summary>Next School Year</summary>
+                  <summary>Future Years</summary>
                   <ul>
                     <li>
                       <button
@@ -4162,7 +4155,20 @@ export default function Home() {
                           setActiveTab("annual-plan");
                         }}
                       >
-                        Future Year Planned Units <span>2027-2028</span>
+                        2027-2028 <span>planned</span>
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className={schoolYear === "2028-2029" ? "tree-button is-context" : "tree-button"}
+                        type="button"
+                        onClick={() => {
+                          setSchoolYear("2028-2029");
+                          setSchoolYearStatus("planned");
+                          setActiveTab("annual-plan");
+                        }}
+                      >
+                        2028-2029 <span>planned</span>
                       </button>
                     </li>
                   </ul>
@@ -4170,7 +4176,7 @@ export default function Home() {
               </li>
               <li>
                 <details className="tree-subsection">
-                  <summary>Past School Years</summary>
+                  <summary>Past Years</summary>
                   <ul>
                     <li><button className="tree-button" type="button">2025-2026 <span>archive</span></button></li>
                   </ul>

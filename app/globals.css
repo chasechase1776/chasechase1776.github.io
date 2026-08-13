@@ -142,7 +142,15 @@ a {
   text-transform: uppercase;
 }
 
+.tree-section > summary {
+  border: 1px solid #b7d7df;
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
 .tree-subsection > summary {
+  border: 0;
+  background: transparent;
   color: var(--ink);
   font-size: 0.78rem;
   text-transform: none;
