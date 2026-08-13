@@ -2310,12 +2310,18 @@ details.skill-group[open] summary {
 
 .valuable-failure-main-grid {
   display: grid;
-  grid-template-columns: 160px repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
+}
+
+.valuable-failure-main-grid label {
+  align-self: start;
+  align-content: start;
 }
 
 .valuable-failure-title-field {
-  grid-column: span 4;
+  grid-column: span 3;
 }
 
 .valuable-failure-date-field {
