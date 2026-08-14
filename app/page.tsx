@@ -90,6 +90,7 @@ type BookListEntry = {
 };
 
 type PortfolioListCategory = "achievements" | "accolades" | "projects" | "fieldTrips" | "valuableFailures";
+type ValuableFailureStep = "setback" | "response" | "reflection" | "plan";
 
 type ValuableFailureFollowUp = {
   id: string;
@@ -111,6 +112,18 @@ type PortfolioListEntry = {
   resolved: boolean;
   followUps: ValuableFailureFollowUp[];
 };
+
+const valuableFailureStepOptions: {
+  key: ValuableFailureStep;
+  label: string;
+  prompt: string;
+  field: "narrative" | "response" | "reflection" | "plan";
+}[] = [
+  { key: "setback", label: "1. What happened?", prompt: "Failure or setback", field: "narrative" },
+  { key: "response", label: "2. How did he respond?", prompt: "Response", field: "response" },
+  { key: "reflection", label: "3. What did he learn?", prompt: "Reflection", field: "reflection" },
+  { key: "plan", label: "4. What is the plan?", prompt: "Plan", field: "plan" }
+];
 
 type ReportBucket = {
   key: string;
@@ -1525,6 +1538,7 @@ export default function Home() {
   const [isLegalArchiveBusy, setIsLegalArchiveBusy] = useState(false);
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activePortfolioSection, setActivePortfolioSection] = useState<PortfolioSection | null>(null);
+  const [activeValuableFailureSteps, setActiveValuableFailureSteps] = useState<Record<string, ValuableFailureStep>>({});
   const [bookListEntries, setBookListEntries] = useState<BookListEntry[]>([]);
   const [bookListMessage, setBookListMessage] = useState("Running book list is ready.");
   const [isBookListBusy, setIsBookListBusy] = useState(false);
@@ -2114,6 +2128,21 @@ export default function Home() {
       if (left.resolved !== right.resolved) return left.resolved ? 1 : -1;
       return right.date.localeCompare(left.date);
     });
+  }
+
+  function renderValuableFailureStepEditor(entry: PortfolioListEntry) {
+    const activeStep = activeValuableFailureSteps[entry.id] ?? "setback";
+    const option = valuableFailureStepOptions.find((item) => item.key === activeStep) ?? valuableFailureStepOptions[0];
+    return (
+      <label className="valuable-failure-step-editor">
+        <span>{option.prompt}</span>
+        <textarea
+          rows={5}
+          value={entry[option.field]}
+          onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { [option.field]: event.target.value })}
+        />
+      </label>
+    );
   }
 
   async function uploadPortfolioListArtifact(category: PortfolioListCategory, entryId: string, event: ChangeEvent<HTMLInputElement>) {
@@ -6564,23 +6593,20 @@ export default function Home() {
                             <span>Date</span>
                             <input type="date" value={entry.date} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { date: event.target.value })} />
                           </label>
-                          <label className="valuable-failure-narrative-field">
-                            <span>Failure or setback</span>
-                            <textarea rows={4} value={entry.narrative} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { narrative: event.target.value })} />
-                          </label>
-                          <label className="valuable-failure-narrative-field">
-                            <span>Response</span>
-                            <textarea rows={4} value={entry.response} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { response: event.target.value })} />
-                          </label>
-                          <label className="valuable-failure-narrative-field">
-                            <span>Reflection</span>
-                            <textarea rows={4} value={entry.reflection} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { reflection: event.target.value })} />
-                          </label>
-                          <label className="valuable-failure-narrative-field">
-                            <span>Plan</span>
-                            <textarea rows={4} value={entry.plan} onChange={(event) => updatePortfolioListEntry("valuableFailures", entry.id, { plan: event.target.value })} />
-                          </label>
                         </div>
+                        <div className="valuable-failure-step-buttons" aria-label="Valuable setback reflection steps">
+                          {valuableFailureStepOptions.map((option) => (
+                            <button
+                              className={(activeValuableFailureSteps[entry.id] ?? "setback") === option.key ? "step-button is-active" : "step-button"}
+                              key={option.key}
+                              type="button"
+                              onClick={() => setActiveValuableFailureSteps((current) => ({ ...current, [entry.id]: option.key }))}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                        {renderValuableFailureStepEditor(entry)}
                         <div className="valuable-failure-actions">
                           <label className="checkbox-row">
                             <input

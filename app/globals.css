@@ -2328,6 +2328,8 @@ details.skill-group[open] summary {
 }
 
 .valuable-failure-card.is-resolved .valuable-failure-main-grid,
+.valuable-failure-card.is-resolved .valuable-failure-step-buttons,
+.valuable-failure-card.is-resolved .valuable-failure-step-editor,
 .valuable-failure-card.is-resolved .valuable-failure-actions,
 .valuable-failure-card.is-resolved .valuable-follow-up-list {
   display: none;
@@ -2335,7 +2337,7 @@ details.skill-group[open] summary {
 
 .valuable-failure-main-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) 170px;
   gap: 10px;
   align-items: start;
 }
@@ -2346,20 +2348,44 @@ details.skill-group[open] summary {
 }
 
 .valuable-failure-title-field {
-  grid-column: span 3;
+  grid-column: span 1;
 }
 
 .valuable-failure-date-field {
   grid-column: span 1;
 }
 
-.valuable-failure-narrative-field {
-  grid-column: span 1;
+.valuable-failure-step-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.valuable-failure-main-grid textarea,
+.step-button {
+  min-height: 44px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--accent-strong);
+  font-weight: 800;
+  text-align: left;
+  padding: 10px 11px;
+}
+
+.step-button.is-active {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.valuable-failure-step-editor {
+  margin-top: 10px;
+}
+
+.valuable-failure-step-editor textarea,
 .valuable-follow-up-row textarea {
-  min-height: 116px;
+  min-height: 170px;
   field-sizing: content;
 }
 
@@ -2793,6 +2819,7 @@ details.skill-group[open] summary {
     .book-list-header,
     .book-list-row,
     .valuable-failure-main-grid,
+    .valuable-failure-step-buttons,
     .valuable-failure-actions,
     .valuable-follow-up-row,
     .snapshot-count-grid,
