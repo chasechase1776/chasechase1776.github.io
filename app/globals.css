@@ -2313,6 +2313,14 @@ details.skill-group[open] summary {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
 }
 
 .valuable-failure-history-summary strong {
@@ -2327,12 +2335,17 @@ details.skill-group[open] summary {
   font-weight: 800;
 }
 
-.valuable-failure-card.is-resolved .valuable-failure-main-grid,
-.valuable-failure-card.is-resolved .valuable-failure-step-buttons,
-.valuable-failure-card.is-resolved .valuable-failure-step-editor,
-.valuable-failure-card.is-resolved .valuable-failure-actions,
-.valuable-failure-card.is-resolved .valuable-follow-up-list {
+.valuable-failure-card.is-resolved:not(.is-expanded) .valuable-failure-main-grid,
+.valuable-failure-card.is-resolved:not(.is-expanded) .valuable-failure-step-buttons,
+.valuable-failure-card.is-resolved:not(.is-expanded) .valuable-failure-step-editor,
+.valuable-failure-card.is-resolved:not(.is-expanded) .valuable-failure-actions,
+.valuable-failure-card.is-resolved:not(.is-expanded) .valuable-follow-up-list {
   display: none;
+}
+
+.valuable-failure-card.is-expanded .valuable-failure-history-summary {
+  border-bottom: 1px solid var(--soft-line);
+  padding-bottom: 10px;
 }
 
 .valuable-failure-main-grid {

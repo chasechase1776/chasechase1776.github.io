@@ -1539,6 +1539,7 @@ export default function Home() {
   const [selectedPortfolioKey, setSelectedPortfolioKey] = useState("all");
   const [activePortfolioSection, setActivePortfolioSection] = useState<PortfolioSection | null>(null);
   const [activeValuableFailureSteps, setActiveValuableFailureSteps] = useState<Record<string, ValuableFailureStep>>({});
+  const [expandedResolvedFailureIds, setExpandedResolvedFailureIds] = useState<string[]>([]);
   const [bookListEntries, setBookListEntries] = useState<BookListEntry[]>([]);
   const [bookListMessage, setBookListMessage] = useState("Running book list is ready.");
   const [isBookListBusy, setIsBookListBusy] = useState(false);
@@ -2128,6 +2129,12 @@ export default function Home() {
       if (left.resolved !== right.resolved) return left.resolved ? 1 : -1;
       return right.date.localeCompare(left.date);
     });
+  }
+
+  function toggleResolvedFailureExpanded(entryId: string) {
+    setExpandedResolvedFailureIds((current) =>
+      current.includes(entryId) ? current.filter((id) => id !== entryId) : [...current, entryId]
+    );
   }
 
   function renderValuableFailureStepEditor(entry: PortfolioListEntry) {
@@ -6576,13 +6583,20 @@ export default function Home() {
                   </div>
                   <p className="status-line" role="status">{portfolioListMessages.valuableFailures}</p>
                   <div className="valuable-failure-list">
-                    {valuableFailureDisplayEntries().length ? valuableFailureDisplayEntries().map((entry) => (
-                      <article className={entry.resolved ? "valuable-failure-card is-resolved" : "valuable-failure-card"} key={entry.id}>
+                    {valuableFailureDisplayEntries().length ? valuableFailureDisplayEntries().map((entry) => {
+                      const isExpandedResolvedEntry = entry.resolved && expandedResolvedFailureIds.includes(entry.id);
+                      return (
+                      <article className={entry.resolved ? `valuable-failure-card is-resolved${isExpandedResolvedEntry ? " is-expanded" : ""}` : "valuable-failure-card"} key={entry.id}>
                         {entry.resolved ? (
-                          <div className="valuable-failure-history-summary">
+                          <button
+                            className="valuable-failure-history-summary"
+                            type="button"
+                            onClick={() => toggleResolvedFailureExpanded(entry.id)}
+                            aria-expanded={isExpandedResolvedEntry}
+                          >
                             <strong>{entry.title.trim() || "Resolved event"}</strong>
                             <span>{dateLabel(entry.date)}</span>
-                          </div>
+                          </button>
                         ) : null}
                         <div className="valuable-failure-main-grid">
                           <label className="valuable-failure-title-field">
@@ -6659,7 +6673,8 @@ export default function Home() {
                           </div>
                         ) : null}
                       </article>
-                    )) : <p className="muted">No valuable setbacks & failures added yet.</p>}
+                      );
+                    }) : <p className="muted">No valuable setbacks & failures added yet.</p>}
                   </div>
                   <details className="report-bucket-card">
                     <summary className="report-bucket-summary">
