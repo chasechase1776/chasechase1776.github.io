@@ -4377,7 +4377,7 @@ export default function Home() {
               </div>
 
               <details className="guidance-disclosure">
-                <summary>Guidance</summary>
+                <summary>Theme Guidance</summary>
                 <div className="guidance-field-stack">
                   <label><span>Unit Writing Topics</span><input value={activePlanner.unitWritingTopics} onChange={(event) => updatePlannerField("unitWritingTopics", event.target.value)} /></label>
                   <label><span>Unit Presentation Topics</span><input value={activePlanner.unitPresentationTopics} onChange={(event) => updatePlannerField("unitPresentationTopics", event.target.value)} /></label>
@@ -4416,7 +4416,7 @@ export default function Home() {
                   </div>
 
                   <details className="guidance-disclosure">
-                    <summary>Guidance</summary>
+                    <summary>Weekly Guidance</summary>
                     <div className="guidance-field-stack">
                       <label><span>Weekly question</span><input value={activePlannerWeek.weeklyQuestion} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "weeklyQuestion", event.target.value)} /></label>
                       <label><span>Weekly writing topics</span><input value={activePlannerWeek.writingTopics} onChange={(event) => updatePlannerWeek(activePlannerWeekIndex ?? 0, "writingTopics", event.target.value)} /></label>
