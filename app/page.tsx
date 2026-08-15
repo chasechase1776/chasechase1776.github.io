@@ -1563,8 +1563,10 @@ export default function Home() {
   const [isWeeklyReviewModalOpen, setIsWeeklyReviewModalOpen] = useState(false);
   const [reviewedWeeklySections, setReviewedWeeklySections] = useState<WeeklyReviewSection[]>([]);
   const [activeQuarterSection, setActiveQuarterSection] = useState<WeeklyReviewSection>("summary");
+  const [isQuarterReviewModalOpen, setIsQuarterReviewModalOpen] = useState(false);
   const [reviewedQuarterSections, setReviewedQuarterSections] = useState<WeeklyReviewSection[]>([]);
   const [activeAnnualReviewSection, setActiveAnnualReviewSection] = useState<WeeklyReviewSection>("summary");
+  const [isAnnualReviewModalOpen, setIsAnnualReviewModalOpen] = useState(false);
   const [reviewedAnnualReviewSections, setReviewedAnnualReviewSections] = useState<WeeklyReviewSection[]>([]);
   const [weeklyReviewId, setWeeklyReviewId] = useState("");
   const [weeklyStartDate, setWeeklyStartDate] = useState(mondayForIsoDate(todayIso()));
@@ -5315,18 +5317,38 @@ export default function Home() {
                   <button
                     className={[
                       "weekly-section-button",
-                      activeQuarterSection === key ? "is-active" : "",
+                      activeQuarterSection === key && isQuarterReviewModalOpen ? "is-active" : "",
                       reviewedQuarterSections.includes(key as WeeklyReviewSection) ? "is-reviewed" : ""
                     ].filter(Boolean).join(" ")}
                     key={key}
                     type="button"
-                    onClick={() => setActiveQuarterSection(key as WeeklyReviewSection)}
+                    onClick={() => {
+                      setActiveQuarterSection(key as WeeklyReviewSection);
+                      setIsQuarterReviewModalOpen(true);
+                    }}
                   >
                     <strong>{label}</strong>
                     <span>{description}</span>
                   </button>
                 ))}
               </div>
+
+              {isQuarterReviewModalOpen ? (
+                <div
+                  className="weekly-review-modal-backdrop"
+                  role="presentation"
+                  onMouseDown={(event) => {
+                    if (event.target === event.currentTarget) setIsQuarterReviewModalOpen(false);
+                  }}
+                >
+                  <div className="weekly-review-modal" role="dialog" aria-modal="true" aria-labelledby="quarter-review-modal-title">
+                    <div className="section-head weekly-review-modal-head">
+                      <div>
+                        <p className="eyebrow">Quarter Review Section</p>
+                        <h2 id="quarter-review-modal-title">{weeklySectionLabels[activeQuarterSection]}</h2>
+                      </div>
+                      <button className="secondary-button" type="button" onClick={() => setIsQuarterReviewModalOpen(false)}>Close</button>
+                    </div>
 
               {activeQuarterSection === "summary" ? (
               <section className="weekly-subsection is-open">
@@ -5531,6 +5553,9 @@ export default function Home() {
                   </button>
                 </div>
               </section>
+              ) : null}
+                  </div>
+                </div>
               ) : null}
             </section>
             ) : null}
@@ -5973,18 +5998,38 @@ export default function Home() {
                   <button
                     className={[
                       "weekly-section-button",
-                      activeAnnualReviewSection === key ? "is-active" : "",
+                      activeAnnualReviewSection === key && isAnnualReviewModalOpen ? "is-active" : "",
                       reviewedAnnualReviewSections.includes(key as WeeklyReviewSection) ? "is-reviewed" : ""
                     ].filter(Boolean).join(" ")}
                     key={key}
                     type="button"
-                    onClick={() => setActiveAnnualReviewSection(key as WeeklyReviewSection)}
+                    onClick={() => {
+                      setActiveAnnualReviewSection(key as WeeklyReviewSection);
+                      setIsAnnualReviewModalOpen(true);
+                    }}
                   >
                     <strong>{label}</strong>
                     <span>{description}</span>
                   </button>
                 ))}
               </div>
+
+              {isAnnualReviewModalOpen ? (
+                <div
+                  className="weekly-review-modal-backdrop"
+                  role="presentation"
+                  onMouseDown={(event) => {
+                    if (event.target === event.currentTarget) setIsAnnualReviewModalOpen(false);
+                  }}
+                >
+                  <div className="weekly-review-modal" role="dialog" aria-modal="true" aria-labelledby="annual-review-modal-title">
+                    <div className="section-head weekly-review-modal-head">
+                      <div>
+                        <p className="eyebrow">Annual Review Section</p>
+                        <h2 id="annual-review-modal-title">{weeklySectionLabels[activeAnnualReviewSection]}</h2>
+                      </div>
+                      <button className="secondary-button" type="button" onClick={() => setIsAnnualReviewModalOpen(false)}>Close</button>
+                    </div>
 
               {activeAnnualReviewSection === "summary" ? (
               <section className="weekly-subsection is-open">
@@ -6116,6 +6161,9 @@ export default function Home() {
                 </button>
               </div>
               </section>
+              ) : null}
+                  </div>
+                </div>
               ) : null}
             </section>
             ) : null}
