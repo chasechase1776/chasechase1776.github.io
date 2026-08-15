@@ -4139,6 +4139,7 @@ export default function Home() {
               </li>
               <li><button className={activeTab === "weekly" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("weekly")}>Weekly Reviews</button></li>
               <li><button className={activeTab === "portfolio" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("portfolio")}>Portfolio</button></li>
+              <li><button className={activeTab === "tools" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("tools")}>Workspace Tools</button></li>
             </ul>
           </details>
 
@@ -4176,7 +4177,6 @@ export default function Home() {
               <li><button className={activeTab === "reports" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("reports")}>Reports</button></li>
               <li><button className={activeTab === "legal" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("legal")}>Legal Archive</button></li>
               <li><button className={activeTab === "records" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("records")}>Records & Snapshots</button></li>
-              <li><button className={activeTab === "tools" ? "tree-button is-active" : "tree-button"} type="button" onClick={() => setActiveTab("tools")}>Workspace Tools</button></li>
             </ul>
           </details>
 
