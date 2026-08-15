@@ -149,6 +149,7 @@ type WorkspaceTab = {
 
 type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
 type PortfolioSection = "proof" | "books" | PortfolioListCategory;
+type WorkspaceToolSection = "subjects" | "legal" | "parser" | "storage" | "rules";
 
 const DEFAULT_STUDENT_NAME = "Bennett C. Claypool";
 const STUDENT_NAME_STORAGE_KEY = "bennett-homeschool-student-name";
@@ -162,6 +163,14 @@ const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   student: "Student Reflection",
   skills: "Skills Review",
   portfolio: "Portfolio"
+};
+
+const workspaceToolSectionLabels: Record<WorkspaceToolSection, string> = {
+  subjects: "Subject Skills",
+  legal: "Legal Tags",
+  parser: "Parser Settings",
+  storage: "Storage Settings",
+  rules: "Record Rules"
 };
 
 const portfolioListLabels: Record<PortfolioListCategory, string> = {
@@ -705,6 +714,8 @@ const unitFormatOptions = ["Harbor & Sprout Template", "Open-and-Go Published Un
 const weeklyRhythmOverrideOptions = ["Use full rhythm", "None", "Light overlay", "Use Thursday heavily", "Finance daily", "Cooking Friday", "Context Wednesday focus", "Meaning Thursday focus", "Creating Friday capstone"];
 const unitStatusOptions: UnitPlanStatus[] = ["active", "upcoming", "planned", "complete", "skipped"];
 const plannerWeekdayLabels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const readAloudActivityTitle = "Read Aloud";
+const fridayTemplateActivityTitles = ["Writing Project Finalization & Critique", "Weekly Presentation:", "Complete Weekly Project"];
 
 const annualPlanSections: { id: AnnualPlanSectionId; label: string; summary: string }[] = [
   { id: "section-1", label: "Section 1", summary: "Big Picture Framework" },
@@ -735,13 +746,28 @@ function newPlannerActivity(weekIndex: number, dayIndex: number, activityIndex: 
   };
 }
 
+function ensureReadAloudFirst(day: UnitPlannerDay, weekIndex: number, dayIndex: number): UnitPlannerDay {
+  const readAloudIndex = day.activities.findIndex((activity) => activity.title.trim().toLowerCase() === readAloudActivityTitle.toLowerCase());
+  if (readAloudIndex === 0) return day;
+
+  const readAloudActivity =
+    readAloudIndex >= 0
+      ? day.activities[readAloudIndex]
+      : {
+          ...newPlannerActivity(weekIndex, dayIndex, 0, readAloudActivityTitle),
+          id: `planner-read-aloud-${weekIndex + 1}-${dayIndex + 1}`
+        };
+  const remainingActivities = day.activities.filter((_activity, index) => index !== readAloudIndex);
+  return { ...day, activities: [readAloudActivity, ...remainingActivities] };
+}
+
 function makePlannerWeek(weekIndex: number, unitTitle: string): UnitPlannerWeek {
   const seedTitles = [
-    [`Launch ${unitTitle}`, "Read and narrate", "Start notebook"],
-    ["Observation activity", "Writing practice"],
-    ["Hands-on investigation", "Sketch or diagram"],
-    ["Project work", "Presentation practice"],
-    ["Final Friday share", "Portfolio pick"]
+    [readAloudActivityTitle, `Launch ${unitTitle}`, "Read and narrate", "Start notebook"],
+    [readAloudActivityTitle, "Observation activity", "Writing practice"],
+    [readAloudActivityTitle, "Hands-on investigation", "Sketch or diagram"],
+    [readAloudActivityTitle, "Project work", "Presentation practice"],
+    [readAloudActivityTitle, "Final Friday share", "Portfolio pick"]
   ];
 
   return {
@@ -1589,6 +1615,8 @@ export default function Home() {
   const [activeAnnualReviewSection, setActiveAnnualReviewSection] = useState<WeeklyReviewSection>("summary");
   const [isAnnualReviewModalOpen, setIsAnnualReviewModalOpen] = useState(false);
   const [reviewedAnnualReviewSections, setReviewedAnnualReviewSections] = useState<WeeklyReviewSection[]>([]);
+  const [activeWorkspaceToolSection, setActiveWorkspaceToolSection] = useState<WorkspaceToolSection>("subjects");
+  const [isWorkspaceToolsModalOpen, setIsWorkspaceToolsModalOpen] = useState(false);
   const [weeklyReviewId, setWeeklyReviewId] = useState("");
   const [weeklyStartDate, setWeeklyStartDate] = useState(mondayForIsoDate(todayIso()));
   const [weeklyStatus, setWeeklyStatus] = useState<"draft" | "finalized" | "amended">("draft");
@@ -3017,6 +3045,30 @@ export default function Home() {
     setPlannerMoveTarget({ week: "", day: "" });
   }
 
+  function addFridayTemplate(weekIndex: number, dayIndex: number) {
+    updatePlanner((planner) => ({
+      ...planner,
+      weeks: planner.weeks.map((week, weekPosition) =>
+        weekPosition === weekIndex
+          ? {
+              ...week,
+              complete: false,
+              days: week.days.map((day, dayPosition) => {
+                if (dayPosition !== dayIndex) return day;
+                const existingTitles = new Set(day.activities.map((activity) => activity.title.trim().toLowerCase()));
+                const templateActivities = fridayTemplateActivityTitles
+                  .filter((title) => !existingTitles.has(title.toLowerCase()))
+                  .map((title, templateIndex) => newPlannerActivity(weekIndex, dayIndex, day.activities.length + templateIndex, title));
+                return templateActivities.length
+                  ? { ...day, complete: false, activities: [...day.activities, ...templateActivities] }
+                  : day;
+              })
+            }
+          : week
+      )
+    }));
+  }
+
   function deletePlannerActivity(weekIndex: number, dayIndex: number, activityId: string) {
     updatePlanner((planner) => ({
       ...planner,
@@ -3265,19 +3317,24 @@ export default function Home() {
         const weeksExpected = Math.max(1, Number.parseInt(row.weeks, 10) || currentPlanner.weeksExpected || 4);
         const weeks = [...currentPlanner.weeks];
         while (weeks.length < weeksExpected) weeks.push(makePlannerWeek(weeks.length, row.title));
+        const normalizedWeeks = weeks.slice(0, weeksExpected).map((week, weekIndex) => {
+          const normalizedDays = week.days.map((day, dayIndex) => ensureReadAloudFirst(day, weekIndex, dayIndex));
+          return normalizedDays.some((day, dayIndex) => day !== week.days[dayIndex]) ? { ...week, days: normalizedDays } : week;
+        });
         const syncedPlanner: UnitStudyPlanner = {
           ...currentPlanner,
           unitTitle: row.title,
           weeksExpected,
           unitQuestion: row.guidingQuestion || currentPlanner.unitQuestion,
-          weeks: weeks.slice(0, weeksExpected)
+          weeks: normalizedWeeks
         };
         const didChange =
           !next[key] ||
           currentPlanner.unitTitle !== syncedPlanner.unitTitle ||
           currentPlanner.weeksExpected !== syncedPlanner.weeksExpected ||
           currentPlanner.unitQuestion !== syncedPlanner.unitQuestion ||
-          currentPlanner.weeks.length !== syncedPlanner.weeks.length;
+          currentPlanner.weeks.length !== syncedPlanner.weeks.length ||
+          normalizedWeeks.some((week, index) => week !== currentPlanner.weeks[index]);
         if (didChange) {
           changed = true;
           next[key] = syncedPlanner;
@@ -3892,35 +3949,6 @@ export default function Home() {
     }
   }
 
-  const subjectTallies = useMemo(() => {
-    const totals = new Map<string, number>();
-    savedActivities
-      .filter((activity) => activity.parentApproved)
-      .forEach((activity) => {
-        activity.allocations.forEach((allocation) => {
-          totals.set(allocation.subject, (totals.get(allocation.subject) ?? 0) + allocation.minutes);
-        });
-      });
-
-    const visibleSubjects = [
-      "Language Arts",
-      "Math",
-      "Finance",
-      "Science",
-      "Social Studies",
-      "Music",
-      "Art",
-      "Foreign Language",
-      "Independent Reading",
-      "Extracurricular",
-      "Unit Study"
-    ];
-    Array.from(totals.keys()).forEach((subject) => {
-      if (!visibleSubjects.includes(subject)) visibleSubjects.push(subject);
-    });
-    return visibleSubjects.map((subject) => [subject, formatMinutes(totals.get(subject) ?? 0)]);
-  }, [savedActivities]);
-
   const portfolioNodes = useMemo<PortfolioNode[]>(() => {
     const proofArtifacts = portfolioArtifacts.filter((artifact) => !isReportArtifact(artifact) && !isPortfolioListArchive(artifact));
     const countBy = (getKey: (artifact: PortfolioArtifact) => string | null) => {
@@ -4459,9 +4487,16 @@ export default function Home() {
                             </button>
                           ))}
                         </div>
-                        <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, dayIndex)}>
-                          Create Activity
-                        </button>
+                        <div className="unit-day-action-row">
+                          <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, dayIndex)}>
+                            Create Activity
+                          </button>
+                          {dayIndex === 4 ? (
+                            <button className="secondary-button" type="button" onClick={() => addFridayTemplate(activePlannerWeekIndex ?? 0, dayIndex)}>
+                              Friday Template
+                            </button>
+                          ) : null}
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -4535,6 +4570,136 @@ export default function Home() {
                 </div>
               ) : null}
             </section>
+            ) : null}
+
+            {activeTab === "tools" ? (
+            <section className="panel workspace-tools-panel" id="workspace-tools">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Workspace tools</p>
+                  <h2>Open one tool at a time</h2>
+                  <p className="panel-note">Supporting settings and reference panels stay compact until you need them.</p>
+                </div>
+              </div>
+              <div className="weekly-section-hub workspace-tools-hub" aria-label="Workspace tool sections">
+                {(Object.keys(workspaceToolSectionLabels) as WorkspaceToolSection[]).map((section) => {
+                  const summaries: Record<WorkspaceToolSection, string> = {
+                    subjects: "Browse selectable skill pills by subject.",
+                    legal: "Check coverage tags used in records.",
+                    parser: "Review how AI draft cards should behave.",
+                    storage: "Check where uploads and PDFs belong.",
+                    rules: "Review time and record-keeping rules."
+                  };
+                  return (
+                    <button
+                      className={activeWorkspaceToolSection === section && isWorkspaceToolsModalOpen ? "weekly-section-button is-active" : "weekly-section-button"}
+                      key={section}
+                      type="button"
+                      onClick={() => {
+                        setActiveWorkspaceToolSection(section);
+                        setIsWorkspaceToolsModalOpen(true);
+                      }}
+                    >
+                      <strong>{workspaceToolSectionLabels[section]}</strong>
+                      <span>{summaries[section]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+            ) : null}
+
+            {activeTab === "tools" && isWorkspaceToolsModalOpen ? (
+              <div
+                className="weekly-review-modal-backdrop"
+                role="presentation"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) setIsWorkspaceToolsModalOpen(false);
+                }}
+              >
+                <section className="weekly-review-modal workspace-tools-modal" role="dialog" aria-modal="true" aria-labelledby="workspace-tools-modal-title">
+                  <div className="section-head weekly-review-modal-head">
+                    <div>
+                      <p className="eyebrow">Workspace tools</p>
+                      <h2 id="workspace-tools-modal-title">{workspaceToolSectionLabels[activeWorkspaceToolSection]}</h2>
+                    </div>
+                    <button className="secondary-button" type="button" onClick={() => setIsWorkspaceToolsModalOpen(false)}>Close</button>
+                  </div>
+
+                  {activeWorkspaceToolSection === "subjects" ? (
+                    <section className="panel" id="skills-panel">
+                      <div className="section-head">
+                        <div>
+                          <p className="eyebrow">AI matching source</p>
+                          <h2>Subject skills panel</h2>
+                        </div>
+                        <span className="tag">Editable taxonomy</span>
+                      </div>
+                      <div className="skills-matrix">
+                        {Object.entries(skillTaxonomy).map(([subject, skills]) => (
+                          <details className="skill-group" key={subject} open={subject === "Language Arts"}>
+                            <summary><span>{subject}</span><span>{skills.length} skills</span></summary>
+                            <div className="skill-list">
+                              {skills.map((skill) => <span className="skill-pill" key={skill}>{skill}</span>)}
+                            </div>
+                          </details>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {activeWorkspaceToolSection === "legal" ? (
+                    <section className="panel" id="legal-panel">
+                      <p className="eyebrow">Texas legal coverage</p>
+                      <h2>Legal coverage panel</h2>
+                      <div className="coverage-list compact-tool-list">
+                        {legalCoverage.map(([category, level]) => (
+                          <div key={category}><span>{category}</span><strong>{level}</strong></div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {activeWorkspaceToolSection === "parser" ? (
+                    <section className="panel">
+                      <p className="eyebrow">Parser settings</p>
+                      <h2>AI draft-card rules</h2>
+                      <div className="coverage-list compact-tool-list">
+                        <div><span>Subject source</span><strong>Use the activity and manual subject split first.</strong></div>
+                        <div><span>Skill pills</span><strong>Suggest relevant skills; parent can add or remove.</strong></div>
+                        <div><span>Legal tags</span><strong>Keep legal tags separate from subject and skill tags.</strong></div>
+                        <div><span>Time bars</span><strong>Show allocated time as part of the day total without double-counting.</strong></div>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {activeWorkspaceToolSection === "storage" ? (
+                    <section className="panel">
+                      <p className="eyebrow">Storage settings</p>
+                      <h2>Upload and report destinations</h2>
+                      <div className="coverage-list compact-tool-list">
+                        <div><span>Proof uploads</span><strong>Portfolio proof-file explorer</strong></div>
+                        <div><span>Generated PDFs</span><strong>Reports workspace buckets</strong></div>
+                        <div><span>Legal files</span><strong>Legal Archive file cabinet</strong></div>
+                        <div><span>Backups</span><strong>Records & Snapshots background archive</strong></div>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {activeWorkspaceToolSection === "rules" ? (
+                    <section className="panel">
+                      <p className="eyebrow">Record rules</p>
+                      <h2>Current counting rules</h2>
+                      <div className="coverage-list compact-tool-list">
+                        <div><span>Meaningful weekday</span><strong>180+ approved minutes</strong></div>
+                        <div><span>Weekend ticker</span><strong>Counts 180+ minute weekend days with no denominator.</strong></div>
+                        <div><span>Source of truth</span><strong>Approved daily activities drive reviews and reports.</strong></div>
+                        <div><span>Cross-subject links</span><strong>Tracked as links, not extra time.</strong></div>
+                      </div>
+                    </section>
+                  ) : null}
+                </section>
+              </div>
             ) : null}
 
             {activeTab === "daily" ? (
@@ -6813,9 +6978,9 @@ export default function Home() {
             ) : null}
           </section>
 
-          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" && activeTab !== "reports" && activeTab !== "legal" ? (
+          {activeTab !== "daily" && activeTab !== "portfolio" && activeTab !== "weekly" && activeTab !== "reports" && activeTab !== "legal" && activeTab !== "tools" ? (
           <aside className="side-column">
-            {activeTab === "quarter" || activeTab === "tools" ? (
+            {activeTab === "quarter" ? (
             <section className="review-alert-card quiet-alert" id="quarter-alert" aria-label="Quarter review alert">
               <div className="alert-head">
                 <div>
@@ -6824,52 +6989,6 @@ export default function Home() {
                   <p>{quarterAlert.summary}</p>
                 </div>
                 <span className="alert-status">{quarterAlert.label}</span>
-              </div>
-            </section>
-            ) : null}
-
-            {activeTab === "tools" ? (
-            <section className="panel" id="weekly-tally">
-              <p className="eyebrow">This week</p>
-              <h2>Weekly subject time tally</h2>
-              <div className="coverage-list">
-                {subjectTallies.map(([subject, time]) => (
-                  <div key={subject}><span>{subject}</span><strong>{time}</strong></div>
-                ))}
-              </div>
-            </section>
-            ) : null}
-
-            {activeTab === "tools" ? (
-            <section className="panel" id="legal-panel">
-              <p className="eyebrow">Texas legal coverage</p>
-              <h2>Legal coverage panel</h2>
-              <div className="coverage-list">
-                {legalCoverage.map(([category, level]) => (
-                  <div key={category}><span>{category}</span><strong>{level}</strong></div>
-                ))}
-              </div>
-            </section>
-            ) : null}
-
-            {activeTab === "tools" ? (
-            <section className="panel" id="skills-panel">
-              <div className="section-head">
-                <div>
-                  <p className="eyebrow">AI matching source</p>
-                  <h2>Subject skills panel</h2>
-                </div>
-                <span className="tag">Editable taxonomy</span>
-              </div>
-              <div className="skills-matrix">
-                {Object.entries(skillTaxonomy).map(([subject, skills]) => (
-                  <details className="skill-group" key={subject} open={subject === "Language Arts"}>
-                    <summary><span>{subject}</span><span>{skills.length} skills</span></summary>
-                    <div className="skill-list">
-                      {skills.map((skill) => <span className="skill-pill" key={skill}>{skill}</span>)}
-                    </div>
-                  </details>
-                ))}
               </div>
             </section>
             ) : null}

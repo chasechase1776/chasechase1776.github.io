@@ -1520,6 +1520,12 @@ details.skill-group[open] summary {
   gap: 7px;
 }
 
+.unit-day-action-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
 .unit-activity-pill {
   display: block;
   width: 100%;
@@ -1742,6 +1748,18 @@ details.skill-group[open] summary {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
+}
+
+.workspace-tools-hub {
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+}
+
+.workspace-tools-modal {
+  width: min(980px, calc(100vw - 40px));
+}
+
+.compact-tool-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .weekly-section-button {
