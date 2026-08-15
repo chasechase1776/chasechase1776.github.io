@@ -153,6 +153,8 @@ type PortfolioSection = "proof" | "books" | PortfolioListCategory;
 const DEFAULT_STUDENT_NAME = "Bennett C. Claypool";
 const STUDENT_NAME_STORAGE_KEY = "bennett-homeschool-student-name";
 const ACTIVITY_RESOURCES_STORAGE_KEY = "bennett-homeschool-activity-resources";
+const CURRENT_SCHOOL_YEAR_LABEL = "2026-2027";
+const CURRENT_SCHOOL_YEAR_STATUS = "trial";
 
 const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   summary: "Summary Info",
@@ -1098,6 +1100,25 @@ function nextSchoolYearLabel(value: string) {
   return `${Number(match[1]) + 1}-${Number(match[2]) + 1}`;
 }
 
+function blankFutureUnitPlanRows(label: string): UnitPlanRow[] {
+  return [
+    {
+      id: `future-unit-${label}`,
+      title: "New Unit Study",
+      weeks: "1",
+      guidingQuestion: "",
+      primaryCompetency: "",
+      formatType: "Minimal Structure / Parent-Designed",
+      weeklyRhythmOverride: "Use full rhythm",
+      publishedSequence: "No",
+      parentDesigned: "Yes",
+      fieldTrip: "",
+      finalFridayCapstone: "",
+      status: "upcoming"
+    }
+  ];
+}
+
 function blankPortfolioListEntry(category: PortfolioListCategory): PortfolioListEntry {
   return {
     id: `${category}-${Date.now()}`,
@@ -1502,8 +1523,8 @@ export default function Home() {
     const storedName = window.localStorage.getItem(STUDENT_NAME_STORAGE_KEY);
     return storedName && storedName !== "Bennett" ? storedName : DEFAULT_STUDENT_NAME;
   });
-  const [schoolYear, setSchoolYear] = useState("2026-2027");
-  const [schoolYearStatus, setSchoolYearStatus] = useState("trial");
+  const [schoolYear, setSchoolYear] = useState(CURRENT_SCHOOL_YEAR_LABEL);
+  const [schoolYearStatus, setSchoolYearStatus] = useState(CURRENT_SCHOOL_YEAR_STATUS);
   const [officialStartDate, setOfficialStartDate] = useState("2027-05-01");
   const [unitStudy, setUnitStudy] = useState("Construction");
   const [selectedDate, setSelectedDate] = useState(todayIso());
@@ -4113,6 +4134,28 @@ export default function Home() {
     : ["Language Arts", "Math", "Science", "Social Studies"];
   const activeUnitStudyRow = unitPlanRows.find((row) => row.status === "active") ?? unitPlanRows[0];
 
+  function switchToCurrentSchoolYear() {
+    setSchoolYear(CURRENT_SCHOOL_YEAR_LABEL);
+    setSchoolYearStatus(CURRENT_SCHOOL_YEAR_STATUS);
+    setActiveTab("daily");
+  }
+
+  function switchToFutureSchoolYear(label: string) {
+    const cleanRows = blankFutureUnitPlanRows(label);
+    setSchoolYear(label);
+    setSchoolYearStatus("planned");
+    setUnitPlanRows(cleanRows);
+    setUnitStudyPlanners(Object.fromEntries(cleanRows.map((row) => [plannerKey(row.title), makeUnitPlanner(row)])));
+    setActivePlannerUnitKey(plannerKey(cleanRows[0].title));
+    setActivePlannerWeekIndex(null);
+    setSelectedPlannerActivity(null);
+    setFinalizedAnnualPlanSections([]);
+    setAnnualPlanStatus("draft");
+    setAnnualPlanMessage(`${label} Annual Plan opened with a clean unit-study list.`);
+    setActiveAnnualPlanSection("section-4");
+    setActiveTab("annual-plan");
+  }
+
   return (
     <main className="mockup-shell">
       <aside className="sidebar" aria-label="School year and unit study navigation">
@@ -4187,31 +4230,32 @@ export default function Home() {
             <summary>School Years</summary>
             <ul className="tree">
               <li>
+                <button
+                  className={schoolYear === CURRENT_SCHOOL_YEAR_LABEL ? "tree-button is-context" : "tree-button"}
+                  type="button"
+                  onClick={switchToCurrentSchoolYear}
+                >
+                  Current School Year <span>{CURRENT_SCHOOL_YEAR_LABEL}</span>
+                </button>
+              </li>
+              <li>
                 <details className="tree-subsection">
                   <summary>Future Years</summary>
                   <ul>
                     <li>
                       <button
-                        className={schoolYear === "2027-2028" ? "tree-button is-context" : "tree-button"}
+                        className="tree-button"
                         type="button"
-                        onClick={() => {
-                          setSchoolYear("2027-2028");
-                          setSchoolYearStatus("planned");
-                          setActiveTab("annual-plan");
-                        }}
+                        onClick={() => switchToFutureSchoolYear("2027-2028")}
                       >
                         2027-2028 <span>planned</span>
                       </button>
                     </li>
                     <li>
                       <button
-                        className={schoolYear === "2028-2029" ? "tree-button is-context" : "tree-button"}
+                        className="tree-button"
                         type="button"
-                        onClick={() => {
-                          setSchoolYear("2028-2029");
-                          setSchoolYearStatus("planned");
-                          setActiveTab("annual-plan");
-                        }}
+                        onClick={() => switchToFutureSchoolYear("2028-2029")}
                       >
                         2028-2029 <span>planned</span>
                       </button>
