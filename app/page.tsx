@@ -1560,6 +1560,7 @@ export default function Home() {
   const [isPortfolioListBusy, setIsPortfolioListBusy] = useState(false);
   const [activeTab, setActiveTab] = useState<WorkspaceTab["key"]>("daily");
   const [activeWeeklySection, setActiveWeeklySection] = useState<WeeklyReviewSection>("summary");
+  const [isWeeklyReviewModalOpen, setIsWeeklyReviewModalOpen] = useState(false);
   const [reviewedWeeklySections, setReviewedWeeklySections] = useState<WeeklyReviewSection[]>([]);
   const [activeQuarterSection, setActiveQuarterSection] = useState<WeeklyReviewSection>("summary");
   const [reviewedQuarterSections, setReviewedQuarterSections] = useState<WeeklyReviewSection[]>([]);
@@ -5060,18 +5061,38 @@ export default function Home() {
                   <button
                     className={[
                       "weekly-section-button",
-                      activeWeeklySection === key ? "is-active" : "",
+                      activeWeeklySection === key && isWeeklyReviewModalOpen ? "is-active" : "",
                       reviewedWeeklySections.includes(key as WeeklyReviewSection) ? "is-reviewed" : ""
                     ].filter(Boolean).join(" ")}
                     key={key}
                     type="button"
-                    onClick={() => setActiveWeeklySection(key as WeeklyReviewSection)}
+                    onClick={() => {
+                      setActiveWeeklySection(key as WeeklyReviewSection);
+                      setIsWeeklyReviewModalOpen(true);
+                    }}
                   >
                     <strong>{label}</strong>
                     <span>{description}</span>
                   </button>
                 ))}
               </div>
+
+              {isWeeklyReviewModalOpen ? (
+                <div
+                  className="weekly-review-modal-backdrop"
+                  role="presentation"
+                  onMouseDown={(event) => {
+                    if (event.target === event.currentTarget) setIsWeeklyReviewModalOpen(false);
+                  }}
+                >
+                  <div className="weekly-review-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-review-modal-title">
+                    <div className="section-head weekly-review-modal-head">
+                      <div>
+                        <p className="eyebrow">Weekly Review Section</p>
+                        <h2 id="weekly-review-modal-title">{weeklySectionLabels[activeWeeklySection]}</h2>
+                      </div>
+                      <button className="secondary-button" type="button" onClick={() => setIsWeeklyReviewModalOpen(false)}>Close</button>
+                    </div>
 
               {activeWeeklySection === "summary" ? (
               <section className="weekly-subsection is-open">
@@ -5248,6 +5269,9 @@ export default function Home() {
                   </button>
                 </div>
               </section>
+              ) : null}
+                  </div>
+                </div>
               ) : null}
             </section>
             ) : null}
