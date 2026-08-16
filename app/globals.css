@@ -124,7 +124,7 @@ a {
 }
 
 .brand .eyebrow {
-  color: #d7a888;
+  color: var(--jute);
 }
 
 .brand-toggle strong {
@@ -264,7 +264,7 @@ a {
   border: 1px solid rgb(215 168 136 / 0.72);
   border-radius: 999px;
   background: var(--gold-soft);
-  color: var(--gold);
+  color: var(--jute);
   padding: 2px 6px;
 }
 
@@ -525,13 +525,13 @@ textarea {
 .activity-type-button.is-needs-review {
   border-color: #d7a888;
   background: var(--gold-soft);
-  color: var(--gold);
+  color: var(--jute);
 }
 
 .activity-type-button.is-selected {
   border-color: var(--blue);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
   box-shadow: inset 0 0 0 1px var(--blue), 0 8px 18px rgb(90 71 64 / 0.12);
 }
 
@@ -767,7 +767,7 @@ textarea {
   border-style: solid;
   border-color: var(--blue);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
 }
 
 .file-picker {
@@ -1234,7 +1234,7 @@ details.skill-group[open] summary {
 .tag.planned {
   border-color: var(--blue);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
 }
 
 .tag.review {
@@ -1282,7 +1282,7 @@ details.skill-group[open] summary {
 
 .parsed-tag-editor summary {
   cursor: pointer;
-  color: var(--blue);
+  color: var(--jute);
   font-size: 0.86rem;
   font-weight: 800;
 }
@@ -1336,7 +1336,7 @@ details.skill-group[open] summary {
 .tag-button.skill-option.is-active {
   border-color: var(--blue);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
 }
 
 .tag-button.legal-option.is-active {
@@ -1348,7 +1348,7 @@ details.skill-group[open] summary {
 .skill-chip {
   border: 1px solid var(--blue);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
 }
 
 .legal-chip {
@@ -1805,7 +1805,7 @@ details.skill-group[open] summary {
 
 .quiet-alert p {
   margin-bottom: 0;
-  color: var(--gold);
+  color: var(--jute);
 }
 
 .trial-banner {
@@ -1817,7 +1817,7 @@ details.skill-group[open] summary {
   border: 1px solid #e8c97d;
   border-radius: 999px;
   background: var(--gold-soft);
-  color: var(--gold);
+  color: var(--jute);
   padding: 5px 9px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -2449,7 +2449,7 @@ details.skill-group[open] summary {
 }
 
 .attached-proof-list a {
-  color: var(--blue);
+  color: var(--jute);
   font-weight: 800;
 }
 
@@ -2559,7 +2559,7 @@ details.skill-group[open] summary {
 .step-button.is-active {
   border-color: var(--blue);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
 }
 
 .valuable-failure-step-editor {
