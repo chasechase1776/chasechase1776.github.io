@@ -11,6 +11,7 @@
     "lint": "eslint . --max-warnings=0",
     "check": "tsc --noEmit && eslint . --max-warnings=0 && prisma generate && next build",
     "smoke:live": "node scripts/smoke-url.mjs https://chasechase1776-github-io.vercel.app",
+    "test:backend-routes": "node scripts/backend-route-tests.mjs",
     "deploy:prod": "vercel --prod",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",

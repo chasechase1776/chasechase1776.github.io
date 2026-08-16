@@ -150,12 +150,36 @@ type WorkspaceTab = {
 type WeeklyReviewSection = "summary" | "parent" | "student" | "skills" | "portfolio";
 type PortfolioSection = "proof" | "books" | PortfolioListCategory;
 type WorkspaceToolSection = "subjects" | "legal" | "parser" | "storage" | "rules";
+type SaveStateStatus = "idle" | "saving" | "saved" | "error";
 
 const DEFAULT_STUDENT_NAME = "Bennett C. Claypool";
 const STUDENT_NAME_STORAGE_KEY = "bennett-homeschool-student-name";
 const ACTIVITY_RESOURCES_STORAGE_KEY = "bennett-homeschool-activity-resources";
 const CURRENT_SCHOOL_YEAR_LABEL = "2026-2027";
 const CURRENT_SCHOOL_YEAR_STATUS = "trial";
+
+function saveStateFromMessage(message: string): SaveStateStatus {
+  if (!message.trim()) return "idle";
+  return /(failed|error|could not|requires|not found|unable|incorrect)/i.test(message) ? "error" : "saved";
+}
+
+function SaveStateIndicator({
+  label,
+  message,
+  status = saveStateFromMessage(message)
+}: {
+  label: string;
+  message: string;
+  status?: SaveStateStatus;
+}) {
+  return (
+    <div className={`save-state-indicator is-${status}`} role="status">
+      <span className="save-state-dot" aria-hidden="true" />
+      <strong>{label}</strong>
+      <span>{message}</span>
+    </div>
+  );
+}
 
 const weeklySectionLabels: Record<WeeklyReviewSection, string> = {
   summary: "Summary Info",
@@ -4402,6 +4426,11 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+              <SaveStateIndicator
+                label={isAnnualPlanSaving ? "Saving planner" : "Planner save state"}
+                message={isAnnualPlanSaving ? "Saving planner changes..." : annualPlanMessage}
+                status={isAnnualPlanSaving ? "saving" : saveStateFromMessage(annualPlanMessage)}
+              />
 
               <div className="unit-planner-landing-summary">
                 <div>
@@ -5012,7 +5041,11 @@ export default function Home() {
                 <button className="primary-button" type="button" disabled={!canParse} onClick={parseWithAi}>Parse with AI</button>
                 <button className="primary-button" type="button" disabled={isSaving || !canSaveApproved} onClick={requestApprovedSave}>Save Approved</button>
               </div>
-              <p className="status-line" role="status">{status}</p>
+              <SaveStateIndicator
+                label={isSaving ? "Saving activity" : isUploadingProof ? "Uploading proof" : "Daily record state"}
+                message={isSaving ? "Saving this activity..." : isUploadingProof ? "Uploading proof file..." : status}
+                status={isSaving || isUploadingProof ? "saving" : saveStateFromMessage(status)}
+              />
             </section>
 
             {duplicateApprovedActivities.length ? (
@@ -5295,7 +5328,11 @@ export default function Home() {
                 <button className="primary-button" type="button" onClick={() => void compileWeeklyPdf()} disabled={isWeeklyBusy || !weeklyReviewId}>Compile PDF to Reports</button>
               </div>
 
-              <p className="status-line" role="status">{weeklyStatusMessage}</p>
+              <SaveStateIndicator
+                label={isWeeklyBusy ? "Working on weekly review" : "Weekly review state"}
+                message={isWeeklyBusy ? "Saving or exporting weekly review..." : weeklyStatusMessage}
+                status={isWeeklyBusy ? "saving" : saveStateFromMessage(weeklyStatusMessage)}
+              />
               {lastWeeklyPdfArtifact ? (
                 <div className="compiled-report-link">
                   <span>{lastWeeklyPdfArtifact.originalName}</span>
@@ -5549,7 +5586,11 @@ export default function Home() {
                 <button className="primary-button" type="button" onClick={() => void compileQuarterPdf()} disabled={isQuarterBusy || !quarterReviewId}>Compile PDF to Reports</button>
               </div>
 
-              <p className="status-line" role="status">{quarterStatusMessage}</p>
+              <SaveStateIndicator
+                label={isQuarterBusy ? "Working on quarter review" : "Quarter review state"}
+                message={isQuarterBusy ? "Saving or exporting quarter review..." : quarterStatusMessage}
+                status={isQuarterBusy ? "saving" : saveStateFromMessage(quarterStatusMessage)}
+              />
               {lastQuarterPdfArtifact ? (
                 <div className="compiled-report-link">
                   <span>{lastQuarterPdfArtifact.originalName}</span>
@@ -5846,9 +5887,11 @@ export default function Home() {
                   </select>
                 </label>
               </div>
-              <p className="status-line" role="status">
-                {isAnnualPlanLoading ? "Loading saved Annual Plan..." : annualPlanMessage}
-              </p>
+              <SaveStateIndicator
+                label={isAnnualPlanLoading ? "Loading plan" : isAnnualPlanSaving ? "Saving plan" : "Annual Plan save state"}
+                message={isAnnualPlanLoading ? "Loading saved Annual Plan..." : isAnnualPlanSaving ? "Saving Annual Plan changes..." : annualPlanMessage}
+                status={isAnnualPlanLoading || isAnnualPlanSaving ? "saving" : saveStateFromMessage(annualPlanMessage)}
+              />
 
               <div className="annual-section-hub" aria-label="Annual Plan sections">
                 {annualPlanSections.map((section) => {
@@ -6238,7 +6281,11 @@ export default function Home() {
                   <button className="primary-button" type="button" onClick={() => setAnnualReviewStatusMessage("Annual Review closeout marked finalized in this workspace. Archive export wiring can be added next.")}>Finalize Closeout</button>
                 </div>
               </div>
-              <p className="status-line" role="status">{annualReviewStatusMessage}</p>
+              <SaveStateIndicator
+                label="Annual review state"
+                message={annualReviewStatusMessage}
+                status={saveStateFromMessage(annualReviewStatusMessage)}
+              />
 
               <div className="weekly-section-hub" aria-label="Annual review sections">
                 {[
@@ -6441,7 +6488,11 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              <p className="status-line" role="status">{recordsSnapshotMessage}</p>
+              <SaveStateIndicator
+                label={isSnapshotBusy ? "Working on backup" : "Backup state"}
+                message={isSnapshotBusy ? "Creating, loading, or verifying backup records..." : recordsSnapshotMessage}
+                status={isSnapshotBusy ? "saving" : saveStateFromMessage(recordsSnapshotMessage)}
+              />
               <div className="snapshot-count-grid">
                 <div className="education-ticker-card"><span>Activities</span><strong>{snapshotCounts.activities}</strong><small>Saved records</small></div>
                 <div className="education-ticker-card"><span>Artifacts</span><strong>{snapshotCounts.artifacts}</strong><small>Files and generated PDFs</small></div>

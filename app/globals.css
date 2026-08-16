@@ -804,6 +804,61 @@ textarea {
   font-weight: 700;
 }
 
+.save-state-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px 0 0;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #fffaf7;
+  color: var(--muted);
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.save-state-indicator strong {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.save-state-indicator span:last-child {
+  overflow-wrap: anywhere;
+}
+
+.save-state-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 999px;
+  background: var(--line);
+  box-shadow: 0 0 0 3px rgb(216 199 189 / 0.35);
+}
+
+.save-state-indicator.is-saving .save-state-dot {
+  background: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+.save-state-indicator.is-saved .save-state-dot {
+  background: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.save-state-indicator.is-error {
+  border-color: var(--red);
+  background: var(--red-soft);
+}
+
+.save-state-indicator.is-error .save-state-dot {
+  background: var(--red);
+  box-shadow: 0 0 0 3px rgb(139 74 61 / 0.15);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
