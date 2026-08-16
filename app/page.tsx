@@ -3053,7 +3053,7 @@ export default function Home() {
                 ...draft.crossSubjects,
                 {
                   id: `cross-${Date.now()}-${draft.crossSubjects.length}`,
-                  activityType: activityTypes.find((type) => type !== selectedType) ?? "Unit Study",
+                  activityType: unitStudySubjectOptions.find((subject) => subject !== parsedSubjectForType(selectedType)) ?? unitStudySubjectOptions[0] ?? "Language Arts",
                   topic: ""
                 }
               ]
@@ -5458,8 +5458,8 @@ export default function Home() {
                                     value={crossSubject.activityType}
                                     onChange={(event) => updateDraftCrossSubject(draft.id, crossSubject.id, { activityType: event.target.value })}
                                   >
-                                    {activityTypes.map((type) => (
-                                      <option key={type}>{type}</option>
+                                    {unitStudySubjectOptions.map((subject) => (
+                                      <option key={subject}>{subject}</option>
                                     ))}
                                   </select>
                                 </label>
