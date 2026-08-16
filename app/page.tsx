@@ -1577,6 +1577,7 @@ export default function Home() {
   const [schoolYearStatus, setSchoolYearStatus] = useState(CURRENT_SCHOOL_YEAR_STATUS);
   const [officialStartDate, setOfficialStartDate] = useState("2027-05-01");
   const [unitStudy, setUnitStudy] = useState("Construction");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [selectedType, setSelectedType] = useState("Language Arts");
   const [title, setTitle] = useState("");
@@ -4254,13 +4255,24 @@ export default function Home() {
 
   return (
     <main className="mockup-shell">
-      <aside className="sidebar" aria-label="School year and unit study navigation">
+      <aside className={isMobileMenuOpen ? "sidebar is-mobile-open" : "sidebar"} aria-label="School year and unit study navigation">
         <div className="brand">
-          <p className="eyebrow">Private Homeschool Records</p>
-          <h1>Bennett Homeschool</h1>
+          <button
+            className="brand-toggle"
+            type="button"
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((current) => !current)}
+          >
+            <span className="eyebrow">Private Homeschool Records</span>
+            <strong>Bennett Homeschool</strong>
+          </button>
         </div>
 
-        <nav>
+        <nav
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest("button")) setIsMobileMenuOpen(false);
+          }}
+        >
           <p className="tree-title">Active School Year</p>
           <ul className="tree">
             <li>
@@ -4561,7 +4573,7 @@ export default function Home() {
                           ))}
                         </div>
                         <div className="unit-day-action-row">
-                          <button className="secondary-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, dayIndex)}>
+                          <button className="secondary-button unit-create-activity-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, dayIndex)}>
                             Create Activity
                           </button>
                           {dayIndex === 4 ? (

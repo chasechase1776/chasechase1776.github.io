@@ -112,12 +112,25 @@ a {
   padding-bottom: 16px;
 }
 
+.brand-toggle {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
 .brand .eyebrow {
   color: #d7a888;
 }
 
-.brand h1 {
+.brand-toggle strong {
   color: #fffaf7;
+  font-size: 1.9rem;
+  line-height: 1.12;
 }
 
 .eyebrow {
@@ -1532,13 +1545,14 @@ details.skill-group[open] summary {
   display: grid;
   gap: 5px;
   min-height: 82px;
-  border: 1px solid var(--blue);
+  border: 1.5px solid rgb(215 168 136 / 0.58);
   border-radius: 8px;
-  background: var(--blue-soft);
-  color: var(--blue);
+  background: linear-gradient(180deg, #13211e, var(--ink));
+  color: var(--surface);
   padding: 14px 16px;
   text-align: center;
   place-items: center;
+  box-shadow: 0 10px 24px rgb(11 21 19 / 0.18);
 }
 
 .unit-week-button strong {
@@ -1546,25 +1560,26 @@ details.skill-group[open] summary {
 }
 
 .unit-week-button span {
-  color: var(--blue);
+  color: rgb(241 233 230 / 0.72);
   font-size: 0.84rem;
   font-weight: 700;
 }
 
 .unit-week-button.is-active {
   border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  background: linear-gradient(180deg, #1f5f44, #12382d);
+  color: #fffaf7;
+  box-shadow: inset 0 0 0 1px rgb(241 233 230 / 0.16), 0 12px 26px rgb(41 143 96 / 0.2);
 }
 
 .unit-week-button.is-complete {
   border-color: var(--green);
-  background: var(--green-soft);
-  color: var(--green);
+  background: linear-gradient(180deg, var(--green), var(--accent-strong));
+  color: #fffaf7;
 }
 
 .unit-week-button.is-complete span {
-  color: var(--green);
+  color: rgb(255 250 247 / 0.82);
 }
 
 .unit-day-columns {
@@ -1618,6 +1633,19 @@ details.skill-group[open] summary {
   display: grid;
   grid-template-columns: 1fr;
   gap: 7px;
+}
+
+.unit-create-activity-button {
+  border-color: rgb(215 168 136 / 0.58);
+  background: linear-gradient(180deg, #13211e, var(--ink));
+  color: var(--surface);
+  font-weight: 900;
+}
+
+.unit-create-activity-button:hover {
+  border-color: var(--green);
+  background: linear-gradient(180deg, #1f5f44, #12382d);
+  color: #fffaf7;
 }
 
 .unit-activity-pill {
@@ -2966,6 +2994,65 @@ details.skill-group[open] summary {
 @media (max-width: 760px) {
   .content {
     padding: 14px;
+  }
+
+  .mockup-shell {
+    gap: 0;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    height: auto;
+    max-height: 100vh;
+    border-right: 0;
+    border-bottom: 1px solid rgb(241 233 230 / 0.18);
+    padding: 0;
+  }
+
+  .brand {
+    border-bottom: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .brand-toggle {
+    min-height: 68px;
+    padding: 12px 14px;
+  }
+
+  .brand-toggle::after {
+    justify-self: end;
+    margin-top: -34px;
+    color: rgb(241 233 230 / 0.72);
+    content: "+";
+    font-size: 1.35rem;
+    font-weight: 900;
+  }
+
+  .sidebar.is-mobile-open .brand-toggle::after {
+    content: "-";
+  }
+
+  .brand-toggle strong {
+    font-size: 1.45rem;
+  }
+
+  .sidebar nav {
+    display: none;
+    max-height: calc(100vh - 68px);
+    overflow: auto;
+    border-top: 1px solid rgb(241 233 230 / 0.14);
+    padding: 12px 14px 16px;
+  }
+
+  .sidebar.is-mobile-open nav {
+    display: block;
+  }
+
+  .context-box {
+    display: none;
   }
 
   .context-box,
