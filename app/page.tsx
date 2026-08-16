@@ -770,21 +770,6 @@ function newPlannerActivity(weekIndex: number, dayIndex: number, activityIndex: 
   };
 }
 
-function ensureReadAloudFirst(day: UnitPlannerDay, weekIndex: number, dayIndex: number): UnitPlannerDay {
-  const readAloudIndex = day.activities.findIndex((activity) => activity.title.trim().toLowerCase() === readAloudActivityTitle.toLowerCase());
-  if (readAloudIndex === 0) return day;
-
-  const readAloudActivity =
-    readAloudIndex >= 0
-      ? day.activities[readAloudIndex]
-      : {
-          ...newPlannerActivity(weekIndex, dayIndex, 0, readAloudActivityTitle),
-          id: `planner-read-aloud-${weekIndex + 1}-${dayIndex + 1}`
-        };
-  const remainingActivities = day.activities.filter((_activity, index) => index !== readAloudIndex);
-  return { ...day, activities: [readAloudActivity, ...remainingActivities] };
-}
-
 function makePlannerWeek(weekIndex: number, unitTitle: string): UnitPlannerWeek {
   const seedTitles = [
     [readAloudActivityTitle, `Launch ${unitTitle}`, "Read and narrate", "Start notebook"],
@@ -3386,10 +3371,7 @@ export default function Home() {
         const weeksExpected = Math.max(1, Number.parseInt(row.weeks, 10) || currentPlanner.weeksExpected || 4);
         const weeks = [...currentPlanner.weeks];
         while (weeks.length < weeksExpected) weeks.push(makePlannerWeek(weeks.length, row.title));
-        const normalizedWeeks = weeks.slice(0, weeksExpected).map((week, weekIndex) => {
-          const normalizedDays = week.days.map((day, dayIndex) => ensureReadAloudFirst(day, weekIndex, dayIndex));
-          return normalizedDays.some((day, dayIndex) => day !== week.days[dayIndex]) ? { ...week, days: normalizedDays } : week;
-        });
+        const normalizedWeeks = weeks.slice(0, weeksExpected);
         const syncedPlanner: UnitStudyPlanner = {
           ...currentPlanner,
           unitTitle: row.title,
@@ -3403,7 +3385,7 @@ export default function Home() {
           currentPlanner.weeksExpected !== syncedPlanner.weeksExpected ||
           currentPlanner.unitQuestion !== syncedPlanner.unitQuestion ||
           currentPlanner.weeks.length !== syncedPlanner.weeks.length ||
-          normalizedWeeks.some((week, index) => week !== currentPlanner.weeks[index]);
+          normalizedWeeks.length !== currentPlanner.weeks.length;
         if (didChange) {
           changed = true;
           next[key] = syncedPlanner;
