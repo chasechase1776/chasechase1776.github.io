@@ -1440,19 +1440,18 @@ details.skill-group[open] summary {
 }
 
 .unit-planner-panel {
-  border-color: rgb(241 233 230 / 0.16);
+  border-color: rgb(215 168 136 / 0.34);
   background:
-    linear-gradient(135deg, rgb(11 21 19 / 0.98), rgb(25 42 38 / 0.96)),
-    var(--ink);
+    linear-gradient(135deg, #6b554d 0%, var(--jute) 52%, #4c3b35 100%);
   color: var(--surface);
-  box-shadow: 0 24px 62px rgb(11 21 19 / 0.24);
+  box-shadow: 0 24px 62px rgb(90 71 64 / 0.22);
 }
 
 .unit-planner-panel > .section-head {
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid rgb(241 233 230 / 0.2);
   border-left: 5px solid var(--green);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgb(90 71 64 / 0.34), rgb(41 143 96 / 0.13));
+  background: linear-gradient(135deg, rgb(90 71 64 / 0.72), rgb(41 143 96 / 0.16));
   margin-bottom: 0;
   padding: 16px;
 }
@@ -1482,7 +1481,7 @@ details.skill-group[open] summary {
 .unit-planner-panel .secondary-button:not(.unit-create-activity-button),
 .unit-planner-panel .primary-action-row .secondary-button {
   border-color: rgb(215 168 136 / 0.58);
-  background: linear-gradient(180deg, #172824, var(--ink));
+  background: linear-gradient(180deg, #725b52, #4c3b35);
   color: var(--surface);
 }
 
@@ -1538,9 +1537,9 @@ details.skill-group[open] summary {
   display: grid;
   gap: 5px;
   min-height: 54px;
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid rgb(241 233 230 / 0.22);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.06);
+  background: rgb(255 250 247 / 0.1);
   padding: 9px 10px;
 }
 
@@ -1565,9 +1564,9 @@ details.skill-group[open] summary {
 .resource-disclosure,
 .shopping-disclosure,
 .planner-empty-state {
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid rgb(241 233 230 / 0.22);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.06);
+  background: rgb(255 250 247 / 0.1);
 }
 
 .guidance-disclosure summary,
@@ -1598,9 +1597,9 @@ details.skill-group[open] summary {
 }
 
 .unit-week-panel {
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid rgb(241 233 230 / 0.22);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.07);
+  background: rgb(255 250 247 / 0.1);
   padding: 14px;
 }
 
@@ -1633,9 +1632,9 @@ details.skill-group[open] summary {
   grid-template-columns: repeat(auto-fit, minmax(150px, 190px));
   justify-content: center;
   gap: 12px;
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid rgb(241 233 230 / 0.22);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.06);
+  background: rgb(255 250 247 / 0.1);
   padding: 12px;
 }
 
@@ -1645,12 +1644,12 @@ details.skill-group[open] summary {
   min-height: 82px;
   border: 1.5px solid rgb(215 168 136 / 0.58);
   border-radius: 8px;
-  background: linear-gradient(180deg, #13211e, var(--ink));
+  background: linear-gradient(180deg, #725b52, #4c3b35);
   color: var(--surface);
   padding: 14px 16px;
   text-align: center;
   place-items: center;
-  box-shadow: 0 10px 24px rgb(11 21 19 / 0.18);
+  box-shadow: 0 10px 24px rgb(90 71 64 / 0.18);
 }
 
 .unit-week-button strong {
@@ -1691,9 +1690,9 @@ details.skill-group[open] summary {
   gap: 10px;
   align-content: start;
   min-height: 190px;
-  border: 1px solid rgb(215 168 136 / 0.28);
+  border: 1px solid rgb(215 168 136 / 0.38);
   border-radius: 8px;
-  background: rgb(11 21 19 / 0.48);
+  background: rgb(255 250 247 / 0.1);
   padding: 12px;
   cursor: grab;
 }
@@ -1735,7 +1734,7 @@ details.skill-group[open] summary {
 
 .unit-create-activity-button {
   border-color: rgb(215 168 136 / 0.58);
-  background: linear-gradient(180deg, #13211e, var(--ink));
+  background: linear-gradient(180deg, #725b52, #4c3b35);
   color: var(--surface);
   font-weight: 900;
 }
@@ -1752,7 +1751,7 @@ details.skill-group[open] summary {
   max-width: 100%;
   border: 1px solid rgb(215 168 136 / 0.45);
   border-radius: 999px;
-  background: rgb(241 233 230 / 0.12);
+  background: rgb(255 250 247 / 0.16);
   color: #fffaf7;
   padding: 6px 9px;
   font-size: 0.78rem;
@@ -1779,21 +1778,21 @@ details.skill-group[open] summary {
 }
 
 .unit-activity-pill.is-skipped {
-  border-color: rgb(241 233 230 / 0.18);
-  background: rgb(241 233 230 / 0.08);
+  border-color: rgb(241 233 230 / 0.24);
+  background: rgb(241 233 230 / 0.12);
   color: rgb(241 233 230 / 0.58);
 }
 
 .unit-activity-pill.is-moved {
   border-color: rgb(215 168 136 / 0.45);
-  background: rgb(241 233 230 / 0.12);
+  background: rgb(255 250 247 / 0.16);
   color: #fffaf7;
 }
 
 .unit-day-detail-panel {
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid rgb(241 233 230 / 0.22);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.08);
+  background: rgb(255 250 247 / 0.1);
   padding: 14px;
 }
 
@@ -1803,7 +1802,7 @@ details.skill-group[open] summary {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgb(11 21 19 / 0.48);
+  background: #5a4740;
   padding: 18px;
 }
 
@@ -1811,15 +1810,14 @@ details.skill-group[open] summary {
   width: min(980px, calc(100vw - 36px));
   max-height: calc(100vh - 36px);
   overflow: auto;
-  box-shadow: 0 24px 70px rgb(11 21 19 / 0.32);
+  box-shadow: 0 24px 70px rgb(90 71 64 / 0.34);
 }
 
 .unit-day-activity-card {
   border: 2px solid rgb(215 168 136 / 0.42);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgb(11 21 19 / 0.98), rgb(25 42 38 / 0.96)),
-    var(--ink);
+    linear-gradient(135deg, #725b52 0%, var(--jute) 58%, #4c3b35 100%);
   color: var(--surface);
   padding: 14px;
 }
@@ -1874,7 +1872,7 @@ details.skill-group[open] summary {
 }
 
 .activity-shopping-disclosure {
-  background: rgb(255 250 247 / 0.06);
+  background: rgb(255 250 247 / 0.1);
 }
 
 .unit-planner-move-date-row {
