@@ -2163,6 +2163,25 @@ export default function Home() {
     setIsNarrationListening(false);
   }, []);
 
+  const liveActivityButtonKey = useCallback((type = selectedType, date = selectedDate) => {
+    return `${date}::${type}`;
+  }, [selectedDate, selectedType]);
+
+  const updateLiveActivityButtonStateFromDrafts = useCallback((nextDraftCards: DraftCard[], type = selectedType, date = selectedDate) => {
+    const key = liveActivityButtonKey(type, date);
+    setLiveActivityButtonStates((current) => {
+      const next = { ...current };
+      if (!nextDraftCards.length) {
+        delete next[key];
+        return next;
+      }
+      const nextState = nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+      if (next[key] === nextState) return current;
+      next[key] = nextState;
+      return next;
+    });
+  }, [liveActivityButtonKey, selectedDate, selectedType]);
+
   useEffect(() => {
     if (!isDailyEntryModalOpen) stopNarrationDictation();
     return () => stopNarrationDictation();
@@ -2268,25 +2287,6 @@ export default function Home() {
       narrationRecognitionRef.current = null;
     }
   }
-
-  const liveActivityButtonKey = useCallback((type = selectedType, date = selectedDate) => {
-    return `${date}::${type}`;
-  }, [selectedDate, selectedType]);
-
-  const updateLiveActivityButtonStateFromDrafts = useCallback((nextDraftCards: DraftCard[], type = selectedType, date = selectedDate) => {
-    const key = liveActivityButtonKey(type, date);
-    setLiveActivityButtonStates((current) => {
-      const next = { ...current };
-      if (!nextDraftCards.length) {
-        delete next[key];
-        return next;
-      }
-      const nextState = nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
-      if (next[key] === nextState) return current;
-      next[key] = nextState;
-      return next;
-    });
-  }, [liveActivityButtonKey, selectedDate, selectedType]);
 
   function clearLiveActivityButtonState(type = selectedType, date = selectedDate) {
     const key = liveActivityButtonKey(type, date);
