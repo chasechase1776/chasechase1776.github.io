@@ -4048,9 +4048,14 @@ export default function Home() {
   }
 
   async function exportDailySummaryPdf() {
+    const defaultTitle = `Daily Summary ${formatUsDate(selectedDate)}`;
+    const requestedTitle = window.prompt("Name this Daily Summary PDF for Reports.", defaultTitle);
+    if (requestedTitle === null) return;
+    const reportTitle = requestedTitle.trim() || defaultTitle;
+
     setIsDailyPdfBusy(true);
     setLastDailyPdfArtifact(null);
-    setStatus(`Creating daily summary PDF for ${selectedDate}...`);
+    setStatus(`Creating ${reportTitle}...`);
     const pdfWindow = window.open("about:blank", "_blank");
     if (pdfWindow) {
       pdfWindow.opener = null;
@@ -4064,7 +4069,8 @@ export default function Home() {
           studentName: student,
           schoolYearLabel: schoolYear,
           date: selectedDate,
-          recordStatus: schoolYearStatus
+          recordStatus: schoolYearStatus,
+          reportTitle
         })
       });
       const data = await response.json().catch(() => ({ error: "Daily summary PDF generation failed before the app received details." }));

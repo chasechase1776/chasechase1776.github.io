@@ -13,7 +13,8 @@ const dailySummaryPdfSchema = z.object({
   studentName: z.string().min(1).default("Bennett C. Claypool"),
   schoolYearLabel: z.string().min(1).default("2026-2027"),
   date: z.string().min(10),
-  recordStatus: z.string().default("trial")
+  recordStatus: z.string().default("trial"),
+  reportTitle: z.string().trim().max(120).optional()
 });
 
 type EvidenceFile = {
@@ -41,6 +42,21 @@ function pdfText(value: string) {
 function dateDisplay(value: string) {
   const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
   return `${String(date.getUTCMonth() + 1).padStart(2, "0")}/${String(date.getUTCDate()).padStart(2, "0")}/${date.getUTCFullYear()}`;
+}
+
+function defaultReportTitle(date: string) {
+  return `Daily Summary ${dateDisplay(date)}`;
+}
+
+function fileNameFromTitle(title: string, fallback: string) {
+  const base =
+    title
+      .replace(/\.pdf$/i, "")
+      .replace(/[<>:"/\\|?*\x00-\x1F]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120) || fallback;
+  return `${base}.pdf`;
 }
 
 function minutesDisplay(minutes: number) {
@@ -119,6 +135,8 @@ async function buildDailySummaryPdf(
   completedActivityTypes: Set<string>
 ) {
   const pdf = await PDFDocument.create();
+  const reportTitle = input.reportTitle || defaultReportTitle(input.date);
+  pdf.setTitle(pdfText(reportTitle));
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const margin = 48;
@@ -128,7 +146,7 @@ async function buildDailySummaryPdf(
   let pageNumber = 1;
 
   const drawFooter = () => {
-    page.drawText(`Daily Summary - Page ${pageNumber}`, {
+    page.drawText(`${pdfText(reportTitle)} - Page ${pageNumber}`, {
       x: margin,
       y: 34,
       size: 8,
@@ -275,7 +293,7 @@ async function buildDailySummaryPdf(
 
   drawCentered(`${input.studentName} - ${input.schoolYearLabel}`, y, 12);
   y -= 18;
-  drawCentered("Daily Summary", y, 12, bold);
+  drawCentered(reportTitle, y, 12, bold);
   y -= 18;
   drawCentered(dateDisplay(input.date), y, 12, bold);
   y -= 36;
@@ -463,7 +481,8 @@ export async function POST(request: Request) {
       evidenceFiles,
       new Set(completedButtonStatuses.map((status) => status.activityType))
     );
-    const fileName = `daily-summary-${input.date.slice(0, 10)}.pdf`;
+    const reportTitle = input.reportTitle || defaultReportTitle(input.date);
+    const fileName = fileNameFromTitle(reportTitle, `daily-summary-${input.date.slice(0, 10)}`);
     const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
     const artifact = await prisma.evidenceArtifact.create({
       data: {
@@ -474,6 +493,7 @@ export async function POST(request: Request) {
           schoolYear: input.schoolYearLabel,
           student: input.studentName,
           date: input.date.slice(0, 10),
+          title: reportTitle,
           reportType: "daily_summary",
           activityCount: activities.length,
           attachedProofCount: artifacts.length
@@ -483,7 +503,7 @@ export async function POST(request: Request) {
     await createArtifactSnapshot({
       schoolYearId: activities[0].schoolYearId,
       type: "daily_summary_pdf",
-      label: `Daily Summary PDF ${input.date.slice(0, 10)}`,
+      label: reportTitle,
       artifactId: artifact.id
     }).catch(() => null);
 
