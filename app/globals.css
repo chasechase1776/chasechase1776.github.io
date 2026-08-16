@@ -1439,94 +1439,6 @@ details.skill-group[open] summary {
   gap: 12px;
 }
 
-.unit-planner-panel {
-  border-color: rgb(241 233 230 / 0.16);
-  background:
-    linear-gradient(135deg, rgb(11 21 19 / 0.98), rgb(25 42 38 / 0.96)),
-    var(--ink);
-  color: var(--surface);
-  box-shadow: 0 24px 62px rgb(11 21 19 / 0.24);
-}
-
-.unit-planner-panel > .section-head {
-  border: 1px solid rgb(241 233 230 / 0.16);
-  border-left: 5px solid var(--green);
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgb(90 71 64 / 0.34), rgb(41 143 96 / 0.13));
-  margin-bottom: 0;
-  padding: 16px;
-}
-
-.unit-planner-panel h2,
-.unit-planner-panel h3,
-.unit-planner-panel strong {
-  color: #fffaf7;
-}
-
-.unit-planner-panel .panel-note,
-.unit-planner-panel .muted,
-.unit-planner-panel .save-state-indicator span:last-child {
-  color: rgb(241 233 230 / 0.74);
-}
-
-.unit-planner-panel .save-state-indicator {
-  border-color: rgb(241 233 230 / 0.16);
-  background: rgb(255 250 247 / 0.08);
-  color: rgb(241 233 230 / 0.76);
-}
-
-.unit-planner-panel .save-state-indicator strong {
-  color: #fffaf7;
-}
-
-.unit-planner-panel .secondary-button:not(.unit-create-activity-button),
-.unit-planner-panel .primary-action-row .secondary-button {
-  border-color: rgb(215 168 136 / 0.58);
-  background: linear-gradient(180deg, #172824, var(--ink));
-  color: var(--surface);
-}
-
-.unit-planner-panel .primary-button {
-  border-color: rgb(41 143 96 / 0.82);
-  background: linear-gradient(180deg, var(--green), var(--accent-strong));
-  color: #fffaf7;
-}
-
-.unit-planner-panel .tag {
-  border-color: rgb(241 233 230 / 0.18);
-  background: rgb(255 250 247 / 0.08);
-  color: rgb(241 233 230 / 0.78);
-}
-
-.unit-planner-panel .tag.good {
-  border-color: rgb(41 143 96 / 0.78);
-  background: rgb(41 143 96 / 0.18);
-  color: #e6f2ec;
-}
-
-.unit-planner-panel .tag.planned {
-  border-color: rgb(215 168 136 / 0.5);
-  background: rgb(215 168 136 / 0.12);
-  color: rgb(241 233 230 / 0.78);
-}
-
-.unit-planner-panel .record-link {
-  border-color: rgb(241 233 230 / 0.16);
-  background: rgb(255 250 247 / 0.08);
-}
-
-.unit-planner-panel .record-link span {
-  color: rgb(241 233 230 / 0.72);
-}
-
-.unit-planner-panel input,
-.unit-planner-panel select,
-.unit-planner-panel textarea {
-  border-color: rgb(215 168 136 / 0.38);
-  background: rgb(255 250 247 / 0.94);
-  color: var(--ink);
-}
-
 .unit-planner-landing-summary {
   display: grid;
   grid-template-columns: minmax(110px, 0.42fr) minmax(240px, 1fr) minmax(150px, 0.5fr) minmax(140px, 0.42fr);
@@ -1538,9 +1450,9 @@ details.skill-group[open] summary {
   display: grid;
   gap: 5px;
   min-height: 54px;
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid var(--soft-line);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.06);
+  background: #fffaf7;
   padding: 9px 10px;
 }
 
@@ -1549,14 +1461,14 @@ details.skill-group[open] summary {
 .weekly-planner-reference-grid span,
 .resource-disclosure span,
 .shopping-disclosure span {
-  color: var(--chai);
+  color: var(--muted);
   font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .unit-planner-landing-summary strong {
-  color: #fffaf7;
+  color: var(--ink);
   font-size: 0.94rem;
   line-height: 1.25;
 }
@@ -1565,16 +1477,16 @@ details.skill-group[open] summary {
 .resource-disclosure,
 .shopping-disclosure,
 .planner-empty-state {
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid var(--soft-line);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.06);
+  background: #fffaf7;
 }
 
 .guidance-disclosure summary,
 .resource-disclosure summary,
 .shopping-disclosure summary {
   cursor: pointer;
-  color: #fffaf7;
+  color: var(--accent-strong);
   font-weight: 900;
   padding: 10px 12px;
 }
@@ -1597,13 +1509,6 @@ details.skill-group[open] summary {
   align-items: start;
 }
 
-.unit-week-panel {
-  border: 1px solid rgb(241 233 230 / 0.16);
-  border-radius: 8px;
-  background: rgb(255 250 247 / 0.07);
-  padding: 14px;
-}
-
 .resource-disclosure label,
 .shopping-disclosure label {
   display: grid;
@@ -1624,7 +1529,7 @@ details.skill-group[open] summary {
 }
 
 .planner-empty-state span {
-  color: rgb(241 233 230 / 0.74);
+  color: var(--muted);
   font-size: 0.88rem;
 }
 
@@ -1633,10 +1538,7 @@ details.skill-group[open] summary {
   grid-template-columns: repeat(auto-fit, minmax(150px, 190px));
   justify-content: center;
   gap: 12px;
-  border: 1px solid rgb(241 233 230 / 0.16);
-  border-radius: 8px;
-  background: rgb(255 250 247 / 0.06);
-  padding: 12px;
+  padding: 8px 0 4px;
 }
 
 .unit-week-button {
@@ -1691,9 +1593,9 @@ details.skill-group[open] summary {
   gap: 10px;
   align-content: start;
   min-height: 190px;
-  border: 1px solid rgb(215 168 136 / 0.28);
+  border: 1px solid var(--soft-line);
   border-radius: 8px;
-  background: rgb(11 21 19 / 0.48);
+  background: #fffaf7;
   padding: 12px;
   cursor: grab;
 }
@@ -1703,8 +1605,8 @@ details.skill-group[open] summary {
 }
 
 .unit-day-column.is-complete {
-  border-color: rgb(41 143 96 / 0.75);
-  background: rgb(41 143 96 / 0.12);
+  border-color: var(--green);
+  background: var(--green-soft);
 }
 
 .unit-day-head {
@@ -1716,7 +1618,7 @@ details.skill-group[open] summary {
 
 .unit-day-date {
   margin: -4px 0 0;
-  color: rgb(241 233 230 / 0.58);
+  color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -1750,10 +1652,10 @@ details.skill-group[open] summary {
   display: block;
   width: 100%;
   max-width: 100%;
-  border: 1px solid rgb(215 168 136 / 0.45);
+  border: 1px solid var(--blue);
   border-radius: 999px;
-  background: rgb(241 233 230 / 0.12);
-  color: #fffaf7;
+  background: var(--blue-soft);
+  color: var(--blue);
   padding: 6px 9px;
   font-size: 0.78rem;
   font-weight: 800;
@@ -1767,33 +1669,32 @@ details.skill-group[open] summary {
 }
 
 .unit-activity-pill.is-selected {
-  border-color: rgb(41 143 96 / 0.86);
   border-width: 2px;
-  box-shadow: 0 0 0 2px rgb(41 143 96 / 0.2);
+  box-shadow: 0 0 0 2px rgb(159 106 74 / 0.18);
 }
 
 .unit-activity-pill.is-complete {
-  border-color: rgb(41 143 96 / 0.86);
-  background: rgb(41 143 96 / 0.24);
-  color: #fffaf7;
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
 }
 
 .unit-activity-pill.is-skipped {
-  border-color: rgb(241 233 230 / 0.18);
-  background: rgb(241 233 230 / 0.08);
-  color: rgb(241 233 230 / 0.58);
+  border-color: #d8c7bd;
+  background: #eee5df;
+  color: var(--muted);
 }
 
 .unit-activity-pill.is-moved {
-  border-color: rgb(215 168 136 / 0.45);
-  background: rgb(241 233 230 / 0.12);
-  color: #fffaf7;
+  border-color: var(--blue);
+  background: var(--blue-soft);
+  color: var(--blue);
 }
 
 .unit-day-detail-panel {
-  border: 1px solid rgb(241 233 230 / 0.16);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgb(255 250 247 / 0.08);
+  background: #fbf4ef;
   padding: 14px;
 }
 
@@ -1815,12 +1716,9 @@ details.skill-group[open] summary {
 }
 
 .unit-day-activity-card {
-  border: 2px solid rgb(215 168 136 / 0.42);
+  border: 3px solid #9f6a4a;
   border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgb(11 21 19 / 0.98), rgb(25 42 38 / 0.96)),
-    var(--ink);
-  color: var(--surface);
+  background: #fffaf7;
   padding: 14px;
 }
 
@@ -1829,7 +1727,7 @@ details.skill-group[open] summary {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: end;
-  border-bottom: 1px solid rgb(241 233 230 / 0.16);
+  border-bottom: 1px solid var(--soft-line);
   padding-bottom: 10px;
 }
 
@@ -1841,7 +1739,7 @@ details.skill-group[open] summary {
 .unit-activity-title-row input {
   border-color: transparent;
   background: transparent;
-  color: #fffaf7;
+  color: var(--accent-strong);
   font-size: 1.24rem;
   font-weight: 900;
   padding-left: 0;
@@ -1874,7 +1772,7 @@ details.skill-group[open] summary {
 }
 
 .activity-shopping-disclosure {
-  background: rgb(255 250 247 / 0.06);
+  background: #fffaf7;
 }
 
 .unit-planner-move-date-row {
@@ -1898,7 +1796,7 @@ details.skill-group[open] summary {
 }
 
 .compiled-shopping-list li {
-  color: #fffaf7;
+  color: var(--ink);
   line-height: 1.35;
 }
 
