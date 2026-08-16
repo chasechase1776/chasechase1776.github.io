@@ -65,10 +65,10 @@ Recommended setup:
 The repository includes `vercel.json`, which runs:
 
 ```text
-pnpm prisma:generate && pnpm prisma:migrate:deploy && pnpm exec next build
+pnpm prisma:generate && pnpm exec next build
 ```
 
-That means Vercel generates the Prisma client and applies checked-in database migrations during deployment.
+That means Vercel generates the Prisma client and builds the app during deployment. Database migrations are a separate step and should be run only when the Prisma schema changes; routine UI edits should not open a production migration connection.
 
 ## Standard Change Delivery
 
