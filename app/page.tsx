@@ -258,6 +258,8 @@ type DraftCard = {
   skills: string[];
 };
 
+type DailyDetailPane = "legal" | "proof" | "resources";
+
 type WeeklyReviewData = {
   totalApprovedLearningTime: number;
   activitiesLogged: number;
@@ -1722,7 +1724,7 @@ export default function Home() {
   const [isLoadingPortfolio, setIsLoadingPortfolio] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingProof, setIsUploadingProof] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [activeDailyDetailPane, setActiveDailyDetailPane] = useState<DailyDetailPane | null>(null);
   const [isDailyEntryModalOpen, setIsDailyEntryModalOpen] = useState(false);
   const [annualPlanStatus, setAnnualPlanStatus] = useState<"draft" | "active" | "finalized" | "archived">("active");
   const [annualPlanMessage, setAnnualPlanMessage] = useState("Annual Plan is active. It can be exported to records/2026-2027/annual-plan.md and PDF.");
@@ -2123,6 +2125,7 @@ export default function Home() {
     setUnitStudyAllocations([{ id: `subject-allocation-${Date.now()}`, subject: defaultAllocationSubjectForType(type), minutes: nextMinutes }]);
     setSelectedType(type);
     setDraftCards([]);
+    setActiveDailyDetailPane(null);
     setUploadedArtifacts([]);
     setSelectedProof([]);
     setStatus(`${type} selected. Entry text is separate for each activity type.`);
@@ -2203,6 +2206,10 @@ export default function Home() {
   }
 
   function buttonState(type: string) {
+    if (type === selectedType && isDailyEntryModalOpen && draftCards.length) {
+      const hasUnapprovedDraftCards = draftCards.some((draft) => draft.status !== "approved");
+      return hasUnapprovedDraftCards ? "needs-review" : "selected-completed";
+    }
     const matching = savedActivities.filter((activity) => activity.activityType === type);
     const hasApproved = matching.some((activity) => activity.parentApproved);
     if (type === selectedType && isDailyEntryModalOpen && hasApproved) return "selected-completed";
@@ -2755,7 +2762,7 @@ export default function Home() {
       setUploadedArtifacts([]);
       if (parentApproved) {
         setIsDailyEntryModalOpen(false);
-        setShowDetails(false);
+        setActiveDailyDetailPane(null);
       }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Activity save failed.");
@@ -2773,6 +2780,7 @@ export default function Home() {
     setSelectedProof([]);
     setUploadedArtifacts([]);
     setDraftCards([]);
+    setActiveDailyDetailPane(null);
     setStatus("Narration and proof selection cleared. Student, school year, unit, date, and activity type were preserved.");
   }
 
@@ -4926,7 +4934,10 @@ export default function Home() {
                 className="daily-entry-modal-backdrop"
                 role="presentation"
                 onMouseDown={(event) => {
-                  if (event.target === event.currentTarget) setIsDailyEntryModalOpen(false);
+                  if (event.target === event.currentTarget) {
+                    setIsDailyEntryModalOpen(false);
+                    setActiveDailyDetailPane(null);
+                  }
                 }}
               >
                 <div className="daily-entry-modal" role="dialog" aria-modal="true" aria-labelledby="daily-entry-modal-title">
@@ -4935,7 +4946,16 @@ export default function Home() {
                       <p className="eyebrow">Daily record entry</p>
                       <h2 id="daily-entry-modal-title">{selectedType}</h2>
                     </div>
-                    <button className="secondary-button" type="button" onClick={() => setIsDailyEntryModalOpen(false)}>Close</button>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() => {
+                        setIsDailyEntryModalOpen(false);
+                        setActiveDailyDetailPane(null);
+                      }}
+                    >
+                      Close
+                    </button>
                   </div>
 
             <section className="panel quick-log-panel">
@@ -5047,6 +5067,17 @@ export default function Home() {
                 <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
                 {narrationDictationMessage ? <p className={isNarrationListening ? "dictation-status is-listening" : "dictation-status"}>{narrationDictationMessage}</p> : null}
               </div>
+              <div className="daily-detail-button-row" aria-label="Daily record detail tools">
+                <button className="secondary-button" type="button" onClick={() => setActiveDailyDetailPane("legal")}>
+                  Legal Tags
+                </button>
+                <button className="secondary-button" type="button" onClick={() => setActiveDailyDetailPane("proof")}>
+                  Proof of Learning
+                </button>
+                <button className="secondary-button" type="button" onClick={() => setActiveDailyDetailPane("resources")}>
+                  Resources
+                </button>
+              </div>
               <div className="quick-summary-row">
                 {hasSubjectTimeSplit ? (
                   activitySubjectAllocations.map((allocation) => (
@@ -5057,10 +5088,9 @@ export default function Home() {
                 )}
                 {selectedType === "Foreign Language" ? <span className="tag">{foreignLanguage || "Spanish"}</span> : null}
                 {selectedType === "Extracurricular" && selectedExtracurriculars.length ? <span className="tag">{selectedExtracurriculars.join(", ")}</span> : null}
-                <span className="tag">Legal tags suggested</span>
-                <button className="text-button" type="button" onClick={() => setShowDetails((value) => !value)}>
-                  {showDetails ? "Hide full details" : "Show full details"}
-                </button>
+                <span className="tag">{legalTags.length} legal tag{legalTags.length === 1 ? "" : "s"}</span>
+                <span className="tag">{uploadedArtifacts.length} proof file{uploadedArtifacts.length === 1 ? "" : "s"}</span>
+                <span className="tag">{filledLessonResources(currentLessonResources).length} resource{filledLessonResources(currentLessonResources).length === 1 ? "" : "s"}</span>
               </div>
               <div className="review-metrics daily-record-ticker" aria-label="Daily record time ticker">
                 <div className="review-metric"><span>Total time today</span><strong>{formatMinutes(dailyApprovedMinutes)}</strong></div>
@@ -5069,9 +5099,23 @@ export default function Home() {
               </div>
             </section>
 
-            {showDetails ? (
-              <>
-                <section className="panel">
+            {activeDailyDetailPane ? (
+              <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setActiveDailyDetailPane(null);
+              }}>
+                <section className="decision-modal daily-detail-modal" role="dialog" aria-modal="true" aria-labelledby="daily-detail-modal-title">
+                  <div className="section-head">
+                    <div>
+                      <p className="eyebrow">Step 2 details</p>
+                      <h2 id="daily-detail-modal-title">
+                        {activeDailyDetailPane === "legal" ? "Legal Tags" : activeDailyDetailPane === "proof" ? "Proof of Learning" : "Resources"}
+                      </h2>
+                    </div>
+                    <button className="secondary-button" type="button" onClick={() => setActiveDailyDetailPane(null)}>Close</button>
+                  </div>
+
+                {activeDailyDetailPane === "legal" ? (
+                <section className="daily-detail-pane">
                   <div className="section-head">
                     <div>
                       <p className="eyebrow">Optional details</p>
@@ -5088,8 +5132,10 @@ export default function Home() {
                     ))}
                   </div>
                 </section>
+                ) : null}
 
-                <section className="panel" id="proof">
+                {activeDailyDetailPane === "proof" ? (
+                <section className="daily-detail-pane" id="proof">
                   <div className="section-head">
                     <div>
                       <p className="eyebrow">Optional proof</p>
@@ -5123,8 +5169,10 @@ export default function Home() {
                     </div>
                   </div>
                 </section>
+                ) : null}
 
-                <section className="panel" id="resources">
+                {activeDailyDetailPane === "resources" ? (
+                <section className="daily-detail-pane" id="resources">
                   <div className="section-head">
                     <div>
                       <p className="eyebrow">Optional resources</p>
@@ -5156,7 +5204,9 @@ export default function Home() {
                     <p className="status-line">{filledLessonResources(currentLessonResources).length} resource{filledLessonResources(currentLessonResources).length === 1 ? "" : "s"} will save with this activity.</p>
                   ) : null}
                 </section>
-              </>
+                ) : null}
+                </section>
+              </div>
             ) : null}
 
             <section className="panel action-panel">

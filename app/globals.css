@@ -616,6 +616,24 @@ textarea {
   font-weight: 800;
 }
 
+.daily-detail-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.daily-detail-modal {
+  width: min(840px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
+}
+
+.daily-detail-pane {
+  display: grid;
+  gap: 12px;
+}
+
 .activity-detail-panel {
   display: grid;
   gap: 8px;
@@ -1004,6 +1022,10 @@ textarea {
   background: #fbf4ef;
   box-shadow: 0 24px 70px rgb(11 21 19 / 0.32);
   padding: 16px;
+}
+
+.daily-entry-modal .modal-backdrop {
+  z-index: 55;
 }
 
 .daily-entry-modal-head {
