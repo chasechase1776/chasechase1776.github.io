@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createExportSnapshot, createFullSchoolYearBackupPackage } from "@/lib/snapshots";
+import { createExportSnapshot, createFullSchoolYearBackupPackage, verifyLatestFullSchoolYearBackupPackage } from "@/lib/snapshots";
 
 const snapshotSchema = z.object({
   studentName: z.string().min(1).default("Bennett C. Claypool"),
@@ -113,6 +113,11 @@ export async function POST(request: Request) {
     const input = parsed.data;
     const schoolYear = await schoolYearFor(input.studentName, input.schoolYearLabel, input.schoolYearStatus);
     const counts = await snapshotCounts(schoolYear.id);
+    if (input.type === "verify_latest_full_backup") {
+      const verification = await verifyLatestFullSchoolYearBackupPackage(schoolYear.id);
+      return NextResponse.json({ verification, counts });
+    }
+
     const snapshot =
       input.type === "full_school_year_backup"
         ? await createFullSchoolYearSnapshot(schoolYear.id, input.label, input.note)
@@ -126,8 +131,10 @@ export async function POST(request: Request) {
               createdBy: "manual_records_snapshot"
             }
           });
+    const verification =
+      input.type === "full_school_year_backup" ? await verifyLatestFullSchoolYearBackupPackage(schoolYear.id) : null;
 
-    return NextResponse.json({ snapshot, counts });
+    return NextResponse.json({ snapshot, counts, verification });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Snapshot creation failed.";
     return NextResponse.json({ error: message }, { status: 500 });

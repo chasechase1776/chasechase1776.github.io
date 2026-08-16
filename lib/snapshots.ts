@@ -9,6 +9,26 @@ type SnapshotInput = {
   payload: Record<string, unknown>;
 };
 
+type BackupCheckStatus = "pass" | "fail";
+
+type BackupVerificationCheck = {
+  name: string;
+  status: BackupCheckStatus;
+  details: string;
+};
+
+type BackupVerificationResult = {
+  verifiedAt: string;
+  restoreReady: boolean;
+  snapshotId: string | null;
+  label: string | null;
+  filePath: string | null;
+  checks: BackupVerificationCheck[];
+  totals?: Record<string, number>;
+  includedFileCount?: number;
+  missingFileCount?: number;
+};
+
 function slug(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "snapshot";
 }
@@ -24,6 +44,15 @@ function dateKey(date: Date) {
 
 function safePathPart(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "file";
+}
+
+function artifactIdFromSnapshotPath(filePath: string) {
+  const match = filePath.match(/\/api\/artifacts\/([^/]+)\/download/);
+  return match?.[1] ?? null;
+}
+
+function addBackupCheck(checks: BackupVerificationCheck[], name: string, passed: boolean, details: string) {
+  checks.push({ name, status: passed ? "pass" : "fail", details });
 }
 
 function countMeaningfulDays(activities: { date: Date; actualMinutes: number; parentApproved: boolean }[], start: string, end: string) {
@@ -212,6 +241,138 @@ function folderForArtifact(artifact: { classification: string | null; mimeType: 
   return "files/other";
 }
 
+async function verifyFullBackupBytes(bytes: Buffer, expectedSchoolYearId?: string) {
+  const checks: BackupVerificationCheck[] = [];
+  const zip = await JSZip.loadAsync(bytes);
+  const backupFile = zip.file("school-year-backup.json");
+  const manifestFile = zip.file("file-manifest.json");
+
+  addBackupCheck(checks, "Backup JSON", Boolean(backupFile), "school-year-backup.json is required for restore.");
+  addBackupCheck(checks, "File manifest", Boolean(manifestFile), "file-manifest.json is required to reconnect stored files.");
+
+  if (!backupFile || !manifestFile) {
+    return {
+      checks,
+      restoreReady: false
+    };
+  }
+
+  const backup = JSON.parse(await backupFile.async("string")) as {
+    backupKind?: string;
+    schoolYear?: { id?: string; label?: string };
+    records?: {
+      activities?: unknown[];
+      artifacts?: unknown[];
+      annualPlans?: unknown[];
+      weeklyReviews?: unknown[];
+      quarterReviews?: unknown[];
+      legalArchiveBuckets?: unknown[];
+      bookListEntries?: unknown[];
+      portfolioListEntries?: unknown[];
+    };
+    totals?: Record<string, number>;
+  };
+  const manifest = JSON.parse(await manifestFile.async("string")) as {
+    includedFiles?: { zipPath: string; sizeBytes: number }[];
+    missingFiles?: unknown[];
+  };
+  const totals = backup.totals ?? {};
+  const records = backup.records ?? {};
+  const includedFiles = manifest.includedFiles ?? [];
+  const missingFiles = manifest.missingFiles ?? [];
+  const artifactCount = Array.isArray(records.artifacts) ? records.artifacts.length : 0;
+
+  addBackupCheck(checks, "Backup kind", backup.backupKind === "full_school_year_backup", "Package identifies itself as a full school-year backup.");
+  addBackupCheck(
+    checks,
+    "School year match",
+    !expectedSchoolYearId || backup.schoolYear?.id === expectedSchoolYearId,
+    `Package belongs to ${backup.schoolYear?.label ?? "an unknown school year"}.`
+  );
+  addBackupCheck(checks, "Activity count", (records.activities?.length ?? 0) === totals.activities, `${records.activities?.length ?? 0} activities match the backup total.`);
+  addBackupCheck(checks, "Artifact count", artifactCount === totals.artifacts, `${artifactCount} artifacts match the backup total.`);
+  addBackupCheck(checks, "Annual plan count", (records.annualPlans?.length ?? 0) === totals.annualPlans, `${records.annualPlans?.length ?? 0} annual plan record(s) included.`);
+  addBackupCheck(checks, "Weekly review count", (records.weeklyReviews?.length ?? 0) === totals.weeklyReviews, `${records.weeklyReviews?.length ?? 0} weekly review record(s) included.`);
+  addBackupCheck(checks, "Quarter review count", (records.quarterReviews?.length ?? 0) === totals.quarterReviews, `${records.quarterReviews?.length ?? 0} quarter review record(s) included.`);
+  addBackupCheck(checks, "Legal archive count", (records.legalArchiveBuckets?.length ?? 0) === totals.legalArchiveBuckets, `${records.legalArchiveBuckets?.length ?? 0} legal bucket(s) included.`);
+  addBackupCheck(
+    checks,
+    "Manifest coverage",
+    includedFiles.length + missingFiles.length === artifactCount,
+    `${includedFiles.length} file(s) included and ${missingFiles.length} missing file(s) listed for ${artifactCount} artifact record(s).`
+  );
+  addBackupCheck(checks, "No missing stored files", missingFiles.length === 0, `${missingFiles.length} stored file(s) were missing when the backup was created.`);
+
+  let zipFilesValid = true;
+  for (const file of includedFiles) {
+    const zipEntry = zip.file(file.zipPath);
+    if (!zipEntry) {
+      zipFilesValid = false;
+      break;
+    }
+    const fileBytes = await zipEntry.async("nodebuffer");
+    if (fileBytes.length !== file.sizeBytes) {
+      zipFilesValid = false;
+      break;
+    }
+  }
+  addBackupCheck(checks, "Embedded files", zipFilesValid, `${includedFiles.length} embedded file(s) can be opened from the ZIP.`);
+
+  return {
+    checks,
+    restoreReady: checks.every((check) => check.status === "pass"),
+    totals,
+    includedFileCount: includedFiles.length,
+    missingFileCount: missingFiles.length
+  };
+}
+
+export async function verifyLatestFullSchoolYearBackupPackage(schoolYearId: string): Promise<BackupVerificationResult> {
+  const verifiedAt = new Date().toISOString();
+  const snapshot = await prisma.exportSnapshot.findFirst({
+    where: { schoolYearId, type: "full_school_year_backup" },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (!snapshot) {
+    return {
+      verifiedAt,
+      restoreReady: false,
+      snapshotId: null,
+      label: null,
+      filePath: null,
+      checks: [{ name: "Full backup package", status: "fail", details: "No full school-year backup package exists yet." }]
+    };
+  }
+
+  const artifactId = artifactIdFromSnapshotPath(snapshot.filePath);
+  const artifact = artifactId ? await prisma.evidenceArtifact.findUnique({ where: { id: artifactId } }) : null;
+  if (!artifact) {
+    return {
+      verifiedAt,
+      restoreReady: false,
+      snapshotId: snapshot.id,
+      label: snapshot.label,
+      filePath: snapshot.filePath,
+      checks: [{ name: "Backup artifact", status: "fail", details: "The snapshot does not point to a stored backup ZIP artifact." }]
+    };
+  }
+
+  const bytes = await readStoredFile(artifact.storagePath);
+  const verification = await verifyFullBackupBytes(bytes, schoolYearId);
+  return {
+    verifiedAt,
+    restoreReady: verification.restoreReady,
+    snapshotId: snapshot.id,
+    label: snapshot.label,
+    filePath: snapshot.filePath,
+    checks: verification.checks,
+    totals: verification.totals,
+    includedFileCount: verification.includedFileCount,
+    missingFileCount: verification.missingFileCount
+  };
+}
+
 export async function createFullSchoolYearBackupPackage(input: {
   schoolYearId: string;
   label: string;
@@ -274,6 +435,7 @@ export async function createFullSchoolYearBackupPackage(input: {
 
   zip.file("file-manifest.json", JSON.stringify(manifest, null, 2));
   const bytes = Buffer.from(await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
+  const verification = await verifyFullBackupBytes(bytes, input.schoolYearId);
   const fileName = `${slug("full-school-year-backup")}-${slug(schoolYear.label)}-${createdAt.toISOString().replace(/[:.]/g, "-")}.zip`;
   const savedFile = await saveGeneratedFile(bytes, fileName, "application/zip");
   const artifact = await prisma.evidenceArtifact.create({
@@ -287,7 +449,9 @@ export async function createFullSchoolYearBackupPackage(input: {
         snapshotType: "full_school_year_backup",
         snapshotLabel: input.label,
         includedFileCount: manifest.includedFiles.length,
-        missingFileCount: manifest.missingFiles.length
+        missingFileCount: manifest.missingFiles.length,
+        restoreReady: verification.restoreReady,
+        verifiedAt: createdAt.toISOString()
       })
     }
   });

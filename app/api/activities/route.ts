@@ -30,6 +30,39 @@ const activitySchema = z.object({
   replaceApprovedActivityIds: z.array(z.string()).default([])
 });
 
+function validateSubjectAllocations(input: z.infer<typeof activitySchema>) {
+  const normalizedAllocations = input.subjectAllocations.map((item) => ({
+    subject: item.subject.trim(),
+    minutes: item.minutes
+  }));
+
+  if (!normalizedAllocations.length) return normalizedAllocations;
+
+  const blankSubject = normalizedAllocations.find((item) => !item.subject);
+  if (blankSubject) {
+    return "Every subject allocation row needs a subject.";
+  }
+
+  const zeroMinuteSubject = normalizedAllocations.find((item) => item.minutes <= 0);
+  if (zeroMinuteSubject) {
+    return "Every subject allocation row needs more than 0 minutes.";
+  }
+
+  const duplicateSubjects = normalizedAllocations
+    .map((item) => item.subject.toLowerCase())
+    .filter((subject, index, subjects) => subjects.indexOf(subject) !== index);
+  if (duplicateSubjects.length) {
+    return "Each subject can appear only once in a time split. Combine duplicate subject rows before saving.";
+  }
+
+  const allocatedMinutes = normalizedAllocations.reduce((sum, item) => sum + item.minutes, 0);
+  if (allocatedMinutes !== input.actualMinutes) {
+    return `Subject allocation minutes must equal actual minutes. Expected ${input.actualMinutes}, received ${allocatedMinutes}.`;
+  }
+
+  return normalizedAllocations;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");
@@ -65,12 +98,9 @@ export async function POST(request: Request) {
     }
 
     const input = parsed.data;
-    const allocatedMinutes = input.subjectAllocations.reduce((sum, item) => sum + item.minutes, 0);
-    if (input.subjectAllocations.length > 0 && allocatedMinutes !== input.actualMinutes) {
-      return NextResponse.json(
-        { error: `Subject allocation minutes must equal actual minutes. Expected ${input.actualMinutes}, received ${allocatedMinutes}.` },
-        { status: 400 }
-      );
+    const allocationValidation = validateSubjectAllocations(input);
+    if (typeof allocationValidation === "string") {
+      return NextResponse.json({ error: allocationValidation }, { status: 400 });
     }
 
     const student = await prisma.student.upsert({
@@ -103,8 +133,8 @@ export async function POST(request: Request) {
         : null;
 
     const dateOnly = input.date.slice(0, 10);
-    const subjects = input.subjectAllocations.length
-      ? input.subjectAllocations
+    const subjects = allocationValidation.length
+      ? allocationValidation
       : [{ subject: inferSubject(input.activityType), minutes: input.actualMinutes }];
     const legalTagLabels = input.legalTags.length ? input.legalTags : suggestLegalTags(input.activityType, subjects.map((item) => item.subject));
     const recordStatus =

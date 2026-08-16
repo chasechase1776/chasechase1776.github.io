@@ -1903,14 +1903,58 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Full backup failed.");
-      setRecordsSnapshotMessage("Full school-year backup saved to the snapshot archive.");
       await loadSnapshots();
+      const verification = data.verification;
+      setRecordsSnapshotMessage(
+        verification?.restoreReady
+          ? `Full school-year backup saved and verified. ${verification.includedFileCount ?? 0} stored file(s) are included.`
+          : "Full school-year backup saved, but verification found something that needs attention. Use Verify Latest Full Backup for details."
+      );
     } catch (error) {
       setRecordsSnapshotMessage(error instanceof Error ? error.message : "Full backup failed.");
     } finally {
       setIsSnapshotBusy(false);
     }
   }, [loadSnapshots, schoolYear, schoolYearStatus, selectedDate, student]);
+
+  const verifyLatestFullBackupSnapshot = useCallback(async () => {
+    if (!student || !schoolYear) return;
+    setIsSnapshotBusy(true);
+    try {
+      const response = await fetch("/api/snapshots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          type: "verify_latest_full_backup",
+          label: "Verify Latest Full Backup",
+          note: "Verify latest full school-year backup package."
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Backup verification failed.");
+      const verification = data.verification;
+      if (verification?.restoreReady) {
+        setRecordsSnapshotMessage(
+          `Latest full backup verified and restore-ready. ${verification.includedFileCount ?? 0} stored file(s) are included; ${verification.missingFileCount ?? 0} missing.`
+        );
+      } else {
+        const failedChecks = verification?.checks?.filter((check: { status: string }) => check.status === "fail") ?? [];
+        setRecordsSnapshotMessage(
+          failedChecks.length
+            ? `Latest full backup needs attention: ${failedChecks.map((check: { name: string }) => check.name).join(", ")}.`
+            : "No full school-year backup is available to verify yet."
+        );
+      }
+      setSnapshotCounts(data.counts ?? snapshotCounts);
+    } catch (error) {
+      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Backup verification failed.");
+    } finally {
+      setIsSnapshotBusy(false);
+    }
+  }, [schoolYear, schoolYearStatus, snapshotCounts, student]);
 
   const loadBookList = useCallback(async () => {
     if (!student || !schoolYear) return;
@@ -6391,6 +6435,9 @@ export default function Home() {
                   </button>
                   <button className="secondary-button" type="button" onClick={() => void createFullBackupSnapshot()} disabled={isSnapshotBusy}>
                     Create Full Backup Now
+                  </button>
+                  <button className="secondary-button" type="button" onClick={() => void verifyLatestFullBackupSnapshot()} disabled={isSnapshotBusy}>
+                    Verify Latest Full Backup
                   </button>
                 </div>
               </div>
