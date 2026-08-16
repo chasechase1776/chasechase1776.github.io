@@ -2298,12 +2298,41 @@ export default function Home() {
     });
   }
 
+  function normalizeActivityLabel(value: string) {
+    return value.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  function savedActivityMatchesButton(activity: SavedActivity, type: string) {
+    const target = normalizeActivityLabel(type);
+    const savedType = normalizeActivityLabel(activity.activityType);
+    const savedTitle = normalizeActivityLabel(activity.title);
+    const aliases: Record<string, string[]> = {
+      [normalizeActivityLabel("Project Cycle")]: [
+        normalizeActivityLabel("Project"),
+        normalizeActivityLabel("Project-Based Learning"),
+        normalizeActivityLabel("Project Based Learning"),
+        normalizeActivityLabel("Unit Project"),
+        normalizeActivityLabel("Complete Weekly Project")
+      ],
+      [normalizeActivityLabel("Presentation Cycle")]: [
+        normalizeActivityLabel("Presentation"),
+        normalizeActivityLabel("Weekly Presentation")
+      ],
+      [normalizeActivityLabel("Writing Project")]: [
+        normalizeActivityLabel("Writing"),
+        normalizeActivityLabel("Writing Project Finalization and Critique")
+      ]
+    };
+    const validLabels = new Set([target, ...(aliases[target] ?? [])]);
+    return validLabels.has(savedType) || validLabels.has(savedTitle) || savedTitle.startsWith(`${target} `);
+  }
+
   function buttonState(type: string) {
     const liveState = liveActivityButtonStates[liveActivityButtonKey(type)];
     if (liveState) {
       return liveState === "completed" && type === selectedType && isDailyEntryModalOpen ? "selected-completed" : liveState;
     }
-    const matching = savedActivities.filter((activity) => activity.activityType === type);
+    const matching = savedActivities.filter((activity) => savedActivityMatchesButton(activity, type));
     const hasApproved = matching.some((activity) => activity.parentApproved);
     if (type === selectedType && isDailyEntryModalOpen && hasApproved) return "selected-completed";
     if (type === selectedType && isDailyEntryModalOpen) return "selected";
