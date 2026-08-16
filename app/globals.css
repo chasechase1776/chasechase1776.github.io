@@ -277,9 +277,7 @@ a {
   position: sticky;
   top: 0;
   z-index: 5;
-  display: grid;
-  grid-template-columns: minmax(220px, 0.65fr) minmax(0, 2fr);
-  gap: 18px;
+  display: block;
   border: 2px solid var(--jute);
   border-radius: 8px;
   background: linear-gradient(135deg, rgb(255 250 247 / 0.98), rgb(244 228 217 / 0.94));
@@ -287,10 +285,58 @@ a {
   padding: 16px;
 }
 
+.context-summary {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.65fr) minmax(0, 2fr) auto;
+  gap: 18px;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.context-summary::-webkit-details-marker {
+  display: none;
+}
+
+.context-summary::after {
+  content: "+";
+  color: var(--jute);
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.context-details[open] .context-summary::after {
+  content: "-";
+}
+
+.context-summary-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.context-summary-fields span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 6px;
+  background: rgb(255 253 251 / 0.82);
+  color: var(--ink);
+  padding: 8px 10px;
+}
+
+.context-summary-fields strong {
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
 .context-fields {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
+  margin-top: 14px;
   min-width: 0;
 }
 
@@ -3052,7 +3098,7 @@ details.skill-group[open] summary {
   padding: 10px;
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1120px) and (orientation: portrait), (max-width: 760px) {
   .mockup-shell,
   .main-grid,
   .dashboard-grid,
@@ -3071,7 +3117,7 @@ details.skill-group[open] summary {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1120px) and (orientation: portrait), (max-width: 760px) {
   .content {
     padding: 14px;
   }
@@ -3131,11 +3177,9 @@ details.skill-group[open] summary {
     display: block;
   }
 
-  .context-box {
-    display: none;
-  }
-
   .context-box,
+  .context-summary,
+  .context-summary-fields,
   .context-fields,
   .form-grid,
     .quick-entry-grid,

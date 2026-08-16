@@ -4760,11 +4760,17 @@ export default function Home() {
       </aside>
 
       <section className="content">
-        <section className="context-box" aria-labelledby="context-title">
-          <div>
-            <p className="eyebrow">Active record context</p>
-            <h2 id="context-title">Student, school year, and unit stay pinned while logging</h2>
-          </div>
+        <details className="context-box context-details" aria-labelledby="context-title">
+          <summary className="context-summary">
+            <div>
+              <p className="eyebrow">Active record context</p>
+              <h2 id="context-title">Student and active unit</h2>
+            </div>
+            <div className="context-summary-fields">
+              <span><strong>Student</strong>{student}</span>
+              <span><strong>Active Unit Study</strong>{unitStudy}</span>
+            </div>
+          </summary>
           <div className="context-fields">
             <label><span>Student</span><input value={student} onChange={(event) => setStudent(event.target.value)} /></label>
             <label><span>School year</span><input value={schoolYear} onChange={(event) => setSchoolYear(event.target.value)} /></label>
@@ -4781,7 +4787,7 @@ export default function Home() {
             <label><span>Official homeschool start</span><input type="date" value={officialStartDate} onChange={(event) => setOfficialStartDate(event.target.value)} /></label>
             <label><span>Active unit study</span><input value={unitStudy} readOnly title="Set the active unit in Annual Plan, Section 4." /></label>
           </div>
-        </section>
+        </details>
 
         <header className="page-header">
           <div>
