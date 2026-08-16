@@ -566,6 +566,56 @@ textarea {
   margin-top: 14px;
 }
 
+.dictation-textarea-group {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.dictation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dictation-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1.5px solid rgb(90 71 64 / 0.44);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fffaf7, #f8eee8);
+  color: var(--jute);
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 3px 8px rgb(90 71 64 / 0.08);
+}
+
+.dictation-button span {
+  border-right: 1px solid var(--soft-line);
+  padding-right: 7px;
+  text-transform: uppercase;
+}
+
+.dictation-button.is-listening {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.dictation-status {
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.dictation-status.is-listening {
+  color: var(--green);
+  font-weight: 800;
+}
+
 .activity-detail-panel {
   display: grid;
   gap: 8px;

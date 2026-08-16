@@ -1,8 +1,33 @@
 "use client";
 
 import type { ChangeEvent, DragEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { skillTaxonomy } from "@/lib/domain";
+
+type BrowserSpeechRecognition = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionEventLike = {
+  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
+  resultIndex: number;
+};
+
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
 
 type SavedActivity = {
   id: string;
@@ -1568,6 +1593,9 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [actualMinutes, setActualMinutes] = useState(25);
   const [narration, setNarration] = useState(defaultNarrationForType("Language Arts"));
+  const [isNarrationListening, setIsNarrationListening] = useState(false);
+  const [narrationDictationMessage, setNarrationDictationMessage] = useState("");
+  const narrationRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
   const [foreignLanguage, setForeignLanguage] = useState("Spanish");
   const [selectedExtracurriculars, setSelectedExtracurriculars] = useState<string[]>([]);
   const [unitStudyAllocations, setUnitStudyAllocations] = useState<UnitStudyAllocation[]>([
@@ -2059,7 +2087,29 @@ export default function Home() {
     });
   }, [loadPortfolioList]);
 
+  const stopNarrationDictation = useCallback(() => {
+    const recognition = narrationRecognitionRef.current;
+    if (recognition) {
+      recognition.onend = null;
+      recognition.onerror = null;
+      recognition.onresult = null;
+      try {
+        recognition.stop();
+      } catch {
+        // Browser speech recognition can throw if it already stopped.
+      }
+      narrationRecognitionRef.current = null;
+    }
+    setIsNarrationListening(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isDailyEntryModalOpen) stopNarrationDictation();
+    return () => stopNarrationDictation();
+  }, [isDailyEntryModalOpen, stopNarrationDictation]);
+
   function selectActivityType(type: string) {
+    stopNarrationDictation();
     const nextDrafts = {
       ...entryDraftsByType,
       [selectedType]: { title, narration, minutes: actualMinutes }
@@ -2077,6 +2127,59 @@ export default function Home() {
     setSelectedProof([]);
     setStatus(`${type} selected. Entry text is separate for each activity type.`);
     setIsDailyEntryModalOpen(true);
+  }
+
+  function appendNarrationDictation(transcript: string) {
+    const cleanTranscript = transcript.trim();
+    if (!cleanTranscript) return;
+    setNarration((current) => {
+      const separator = current.trim() ? (/\s$/.test(current) ? "" : " ") : "";
+      return `${current}${separator}${cleanTranscript}`;
+    });
+  }
+
+  function toggleNarrationDictation() {
+    if (isNarrationListening) {
+      stopNarrationDictation();
+      setNarrationDictationMessage("Dictation stopped.");
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setNarrationDictationMessage("Dictation is not supported in this browser. Try Chrome or Edge.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+      recognition.onresult = (event) => {
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          const result = event.results[index];
+          if (result.isFinal) appendNarrationDictation(result[0].transcript);
+        }
+      };
+      recognition.onerror = () => {
+        setNarrationDictationMessage("Dictation stopped. Check microphone permission and try again.");
+        setIsNarrationListening(false);
+        narrationRecognitionRef.current = null;
+      };
+      recognition.onend = () => {
+        setIsNarrationListening(false);
+        narrationRecognitionRef.current = null;
+      };
+      narrationRecognitionRef.current = recognition;
+      recognition.start();
+      setIsNarrationListening(true);
+      setNarrationDictationMessage("Listening... speak normally, then select Stop Dictation.");
+    } catch {
+      setNarrationDictationMessage("Dictation could not start. Check microphone permission and try again.");
+      setIsNarrationListening(false);
+      narrationRecognitionRef.current = null;
+    }
   }
 
   function buttonState(type: string) {
@@ -4908,7 +5011,22 @@ export default function Home() {
                   ) : null}
                 </div>
               ) : null}
-              <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
+              <div className="dictation-textarea-group">
+                <div className="dictation-toolbar">
+                  <span className="field-label">Narration</span>
+                  <button
+                    className={isNarrationListening ? "dictation-button is-listening" : "dictation-button"}
+                    type="button"
+                    aria-pressed={isNarrationListening}
+                    onClick={toggleNarrationDictation}
+                  >
+                    <span aria-hidden="true">Mic</span>
+                    {isNarrationListening ? "Stop Dictation" : "Dictate"}
+                  </button>
+                </div>
+                <textarea value={narration} onChange={(event) => setNarration(event.target.value)} />
+                {narrationDictationMessage ? <p className={isNarrationListening ? "dictation-status is-listening" : "dictation-status"}>{narrationDictationMessage}</p> : null}
+              </div>
               <div className="quick-summary-row">
                 {hasSubjectTimeSplit ? (
                   activitySubjectAllocations.map((allocation) => (
