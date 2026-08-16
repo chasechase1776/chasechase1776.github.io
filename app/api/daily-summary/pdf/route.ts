@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import { createAuditLogSafely } from "@/lib/audit";
+import { readableError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { activityTypes } from "@/lib/domain";
 import { createArtifactSnapshot } from "@/lib/snapshots";
@@ -506,10 +508,21 @@ export async function POST(request: Request) {
       label: reportTitle,
       artifactId: artifact.id
     }).catch(() => null);
+    await createAuditLogSafely({
+      schoolYearId: activities[0].schoolYearId,
+      action: "daily_summary_pdf_generated",
+      label: reportTitle,
+      details: {
+        artifactId: artifact.id,
+        date: input.date.slice(0, 10),
+        activityCount: activities.length,
+        attachedProofCount: artifacts.length
+      }
+    });
 
     return NextResponse.json({ artifact });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Daily summary PDF generation failed.";
+    const message = readableError(error, "Daily summary PDF generation failed. Confirm approved activities exist for the selected date and try again.");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

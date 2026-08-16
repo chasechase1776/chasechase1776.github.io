@@ -157,6 +157,14 @@ type ReportBucket = {
   classifications: string[];
 };
 
+type AuditLogRecord = {
+  id: string;
+  action: string;
+  label: string;
+  detailsJson: string;
+  createdAt: string;
+};
+
 type PortfolioNode = {
   key: string;
   label: string;
@@ -186,6 +194,19 @@ const CURRENT_SCHOOL_YEAR_STATUS = "trial";
 function saveStateFromMessage(message: string): SaveStateStatus {
   if (!message.trim()) return "idle";
   return /(failed|error|could not|requires|not found|unable|incorrect)/i.test(message) ? "error" : "saved";
+}
+
+function friendlyError(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) return fallback;
+  const message = error.message.trim();
+  if (!message) return fallback;
+  if (/fetch failed|failed to fetch|networkerror/i.test(message)) {
+    return "The app could not reach the server. Check the connection, refresh the page, and try again.";
+  }
+  if (/load failed|could not load/i.test(message)) {
+    return `${message} Refresh the page before making more changes.`;
+  }
+  return message;
 }
 
 function SaveStateIndicator({
@@ -1770,6 +1791,7 @@ export default function Home() {
   const [isAnnualPlanLoading, setIsAnnualPlanLoading] = useState(false);
   const [recordsSnapshotMessage, setRecordsSnapshotMessage] = useState("Records & Snapshots runs in the background. Open this archive only when you need to retrieve a checkpoint.");
   const [snapshots, setSnapshots] = useState<ExportSnapshotRecord[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
   const [snapshotCounts, setSnapshotCounts] = useState<SnapshotCounts>({
     activities: 0,
     artifacts: 0,
@@ -2001,10 +2023,16 @@ export default function Home() {
     setIsSnapshotBusy(true);
     try {
       const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear, schoolYearStatus });
-      const response = await fetch(`/api/snapshots?${params.toString()}`, { cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not load snapshot archive.");
+      const [snapshotResponse, auditResponse] = await Promise.all([
+        fetch(`/api/snapshots?${params.toString()}`, { cache: "no-store" }),
+        fetch(`/api/audit-log?${params.toString()}`, { cache: "no-store" })
+      ]);
+      const data = await snapshotResponse.json();
+      const auditData = await auditResponse.json();
+      if (!snapshotResponse.ok) throw new Error(data.error ?? "Could not load snapshot archive.");
+      if (!auditResponse.ok) throw new Error(auditData.error ?? "Could not load audit log.");
       setSnapshots(data.snapshots ?? []);
+      setAuditLogs(auditData.auditLogs ?? []);
       setSnapshotCounts(data.counts ?? {
         activities: 0,
         artifacts: 0,
@@ -2013,9 +2041,9 @@ export default function Home() {
         annualPlans: 0,
         legalBuckets: 0
       });
-      setRecordsSnapshotMessage(data.snapshots?.length ? "Background snapshot archive loaded." : "No background snapshots yet. They will appear after saves and PDF exports.");
+      setRecordsSnapshotMessage(data.snapshots?.length || auditData.auditLogs?.length ? "Background archive and audit log loaded." : "No background snapshots or audit entries yet. They will appear after saves and PDF exports.");
     } catch (error) {
-      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Could not load snapshot archive.");
+      setRecordsSnapshotMessage(friendlyError(error, "Could not load Records & Snapshots archive. Refresh the page and try again."));
     } finally {
       setIsSnapshotBusy(false);
     }
@@ -2047,7 +2075,7 @@ export default function Home() {
           : "Full school-year backup saved, but verification found something that needs attention. Use Verify Latest Full Backup for details."
       );
     } catch (error) {
-      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Full backup failed.");
+      setRecordsSnapshotMessage(friendlyError(error, "Full backup failed. Refresh Records & Snapshots and try again."));
     } finally {
       setIsSnapshotBusy(false);
     }
@@ -2086,7 +2114,7 @@ export default function Home() {
       }
       setSnapshotCounts(data.counts ?? snapshotCounts);
     } catch (error) {
-      setRecordsSnapshotMessage(error instanceof Error ? error.message : "Backup verification failed.");
+      setRecordsSnapshotMessage(friendlyError(error, "Backup verification failed. Refresh Records & Snapshots and try again."));
     } finally {
       setIsSnapshotBusy(false);
     }
@@ -2977,7 +3005,7 @@ export default function Home() {
         setActiveDailyDetailPane(null);
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Activity save failed.");
+      setStatus(friendlyError(error, "Activity save failed. Confirm the activity details and try again."));
     } finally {
       setIsSaving(false);
     }
@@ -3021,7 +3049,7 @@ export default function Home() {
       });
       setStatus(`${file.name} uploaded. It will attach to the activity when you save.`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Proof upload failed.");
+      setStatus(friendlyError(error, "Proof upload failed. Try a smaller file or upload again."));
     } finally {
       setIsUploadingProof(false);
     }
@@ -3371,7 +3399,7 @@ export default function Home() {
       setAnnualPlanStatus(data.plan.status);
       setAnnualPlanMessage(message);
     } catch (error) {
-      setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan save failed.");
+      setAnnualPlanMessage(friendlyError(error, "Annual Plan save failed. Refresh the page and try again."));
     } finally {
       setIsAnnualPlanSaving(false);
     }
@@ -3703,7 +3731,7 @@ export default function Home() {
           setAnnualPlanMessage(`Loaded saved Annual Plan for ${schoolYear}.`);
         }
       } catch (error) {
-        if (isCurrent) setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan load failed.");
+        if (isCurrent) setAnnualPlanMessage(friendlyError(error, "Annual Plan load failed. Refresh before editing the plan."));
       } finally {
         if (isCurrent) setIsAnnualPlanLoading(false);
       }
@@ -3793,7 +3821,7 @@ export default function Home() {
         setAnnualPlanStatus(data.plan.status);
         setAnnualPlanMessage("Unit Study Planner autosaved with Annual Plan data.");
       } catch (error) {
-        setAnnualPlanMessage(error instanceof Error ? error.message : "Unit Study Planner autosave failed.");
+        setAnnualPlanMessage(friendlyError(error, "Unit Study Planner autosave failed. Refresh before continuing planner edits."));
       } finally {
         setIsAnnualPlanSaving(false);
       }
@@ -4037,7 +4065,7 @@ export default function Home() {
       );
       setAnnualPlanMessage(`${file.name} attached to Annual Records. It will be included when you generate the Annual Plan PDF.`);
     } catch (error) {
-      setAnnualPlanMessage(error instanceof Error ? error.message : "Annual record upload failed.");
+      setAnnualPlanMessage(friendlyError(error, "Annual record upload failed. Try the upload again."));
     } finally {
       setIsAnnualPlanBusy(false);
     }
@@ -4069,7 +4097,7 @@ export default function Home() {
       window.open(`/api/artifacts/${data.artifact.id}/download`, "_blank", "noopener,noreferrer");
       setAnnualPlanMessage(`${data.artifact.originalName} was generated with Section 7 attachments and saved to Reports.`);
     } catch (error) {
-      setAnnualPlanMessage(error instanceof Error ? error.message : "Annual Plan PDF generation failed.");
+      setAnnualPlanMessage(friendlyError(error, "Annual Plan PDF generation failed. Save the plan, then try again."));
     } finally {
       setIsAnnualPlanBusy(false);
     }
@@ -4114,7 +4142,7 @@ export default function Home() {
       await loadPortfolio();
     } catch (error) {
       if (pdfWindow) pdfWindow.close();
-      setStatus(error instanceof Error ? error.message : "Daily summary PDF generation failed.");
+      setStatus(friendlyError(error, "Daily summary PDF generation failed. Confirm approved activities exist for this date."));
     } finally {
       setIsDailyPdfBusy(false);
     }
@@ -4299,7 +4327,7 @@ export default function Home() {
       setLastWeeklyPdfArtifact(data.artifact);
       setWeeklyStatusMessage(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
     } catch (error) {
-      setWeeklyStatusMessage(error instanceof Error ? error.message : "Weekly PDF generation failed.");
+      setWeeklyStatusMessage(friendlyError(error, "Weekly PDF generation failed. Save the weekly review, then try again."));
     } finally {
       setIsWeeklyBusy(false);
     }
@@ -4415,7 +4443,7 @@ export default function Home() {
       setLastQuarterPdfArtifact(data.artifact);
       setQuarterStatusMessage(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
     } catch (error) {
-      setQuarterStatusMessage(error instanceof Error ? error.message : "Quarter PDF generation failed.");
+      setQuarterStatusMessage(friendlyError(error, "Quarter PDF generation failed. Save the quarter review, then try again."));
     } finally {
       setIsQuarterBusy(false);
     }
@@ -7030,6 +7058,28 @@ export default function Home() {
                     </article>
                   )) : (
                     <p className="muted">No checkpoints yet. Save a record, generate a PDF, or use Create Full Backup Now.</p>
+                  )}
+                </div>
+              </details>
+              <details className="snapshot-automation-card">
+                <summary>
+                  <div>
+                    <p className="eyebrow">Audit Log</p>
+                    <h3>{auditLogs.length} recent action{auditLogs.length === 1 ? "" : "s"}</h3>
+                  </div>
+                  <span className="tag">Newest first</span>
+                </summary>
+                <div className="report-list">
+                  {auditLogs.length ? auditLogs.map((entry) => (
+                    <article className="report-list-row" key={entry.id}>
+                      <div>
+                        <strong>{entry.label}</strong>
+                        <span>{entry.action.replace(/_/g, " ")} - {dateLabel(entry.createdAt)}</span>
+                      </div>
+                      <span className="tag">Logged</span>
+                    </article>
+                  )) : (
+                    <p className="muted">No audit entries yet. Saves, uploads, generated PDFs, backups, and protected planner decisions will appear here.</p>
                   )}
                 </div>
               </details>

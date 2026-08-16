@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createAuditLogSafely } from "@/lib/audit";
+import { readableError } from "@/lib/api-errors";
 import { defaultRecordStatus, inferSubject, suggestLegalTags } from "@/lib/domain";
 import { regenerateMarkdownForActivity } from "@/lib/markdown";
 import { prisma } from "@/lib/prisma";
@@ -226,10 +228,23 @@ export async function POST(request: Request) {
         }
       }).catch(() => null);
     }
+    await createAuditLogSafely({
+      schoolYearId: schoolYear.id,
+      action: input.parentApproved ? "activity_approved" : "activity_draft_saved",
+      label: `${input.parentApproved ? "Approved" : "Draft"} activity saved: ${activity.title}`,
+      details: {
+        activityId: activity.id,
+        activityType: activity.activityType,
+        date: dateOnly,
+        actualMinutes: activity.actualMinutes,
+        artifactCount: input.artifactIds.length,
+        replacedApprovedActivityIds: input.replaceApprovedActivityIds
+      }
+    });
 
     return NextResponse.json({ activity, markdownFiles }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Activity save failed.";
+    const message = readableError(error, "Activity save failed. Confirm the required fields and try again.");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

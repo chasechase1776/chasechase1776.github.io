@@ -38,6 +38,7 @@ model SchoolYear {
   legalArchiveBuckets          LegalArchiveBucket[]
   exportSnapshots              ExportSnapshot[]
   dailyActivityStatuses        DailyActivityStatus[]
+  auditLogs                    AuditLog[]
 
   @@unique([studentId, label])
 }
@@ -268,4 +269,17 @@ model ExportSnapshot {
   createdAt    DateTime   @default(now())
   schoolYearId String
   schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String     @id @default(cuid())
+  action       String
+  label        String
+  detailsJson  String     @default("{}")
+  createdAt    DateTime   @default(now())
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+
+  @@index([schoolYearId, createdAt])
+  @@index([action])
 }

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { createAuditLogSafely } from "@/lib/audit";
+import { readableError } from "@/lib/api-errors";
 import { saveUploadedFile } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 
@@ -26,10 +28,41 @@ export async function POST(request: Request) {
         activityId: typeof activityId === "string" && activityId ? activityId : undefined
       }
     });
+    const activity = artifact.activityId
+      ? await prisma.activity.findUnique({ where: { id: artifact.activityId }, select: { schoolYearId: true, title: true } })
+      : null;
+    const parsedTags = (() => {
+      try {
+        return JSON.parse(tagsJson) as { schoolYear?: string; student?: string };
+      } catch {
+        return {};
+      }
+    })();
+    const schoolYear = !activity && parsedTags.student && parsedTags.schoolYear
+      ? await prisma.schoolYear.findFirst({
+          where: { label: parsedTags.schoolYear, student: { name: parsedTags.student } },
+          select: { id: true }
+        })
+      : null;
+    const schoolYearId = activity?.schoolYearId ?? schoolYear?.id;
+    if (schoolYearId) {
+      await createAuditLogSafely({
+        schoolYearId,
+        action: "file_uploaded",
+        label: `Uploaded file: ${artifact.originalName}`,
+        details: {
+          artifactId: artifact.id,
+          mimeType: artifact.mimeType,
+          sizeBytes: artifact.sizeBytes,
+          classification: artifact.classification,
+          linkedActivityTitle: activity?.title
+        }
+      });
+    }
 
     return NextResponse.json({ artifact }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Proof upload failed.";
+    const message = readableError(error, "Proof upload failed. Try a smaller file or upload again.");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

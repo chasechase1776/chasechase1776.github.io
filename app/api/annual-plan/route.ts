@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createAuditLogSafely } from "@/lib/audit";
+import { readableError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { createExportSnapshot } from "@/lib/snapshots";
 
@@ -163,6 +165,7 @@ export async function POST(request: Request) {
     const existingPlan = await prisma.annualPlan.findUnique({ where: { schoolYearId: schoolYear.id } });
     const existingData = existingPlan ? JSON.parse(existingPlan.dataJson) as Record<string, unknown> : null;
     const safeData = preserveProtectedPlannerDetails(input.data, existingData);
+    const preservedPlannerDetails = safeData !== input.data;
     const plan = await prisma.annualPlan.upsert({
       where: { schoolYearId: schoolYear.id },
       update: {
@@ -188,10 +191,20 @@ export async function POST(request: Request) {
         data: safeData
       }
     }).catch(() => null);
+    await createAuditLogSafely({
+      schoolYearId: schoolYear.id,
+      action: preservedPlannerDetails ? "annual_plan_save_protected" : "annual_plan_save",
+      label: preservedPlannerDetails ? "Annual Plan saved; richer protected unit planner details were preserved." : `Annual Plan ${input.status} saved.`,
+      details: {
+        status: input.status,
+        recordStatus: input.recordStatus,
+        protectedPlannerDetailsPreserved: preservedPlannerDetails
+      }
+    });
 
     return NextResponse.json({ plan, data: safeData });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Annual Plan save failed.";
+    const message = readableError(error, "Annual Plan save failed. Refresh the page and try again.");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

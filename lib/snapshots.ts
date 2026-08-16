@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { createAuditLogSafely } from "./audit";
 import { prisma } from "./prisma";
 import { readStoredFile, saveGeneratedFile } from "./storage";
 
@@ -104,7 +105,7 @@ export async function createExportSnapshot(input: SnapshotInput) {
     }
   });
 
-  return prisma.exportSnapshot.create({
+  const snapshot = await prisma.exportSnapshot.create({
     data: {
       type: input.type,
       label: input.label,
@@ -112,6 +113,18 @@ export async function createExportSnapshot(input: SnapshotInput) {
       schoolYearId: schoolYear.id
     }
   });
+  await createAuditLogSafely({
+    schoolYearId: schoolYear.id,
+    action: "checkpoint_created",
+    label: input.label,
+    details: {
+      snapshotId: snapshot.id,
+      snapshotType: input.type,
+      artifactId: artifact.id
+    }
+  });
+
+  return snapshot;
 }
 
 export async function buildFullSchoolYearBackup(schoolYearId: string) {
@@ -456,7 +469,7 @@ export async function createFullSchoolYearBackupPackage(input: {
     }
   });
 
-  return prisma.exportSnapshot.create({
+  const snapshot = await prisma.exportSnapshot.create({
     data: {
       type: "full_school_year_backup",
       label: input.label,
@@ -464,6 +477,18 @@ export async function createFullSchoolYearBackupPackage(input: {
       schoolYearId: schoolYear.id
     }
   });
+  await createAuditLogSafely({
+    schoolYearId: schoolYear.id,
+    action: "full_backup_created",
+    label: input.label,
+    details: {
+      snapshotId: snapshot.id,
+      artifactId: artifact.id,
+      totals: backup.totals
+    }
+  });
+
+  return snapshot;
 }
 
 export async function createArtifactSnapshot(input: {
@@ -475,7 +500,7 @@ export async function createArtifactSnapshot(input: {
   const artifact = await prisma.evidenceArtifact.findUnique({ where: { id: input.artifactId } });
   if (!artifact) return null;
 
-  return prisma.exportSnapshot.create({
+  const snapshot = await prisma.exportSnapshot.create({
     data: {
       type: input.type,
       label: input.label,
@@ -483,4 +508,16 @@ export async function createArtifactSnapshot(input: {
       schoolYearId: input.schoolYearId
     }
   });
+  await createAuditLogSafely({
+    schoolYearId: input.schoolYearId,
+    action: "report_artifact_saved",
+    label: input.label,
+    details: {
+      snapshotId: snapshot.id,
+      snapshotType: input.type,
+      artifactId: artifact.id
+    }
+  });
+
+  return snapshot;
 }

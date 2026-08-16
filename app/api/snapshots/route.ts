@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createAuditLogSafely } from "@/lib/audit";
+import { readableError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { createExportSnapshot, createFullSchoolYearBackupPackage, verifyLatestFullSchoolYearBackupPackage } from "@/lib/snapshots";
 
@@ -133,10 +135,20 @@ export async function POST(request: Request) {
           });
     const verification =
       input.type === "full_school_year_backup" ? await verifyLatestFullSchoolYearBackupPackage(schoolYear.id) : null;
+    await createAuditLogSafely({
+      schoolYearId: schoolYear.id,
+      action: input.type,
+      label: input.label,
+      details: {
+        note: input.note,
+        counts,
+        verification
+      }
+    });
 
     return NextResponse.json({ snapshot, counts, verification });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Snapshot creation failed.";
+    const message = readableError(error, "Snapshot or backup action failed. Refresh Records & Snapshots and try again.");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
