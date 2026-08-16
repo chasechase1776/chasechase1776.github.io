@@ -3267,7 +3267,7 @@ export default function Home() {
       setUnitStudyAllocations(unitStudyRowsFromAllocations(draft.subjectAllocations));
     }
     setDraftCards((current) => {
-      const next = current.map((item) => (item.id === id ? { ...item, status: "approved" } : item));
+      const next: DraftCard[] = current.map((item) => (item.id === id ? { ...item, status: "approved" as const } : item));
       persistDraftButtonStatus(next);
       return next;
     });
