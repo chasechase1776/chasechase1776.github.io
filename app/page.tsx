@@ -2171,7 +2171,7 @@ export default function Home() {
   useEffect(() => {
     if (!isDailyEntryModalOpen) return;
     updateLiveActivityButtonStateFromDrafts(draftCards);
-  }, [draftCards, isDailyEntryModalOpen, selectedDate, selectedType]);
+  }, [draftCards, isDailyEntryModalOpen, selectedDate, selectedType, updateLiveActivityButtonStateFromDrafts]);
 
   function selectActivityType(type: string) {
     stopNarrationDictation();
@@ -2269,11 +2269,11 @@ export default function Home() {
     }
   }
 
-  function liveActivityButtonKey(type = selectedType, date = selectedDate) {
+  const liveActivityButtonKey = useCallback((type = selectedType, date = selectedDate) => {
     return `${date}::${type}`;
-  }
+  }, [selectedDate, selectedType]);
 
-  function updateLiveActivityButtonStateFromDrafts(nextDraftCards: DraftCard[], type = selectedType, date = selectedDate) {
+  const updateLiveActivityButtonStateFromDrafts = useCallback((nextDraftCards: DraftCard[], type = selectedType, date = selectedDate) => {
     const key = liveActivityButtonKey(type, date);
     setLiveActivityButtonStates((current) => {
       const next = { ...current };
@@ -2281,10 +2281,12 @@ export default function Home() {
         delete next[key];
         return next;
       }
-      next[key] = nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+      const nextState = nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+      if (next[key] === nextState) return current;
+      next[key] = nextState;
       return next;
     });
-  }
+  }, [liveActivityButtonKey, selectedDate, selectedType]);
 
   function clearLiveActivityButtonState(type = selectedType, date = selectedDate) {
     const key = liveActivityButtonKey(type, date);
