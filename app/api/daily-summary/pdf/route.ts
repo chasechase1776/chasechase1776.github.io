@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { activityTypes } from "@/lib/domain";
 import { createArtifactSnapshot } from "@/lib/snapshots";
 import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
 
@@ -40,6 +41,13 @@ function pdfText(value: string) {
 function dateDisplay(value: string) {
   const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
   return `${String(date.getUTCMonth() + 1).padStart(2, "0")}/${String(date.getUTCDate()).padStart(2, "0")}/${date.getUTCFullYear()}`;
+}
+
+function minutesDisplay(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  if (!hours) return `${minutes} min`;
+  return `${hours}h ${remaining}m`;
 }
 
 function wrapLine(value: string, width = 88) {
@@ -163,6 +171,76 @@ async function buildDailySummaryPdf(
     wrapLine(line).forEach((wrapped) => drawLine(wrapped, { indent }));
   };
 
+  const drawSectionHeading = (label: string, title: string) => {
+    ensureSpace(34);
+    page.drawText(pdfText(label), {
+      x: margin,
+      y,
+      size: 11,
+      font: bold,
+      color: rgb(0.35, 0.28, 0.25)
+    });
+    page.drawText(pdfText(title), {
+      x: margin + 28,
+      y,
+      size: 12,
+      font: bold,
+      color: rgb(0.09, 0.13, 0.17)
+    });
+    y -= 22;
+  };
+
+  const drawActivityTile = (x: number, tileY: number, width: number, height: number, label: string, minutes: number, completed: boolean) => {
+    page.drawRectangle({
+      x,
+      y: tileY,
+      width,
+      height,
+      borderWidth: 1.2,
+      borderColor: completed ? rgb(0.16, 0.56, 0.38) : rgb(0.63, 0.55, 0.5),
+      color: completed ? rgb(0.9, 0.96, 0.93) : rgb(1, 0.98, 0.97)
+    });
+    page.drawText(pdfText(label), {
+      x: x + 8,
+      y: tileY + height - 17,
+      size: 9,
+      font: bold,
+      color: rgb(0.05, 0.08, 0.08)
+    });
+    page.drawText(minutes ? minutesDisplay(minutes) : "not logged", {
+      x: x + 8,
+      y: tileY + 10,
+      size: 8,
+      font: minutes ? bold : regular,
+      color: completed ? rgb(0.08, 0.42, 0.27) : rgb(0.35, 0.28, 0.25)
+    });
+  };
+
+  const drawSubjectBar = (subject: string, minutes: number, totalMinutes: number, index: number) => {
+    const barWidth = 255;
+    const barHeight = 8;
+    const percent = totalMinutes ? Math.max(0.03, Math.min(1, minutes / totalMinutes)) : 0;
+    const x = margin + 210;
+    const barY = y + 2;
+    drawWrapped(`${subject}: ${minutesDisplay(minutes)}`, 12);
+    page.drawRectangle({
+      x,
+      y: barY,
+      width: barWidth,
+      height: barHeight,
+      borderWidth: 0.8,
+      borderColor: rgb(0.85, 0.78, 0.74),
+      color: rgb(0.98, 0.94, 0.92)
+    });
+    page.drawRectangle({
+      x,
+      y: barY,
+      width: barWidth * percent,
+      height: barHeight,
+      color: index % 2 === 0 ? rgb(0.16, 0.56, 0.38) : rgb(0.62, 0.42, 0.29)
+    });
+  };
+
   const drawGap = (height = 8) => {
     ensureSpace(height);
     y -= height;
@@ -170,6 +248,22 @@ async function buildDailySummaryPdf(
 
   const totalMinutes = activities.reduce((sum, activity) => sum + activity.actualMinutes, 0);
   const totalProof = activities.reduce((sum, activity) => sum + activity.artifacts.length, 0);
+  const activityTime = new Map<string, number>();
+  const activityApproved = new Map<string, boolean>();
+  const subjectTime = new Map<string, number>();
+
+  activities.forEach((activity) => {
+    activityTime.set(activity.activityType, (activityTime.get(activity.activityType) ?? 0) + activity.actualMinutes);
+    activityApproved.set(activity.activityType, (activityApproved.get(activity.activityType) ?? false) || activity.parentApproved);
+    activity.allocations.forEach((allocation) => {
+      subjectTime.set(allocation.subject, (subjectTime.get(allocation.subject) ?? 0) + allocation.minutes);
+    });
+    if (!activity.allocations.length) {
+      subjectTime.set(activity.activityType, (subjectTime.get(activity.activityType) ?? 0) + activity.actualMinutes);
+    }
+  });
+
+  const sortedSubjectTime = Array.from(subjectTime.entries()).sort((a, b) => b[1] - a[1]);
 
   drawCentered(`${input.studentName} - ${input.schoolYearLabel}`, y, 12);
   y -= 18;
@@ -178,16 +272,44 @@ async function buildDailySummaryPdf(
   drawCentered(dateDisplay(input.date), y, 12, bold);
   y -= 36;
 
-  drawLine("Daily Totals", { heading: true });
-  drawWrapped(`Activities saved: ${activities.length}`, 12);
-  drawWrapped(`Total learning time: ${totalMinutes} minutes`, 12);
-  drawWrapped(`Proof files attached: ${totalProof}`, 12);
-  drawGap(10);
+  drawSectionHeading("I", "Learning activities");
+  const tileWidth = 120;
+  const tileHeight = 48;
+  const tileGap = 12;
+  const tilesPerRow = 4;
+  ensureSpace(Math.ceil(activityTypes.length / tilesPerRow) * (tileHeight + tileGap) + 28);
+  activityTypes.forEach((activityType, index) => {
+    const row = Math.floor(index / tilesPerRow);
+    const column = index % tilesPerRow;
+    const x = margin + column * (tileWidth + tileGap);
+    const tileY = y - row * (tileHeight + tileGap) - tileHeight;
+    drawActivityTile(
+      x,
+      tileY,
+      tileWidth,
+      tileHeight,
+      activityType,
+      activityTime.get(activityType) ?? 0,
+      activityApproved.get(activityType) ?? false
+    );
+  });
+  y -= Math.ceil(activityTypes.length / tilesPerRow) * (tileHeight + tileGap) + 4;
+  drawWrapped(`Total time: ${minutesDisplay(totalMinutes)}`, 12);
+  drawWrapped(`Activities saved: ${activities.length}; proof files attached: ${totalProof}`, 12);
+  drawGap(12);
 
-  drawLine("Saved Activity Records", { heading: true });
+  drawSectionHeading("II", "Subject skill time summary");
+  if (sortedSubjectTime.length) {
+    sortedSubjectTime.forEach(([subject, minutes], index) => drawSubjectBar(subject, minutes, totalMinutes, index));
+  } else {
+    drawWrapped("No subject time allocations were saved for this date.", 12);
+  }
+  drawGap(12);
+
+  drawSectionHeading("III", "Daily record narratives");
   activities.forEach((activity, index) => {
     drawWrapped(`${index + 1}. ${activity.title}`, 12);
-    drawWrapped(`${activity.activityType} - ${activity.actualMinutes} minutes - ${activity.parentApproved ? "approved" : "draft / needs review"} - ${activity.recordStatus}`, 24);
+    drawWrapped(`${activity.activityType} - ${minutesDisplay(activity.actualMinutes)} - ${activity.parentApproved ? "approved" : "draft / needs review"} - ${activity.recordStatus}`, 24);
     drawWrapped(`Narration: ${activity.narration}`, 24);
     if (activity.allocations.length) {
       drawWrapped(`Subject allocations: ${activity.allocations.map((allocation) => `${allocation.subject} ${allocation.minutes}m`).join("; ")}`, 24);

@@ -577,6 +577,18 @@ textarea {
   margin-top: 14px;
 }
 
+.daily-completion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: end;
+  gap: 8px;
+}
+
+.daily-completion-actions .date-selector {
+  margin-right: 6px;
+}
+
 .dictation-textarea-group {
   display: grid;
   gap: 7px;

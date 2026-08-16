@@ -1707,6 +1707,7 @@ export default function Home() {
   const [isWeeklyBusy, setIsWeeklyBusy] = useState(false);
   const [isAnnualPlanBusy, setIsAnnualPlanBusy] = useState(false);
   const [isDailyPdfBusy, setIsDailyPdfBusy] = useState(false);
+  const [isCompletingDay, setIsCompletingDay] = useState(false);
   const [quarterReviewId, setQuarterReviewId] = useState("");
   const [quarterLabel, setQuarterLabel] = useState("Quarter 1");
   const [quarterStartDate, setQuarterStartDate] = useState("2026-07-01");
@@ -1873,9 +1874,12 @@ export default function Home() {
       const response = await fetch(`/api/activities?${params.toString()}`, { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not load saved activities.");
-      setSavedActivities(data.activities ?? []);
+      const activities = data.activities ?? [];
+      setSavedActivities(activities);
+      return activities as SavedActivity[];
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Could not load saved activities.");
+      return [];
     } finally {
       if (!options?.silent) setIsLoadingRecords(false);
     }
@@ -4047,6 +4051,11 @@ export default function Home() {
     setIsDailyPdfBusy(true);
     setLastDailyPdfArtifact(null);
     setStatus(`Creating daily summary PDF for ${selectedDate}...`);
+    const pdfWindow = window.open("about:blank", "_blank");
+    if (pdfWindow) {
+      pdfWindow.opener = null;
+      pdfWindow.document.write("<p style=\"font-family: sans-serif; padding: 24px;\">Creating daily summary PDF...</p>");
+    }
     try {
       const response = await fetch("/api/daily-summary/pdf", {
         method: "POST",
@@ -4061,13 +4070,57 @@ export default function Home() {
       const data = await response.json().catch(() => ({ error: "Daily summary PDF generation failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Daily summary PDF generation failed.");
       setLastDailyPdfArtifact(data.artifact);
-      window.open(`/api/artifacts/${data.artifact.id}/download`, "_blank", "noopener,noreferrer");
+      const pdfUrl = `/api/artifacts/${data.artifact.id}/download`;
+      if (pdfWindow) {
+        pdfWindow.location.href = pdfUrl;
+      } else {
+        window.open(pdfUrl, "_blank", "noopener,noreferrer");
+      }
       setStatus(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
       await loadPortfolio();
     } catch (error) {
+      if (pdfWindow) pdfWindow.close();
       setStatus(error instanceof Error ? error.message : "Daily summary PDF generation failed.");
     } finally {
       setIsDailyPdfBusy(false);
+    }
+  }
+
+  async function completeDay() {
+    setIsCompletingDay(true);
+    setStatus(`Completing saved activities for ${formatUsDate(selectedDate)}...`);
+    try {
+      const latestActivities = await loadSavedActivities(selectedDate);
+      const activitiesForStatus = latestActivities.length ? latestActivities : savedActivities;
+      if (!activitiesForStatus.length) {
+        setStatus(`No saved activities found for ${formatUsDate(selectedDate)}. Save activities before completing the day.`);
+        return;
+      }
+
+      const statusByType = new Map<string, LiveActivityButtonState>();
+      activitiesForStatus.forEach((activity) => {
+        const current = statusByType.get(activity.activityType);
+        if (activity.parentApproved) {
+          statusByType.set(activity.activityType, "completed");
+        } else if (current !== "completed") {
+          statusByType.set(activity.activityType, "needs-review");
+        }
+      });
+
+      await Promise.all(
+        Array.from(statusByType.entries()).map(([activityType, statusValue]) =>
+          persistActivityButtonStatus(activityType, statusValue, selectedDate)
+        )
+      );
+      await loadDailyActivityButtonStatuses(selectedDate);
+      const completedCount = Array.from(statusByType.values()).filter((statusValue) => statusValue === "completed").length;
+      setStatus(
+        `Day completed for ${formatUsDate(selectedDate)}. ${completedCount} activity button${completedCount === 1 ? "" : "s"} marked complete from saved approved records.`
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Complete day failed.");
+    } finally {
+      setIsCompletingDay(false);
     }
   }
 
@@ -5111,7 +5164,15 @@ export default function Home() {
                   <p className="eyebrow">Step 1</p>
                   <h2>Select learning activity</h2>
                 </div>
-                <label className="date-selector"><span>Date</span><input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} /></label>
+                <div className="daily-completion-actions">
+                  <label className="date-selector"><span>Date</span><input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} /></label>
+                  <button className="success-button" type="button" onClick={() => void completeDay()} disabled={isCompletingDay || isLoadingRecords}>
+                    {isCompletingDay ? "Completing..." : "Complete Day"}
+                  </button>
+                  <button className="success-button" type="button" onClick={() => void exportDailySummaryPdf()} disabled={isDailyPdfBusy || savedActivities.length === 0}>
+                    {isDailyPdfBusy ? "Creating PDF..." : "Compile PDF"}
+                  </button>
+                </div>
               </div>
               <div className="activity-legend">
                 <span><i className="legend-dot" />Neutral</span>
