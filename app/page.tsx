@@ -1881,6 +1881,59 @@ export default function Home() {
     }
   }, [schoolYear, student]);
 
+  const loadDailyActivityButtonStatuses = useCallback(async (date: string) => {
+    try {
+      const params = new URLSearchParams({ date, studentName: student, schoolYearLabel: schoolYear });
+      const response = await fetch(`/api/daily-activity-status?${params.toString()}`, { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not load daily activity button statuses.");
+      setLiveActivityButtonStates((current) => {
+        const next = Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${date}::`)));
+        (data.statuses ?? []).forEach((item: { activityType: string; status: LiveActivityButtonState }) => {
+          if (item.status === "completed" || item.status === "needs-review") {
+            next[`${date}::${item.activityType}`] = item.status;
+          }
+        });
+        return next;
+      });
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not load daily activity button statuses.");
+    }
+  }, [schoolYear, student]);
+
+  const persistActivityButtonStatus = useCallback(async (activityType: string, statusValue: LiveActivityButtonState | "neutral", date = selectedDate) => {
+    setLiveActivityButtonStates((current) => {
+      const key = `${date}::${activityType}`;
+      const next = { ...current };
+      if (statusValue === "neutral") {
+        delete next[key];
+      } else {
+        next[key] = statusValue;
+      }
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/daily-activity-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: student,
+          schoolYearLabel: schoolYear,
+          schoolYearStatus,
+          date,
+          activityType,
+          status: statusValue
+        })
+      });
+      const data = await response.json().catch(() => ({ error: "Daily activity button status update failed." }));
+      if (!response.ok) throw new Error(data.error ?? "Daily activity button status update failed.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Daily activity button status update failed.");
+      void loadDailyActivityButtonStatuses(date);
+    }
+  }, [loadDailyActivityButtonStatuses, schoolYear, schoolYearStatus, selectedDate, student]);
+
   const loadAllSavedActivities = useCallback(async () => {
     try {
       const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear });
@@ -2061,13 +2114,15 @@ export default function Home() {
 
   useEffect(() => {
     void loadSavedActivities(selectedDate);
-  }, [loadSavedActivities, selectedDate]);
+    void loadDailyActivityButtonStatuses(selectedDate);
+  }, [loadDailyActivityButtonStatuses, loadSavedActivities, selectedDate]);
 
   useEffect(() => {
     if (activeTab !== "daily") return;
 
     const refreshDailyStatus = () => {
       void loadSavedActivities(selectedDate, { silent: true });
+      void loadDailyActivityButtonStatuses(selectedDate);
     };
 
     window.addEventListener("focus", refreshDailyStatus);
@@ -2077,7 +2132,7 @@ export default function Home() {
       window.removeEventListener("focus", refreshDailyStatus);
       window.clearInterval(refreshInterval);
     };
-  }, [activeTab, loadSavedActivities, selectedDate]);
+  }, [activeTab, loadDailyActivityButtonStatuses, loadSavedActivities, selectedDate]);
 
   useEffect(() => {
     let currentToday = todayIso();
@@ -2181,6 +2236,16 @@ export default function Home() {
       return next;
     });
   }, [liveActivityButtonKey, selectedDate, selectedType]);
+
+  function statusFromDraftCards(nextDraftCards: DraftCard[]): LiveActivityButtonState | "neutral" {
+    if (!nextDraftCards.length) return "neutral";
+    return nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+  }
+
+  function persistDraftButtonStatus(nextDraftCards: DraftCard[]) {
+    updateLiveActivityButtonStateFromDrafts(nextDraftCards);
+    void persistActivityButtonStatus(selectedType, statusFromDraftCards(nextDraftCards));
+  }
 
   useEffect(() => {
     if (!isDailyEntryModalOpen) stopNarrationDictation();
@@ -2873,6 +2938,7 @@ export default function Home() {
       await loadSavedActivities(selectedDate);
       await loadAllSavedActivities();
       await loadPortfolio();
+      await persistActivityButtonStatus(selectedType, parentApproved ? "completed" : "needs-review");
       setDuplicateApprovedActivities([]);
       setStatus(
         parentApproved && replaceApprovedActivityIds.length > 0
@@ -2907,6 +2973,7 @@ export default function Home() {
     setUploadedArtifacts([]);
     setDraftCards([]);
     clearLiveActivityButtonState();
+    void persistActivityButtonStatus(selectedType, "neutral");
     setActiveDailyDetailPane(null);
     setStatus("Narration and proof selection cleared. Student, school year, unit, date, and activity type were preserved.");
   }
@@ -3010,6 +3077,7 @@ export default function Home() {
       activitySubjectAllocations
     );
     setDraftCards(drafts);
+    persistDraftButtonStatus(drafts);
     setStatus("Mock AI parse complete. Review the editable cards below before saving.");
   }
 
@@ -3185,7 +3253,11 @@ export default function Home() {
   }
 
   function deleteDraftCard(id: string) {
-    setDraftCards((current) => current.filter((draft) => draft.id !== id));
+    setDraftCards((current) => {
+      const next = current.filter((draft) => draft.id !== id);
+      persistDraftButtonStatus(next);
+      return next;
+    });
     setStatus("Parsed card deleted from AI review summary.");
   }
 
@@ -3194,7 +3266,11 @@ export default function Home() {
     if (hasSubjectTimeSplit && draft) {
       setUnitStudyAllocations(unitStudyRowsFromAllocations(draft.subjectAllocations));
     }
-    setDraftCards((current) => current.map((item) => (item.id === id ? { ...item, status: "approved" } : item)));
+    setDraftCards((current) => {
+      const next = current.map((item) => (item.id === id ? { ...item, status: "approved" } : item));
+      persistDraftButtonStatus(next);
+      return next;
+    });
     setStatus(
       hasSubjectTimeSplit
         ? "Parsed card approved and its subject split was applied to Step 2. Use Save Approved when the daily record is ready."

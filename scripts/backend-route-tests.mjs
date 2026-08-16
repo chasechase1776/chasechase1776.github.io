@@ -96,6 +96,18 @@ test("daily summary PDF route rejects incomplete request", async () => {
   await expectJsonResponse("daily summary pdf validation", response, 400, "date");
 });
 
+test("daily activity status route rejects incomplete request", async () => {
+  const response = await fetch(url("/api/daily-activity-status"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "User-Agent": "bennett-homeschool-backend-route-test"
+    },
+    body: JSON.stringify({})
+  });
+  await expectJsonResponse("daily activity status validation", response, 400, "schoolYearLabel");
+});
+
 test("weekly PDF route rejects incomplete request", async () => {
   const response = await fetch(url("/api/reviews/weekly/pdf"), {
     method: "POST",

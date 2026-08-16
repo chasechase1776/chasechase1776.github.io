@@ -37,6 +37,7 @@ model SchoolYear {
   portfolioListEntries         PortfolioListEntry[]
   legalArchiveBuckets          LegalArchiveBucket[]
   exportSnapshots              ExportSnapshot[]
+  dailyActivityStatuses        DailyActivityStatus[]
 
   @@unique([studentId, label])
 }
@@ -80,6 +81,20 @@ model Activity {
 
   @@index([date, activityType, parentApproved, reviewStatus])
   @@index([recordStatus])
+}
+
+model DailyActivityStatus {
+  id           String     @id @default(cuid())
+  date         DateTime
+  activityType String
+  status       String
+  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime   @default(now())
+  schoolYearId String
+  schoolYear   SchoolYear @relation(fields: [schoolYearId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolYearId, date, activityType])
+  @@index([date, status])
 }
 
 model SubjectAllocation {
