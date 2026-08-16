@@ -18,7 +18,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "ontoly": "ontoly",
-    "ontoly:build": "ontoly build . --output .ontoly",
+    "ontoly:build": "node scripts/ontoly-clean-build.mjs",
     "ontoly:doctor": "ontoly doctor .",
     "ontoly:summary": "ontoly repository-summary .",
     "ontoly:graph": "ontoly graph . --format html"
