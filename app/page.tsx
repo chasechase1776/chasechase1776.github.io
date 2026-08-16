@@ -768,6 +768,11 @@ const unitStatusOptions: UnitPlanStatus[] = ["active", "upcoming", "planned", "c
 const plannerWeekdayLabels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 const readAloudActivityTitle = "Read Aloud";
 const fridayTemplateActivityTitles = ["Writing Project Finalization & Critique", "Weekly Presentation:", "Complete Weekly Project"];
+const protectedUnitWeekCounts: Record<string, number> = {
+  construction: 4,
+  "all-about-me": 4,
+  "off-the-land": 5
+};
 
 const annualPlanSections: { id: AnnualPlanSectionId; label: string; summary: string }[] = [
   { id: "section-1", label: "Section 1", summary: "Big Picture Framework" },
@@ -859,12 +864,13 @@ function makeUnitPlanner(row: UnitPlanRow): UnitStudyPlanner {
 }
 
 function preservedPlannerWeekCount(row: UnitPlanRow, planner?: UnitStudyPlanner) {
+  const key = plannerKey(row.title);
   return Math.max(
     1,
     Number.parseInt(row.weeks, 10) || 0,
     planner?.weeksExpected ?? 0,
     planner?.weeks?.length ?? 0,
-    row.id === "construction" || plannerKey(row.title) === "construction" ? 4 : 0
+    protectedUnitWeekCounts[row.id] ?? protectedUnitWeekCounts[key] ?? 0
   );
 }
 
@@ -886,7 +892,7 @@ const initialUnitPlanRows: UnitPlanRow[] = [
   {
     id: "all-about-me",
     title: "All About Me",
-    weeks: "2",
+    weeks: "4",
     guidingQuestion: "Who am I in my family and community?",
     primaryCompetency: "Identity and self-awareness",
     formatType: "Harbor & Sprout Template",
@@ -900,7 +906,7 @@ const initialUnitPlanRows: UnitPlanRow[] = [
   {
     id: "off-the-land",
     title: "Off the Land",
-    weeks: "3",
+    weeks: "5",
     guidingQuestion: "How do people use land responsibly?",
     primaryCompetency: "Self-sufficiency",
     formatType: "Open-and-Go Published Unit",
