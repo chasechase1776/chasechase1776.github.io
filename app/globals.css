@@ -522,10 +522,21 @@ textarea {
   color: var(--green);
 }
 
+.activity-type-button.is-completed span,
+.activity-type-button.is-selected-completed span {
+  color: var(--green);
+  font-weight: 800;
+}
+
 .activity-type-button.is-needs-review {
   border-color: #d7a888;
   background: var(--gold-soft);
   color: var(--jute);
+}
+
+.activity-type-button.is-needs-review span {
+  color: var(--jute);
+  font-weight: 800;
 }
 
 .activity-type-button.is-selected {

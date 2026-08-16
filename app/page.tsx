@@ -259,6 +259,7 @@ type DraftCard = {
 };
 
 type DailyDetailPane = "legal" | "proof" | "resources";
+type LiveActivityButtonState = "needs-review" | "completed";
 
 type WeeklyReviewData = {
   totalApprovedLearningTime: number;
@@ -1738,6 +1739,7 @@ export default function Home() {
     nextQuarterPriorities: ""
   });
   const [draftCards, setDraftCards] = useState<DraftCard[]>([]);
+  const [liveActivityButtonStates, setLiveActivityButtonStates] = useState<Record<string, LiveActivityButtonState>>({});
   const [status, setStatus] = useState("Ready to parse the current entry.");
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [isLoadingPortfolio, setIsLoadingPortfolio] = useState(false);
@@ -2129,6 +2131,11 @@ export default function Home() {
     return () => stopNarrationDictation();
   }, [isDailyEntryModalOpen, stopNarrationDictation]);
 
+  useEffect(() => {
+    if (!isDailyEntryModalOpen) return;
+    updateLiveActivityButtonStateFromDrafts(draftCards);
+  }, [draftCards, isDailyEntryModalOpen, selectedDate, selectedType]);
+
   function selectActivityType(type: string) {
     stopNarrationDictation();
     const nextDrafts = {
@@ -2225,10 +2232,37 @@ export default function Home() {
     }
   }
 
+  function liveActivityButtonKey(type = selectedType, date = selectedDate) {
+    return `${date}::${type}`;
+  }
+
+  function updateLiveActivityButtonStateFromDrafts(nextDraftCards: DraftCard[], type = selectedType, date = selectedDate) {
+    const key = liveActivityButtonKey(type, date);
+    setLiveActivityButtonStates((current) => {
+      const next = { ...current };
+      if (!nextDraftCards.length) {
+        delete next[key];
+        return next;
+      }
+      next[key] = nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+      return next;
+    });
+  }
+
+  function clearLiveActivityButtonState(type = selectedType, date = selectedDate) {
+    const key = liveActivityButtonKey(type, date);
+    setLiveActivityButtonStates((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }
+
   function buttonState(type: string) {
-    if (type === selectedType && isDailyEntryModalOpen && draftCards.length) {
-      const hasUnapprovedDraftCards = draftCards.some((draft) => draft.status !== "approved");
-      return hasUnapprovedDraftCards ? "needs-review" : "selected-completed";
+    const liveState = liveActivityButtonStates[liveActivityButtonKey(type)];
+    if (liveState) {
+      return liveState === "completed" && type === selectedType && isDailyEntryModalOpen ? "selected-completed" : liveState;
     }
     const matching = savedActivities.filter((activity) => activity.activityType === type);
     const hasApproved = matching.some((activity) => activity.parentApproved);
@@ -2781,6 +2815,10 @@ export default function Home() {
       );
       setUploadedArtifacts([]);
       if (parentApproved) {
+        setLiveActivityButtonStates((current) => ({
+          ...current,
+          [liveActivityButtonKey()]: "completed"
+        }));
         setIsDailyEntryModalOpen(false);
         setActiveDailyDetailPane(null);
       }
@@ -2800,6 +2838,7 @@ export default function Home() {
     setSelectedProof([]);
     setUploadedArtifacts([]);
     setDraftCards([]);
+    clearLiveActivityButtonState();
     setActiveDailyDetailPane(null);
     setStatus("Narration and proof selection cleared. Student, school year, unit, date, and activity type were preserved.");
   }
