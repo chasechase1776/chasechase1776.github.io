@@ -216,7 +216,7 @@ async function buildDailySummaryPdf(
     });
   };
 
-  const drawSubjectBar = (subject: string, minutes: number, totalMinutes: number, index: number) => {
+  const drawSubjectBar = (subject: string, minutes: number, totalMinutes: number, completed: boolean) => {
     const barWidth = 255;
     const barHeight = 8;
     const percent = totalMinutes ? Math.max(0.03, Math.min(1, minutes / totalMinutes)) : 0;
@@ -229,15 +229,15 @@ async function buildDailySummaryPdf(
       width: barWidth,
       height: barHeight,
       borderWidth: 0.8,
-      borderColor: rgb(0.85, 0.78, 0.74),
-      color: rgb(0.98, 0.94, 0.92)
+      borderColor: completed ? rgb(0.16, 0.56, 0.38) : rgb(0.85, 0.78, 0.74),
+      color: completed ? rgb(0.9, 0.96, 0.93) : rgb(0.98, 0.94, 0.92)
     });
     page.drawRectangle({
       x,
       y: barY,
       width: barWidth * percent,
       height: barHeight,
-      color: index % 2 === 0 ? rgb(0.16, 0.56, 0.38) : rgb(0.62, 0.42, 0.29)
+      color: completed ? rgb(0.16, 0.56, 0.38) : rgb(0.62, 0.42, 0.29)
     });
   };
 
@@ -251,15 +251,18 @@ async function buildDailySummaryPdf(
   const activityTime = new Map<string, number>();
   const activityApproved = new Map<string, boolean>();
   const subjectTime = new Map<string, number>();
+  const subjectApproved = new Map<string, boolean>();
 
   activities.forEach((activity) => {
     activityTime.set(activity.activityType, (activityTime.get(activity.activityType) ?? 0) + activity.actualMinutes);
     activityApproved.set(activity.activityType, (activityApproved.get(activity.activityType) ?? false) || activity.parentApproved);
     activity.allocations.forEach((allocation) => {
       subjectTime.set(allocation.subject, (subjectTime.get(allocation.subject) ?? 0) + allocation.minutes);
+      subjectApproved.set(allocation.subject, (subjectApproved.get(allocation.subject) ?? false) || activity.parentApproved);
     });
     if (!activity.allocations.length) {
       subjectTime.set(activity.activityType, (subjectTime.get(activity.activityType) ?? 0) + activity.actualMinutes);
+      subjectApproved.set(activity.activityType, (subjectApproved.get(activity.activityType) ?? false) || activity.parentApproved);
     }
   });
 
@@ -300,7 +303,7 @@ async function buildDailySummaryPdf(
 
   drawSectionHeading("II", "Subject skill time summary");
   if (sortedSubjectTime.length) {
-    sortedSubjectTime.forEach(([subject, minutes], index) => drawSubjectBar(subject, minutes, totalMinutes, index));
+    sortedSubjectTime.forEach(([subject, minutes]) => drawSubjectBar(subject, minutes, totalMinutes, subjectApproved.get(subject) ?? false));
   } else {
     drawWrapped("No subject time allocations were saved for this date.", 12);
   }
