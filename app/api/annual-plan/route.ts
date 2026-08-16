@@ -13,6 +13,92 @@ const annualPlanSchema = z.object({
   data: z.record(z.unknown())
 });
 
+const protectedUnitWeekCounts: Record<string, number> = {
+  construction: 4,
+  "all-about-me": 4,
+  "off-the-land": 5
+};
+
+function plannerKey(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unit";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function filledString(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function plannerDetailScore(planner: unknown) {
+  if (!isRecord(planner)) return { weeks: 0, score: 0 };
+  const weeks = Array.isArray(planner.weeks) ? planner.weeks : [];
+  let score = 0;
+
+  ["unitQuestion", "unitWritingTopics", "unitPresentationTopics", "unitProject"].forEach((key) => {
+    if (filledString(planner[key])) score += 1;
+  });
+
+  weeks.forEach((week) => {
+    if (!isRecord(week)) return;
+    ["weeklyQuestion", "writingTopics", "presentationTopic", "project", "resources", "shoppingList"].forEach((key) => {
+      if (filledString(week[key])) score += 1;
+    });
+    const days = Array.isArray(week.days) ? week.days : [];
+    days.forEach((day) => {
+      if (!isRecord(day) || !Array.isArray(day.activities)) return;
+      day.activities.forEach((activity) => {
+        if (!isRecord(activity)) return;
+        if (filledString(activity.title)) score += 1;
+        if (filledString(activity.description)) score += 3;
+        if (filledString(activity.prepNotes)) score += 2;
+        if (filledString(activity.shoppingList)) score += 2;
+        if (filledString(activity.startTime)) score += 1;
+        if (filledString(activity.finishTime)) score += 1;
+        if (typeof activity.expectedMinutes === "number" && activity.expectedMinutes > 0) score += 1;
+      });
+    });
+  });
+
+  return { weeks: weeks.length, score };
+}
+
+function preserveProtectedPlannerDetails(incomingData: Record<string, unknown>, existingData: Record<string, unknown> | null) {
+  if (!existingData) return incomingData;
+  const incomingPlanners = isRecord(incomingData.unitStudyPlanners) ? incomingData.unitStudyPlanners : null;
+  const existingPlanners = isRecord(existingData.unitStudyPlanners) ? existingData.unitStudyPlanners : null;
+  if (!incomingPlanners || !existingPlanners) return incomingData;
+
+  const nextPlanners = { ...incomingPlanners };
+  let changed = false;
+
+  Object.entries(protectedUnitWeekCounts).forEach(([key, requiredWeeks]) => {
+    const incomingPlanner = incomingPlanners[key];
+    const existingPlanner = existingPlanners[key];
+    const incomingScore = plannerDetailScore(incomingPlanner);
+    const existingScore = plannerDetailScore(existingPlanner);
+
+    if (existingScore.weeks >= requiredWeeks && existingScore.score > incomingScore.score) {
+      nextPlanners[key] = existingPlanner;
+      changed = true;
+    }
+  });
+
+  const incomingRows = Array.isArray(incomingData.unitPlanRows) ? incomingData.unitPlanRows : null;
+  const nextRows = incomingRows
+    ? incomingRows.map((row) => {
+        if (!isRecord(row)) return row;
+        const id = typeof row.id === "string" ? row.id : "";
+        const titleKey = typeof row.title === "string" ? plannerKey(row.title) : "";
+        const requiredWeeks = protectedUnitWeekCounts[id] ?? protectedUnitWeekCounts[titleKey];
+        return requiredWeeks ? { ...row, weeks: String(requiredWeeks) } : row;
+      })
+    : incomingRows;
+
+  return changed || nextRows !== incomingRows ? { ...incomingData, unitStudyPlanners: nextPlanners, unitPlanRows: nextRows } : incomingData;
+}
+
 function dateFromIso(value?: string | null) {
   return value ? new Date(`${value.slice(0, 10)}T00:00:00.000Z`) : undefined;
 }
@@ -74,17 +160,20 @@ export async function POST(request: Request) {
 
     const input = parsed.data;
     const schoolYear = await upsertSchoolYear(input);
+    const existingPlan = await prisma.annualPlan.findUnique({ where: { schoolYearId: schoolYear.id } });
+    const existingData = existingPlan ? JSON.parse(existingPlan.dataJson) as Record<string, unknown> : null;
+    const safeData = preserveProtectedPlannerDetails(input.data, existingData);
     const plan = await prisma.annualPlan.upsert({
       where: { schoolYearId: schoolYear.id },
       update: {
         status: input.status,
         recordStatus: input.recordStatus,
-        dataJson: JSON.stringify(input.data)
+        dataJson: JSON.stringify(safeData)
       },
       create: {
         status: input.status,
         recordStatus: input.recordStatus,
-        dataJson: JSON.stringify(input.data),
+        dataJson: JSON.stringify(safeData),
         schoolYearId: schoolYear.id
       }
     });
@@ -96,11 +185,11 @@ export async function POST(request: Request) {
         planId: plan.id,
         status: input.status,
         recordStatus: input.recordStatus,
-        data: input.data
+        data: safeData
       }
     }).catch(() => null);
 
-    return NextResponse.json({ plan, data: input.data });
+    return NextResponse.json({ plan, data: safeData });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Annual Plan save failed.";
     return NextResponse.json({ error: message }, { status: 500 });
