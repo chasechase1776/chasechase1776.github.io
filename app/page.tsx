@@ -7015,7 +7015,7 @@ export default function Home() {
                 <div className="education-ticker-card"><span>Annual Plans</span><strong>{snapshotCounts.annualPlans}</strong><small>Saved plan records</small></div>
                 <div className="education-ticker-card"><span>Legal Buckets</span><strong>{snapshotCounts.legalBuckets}</strong><small>File-cabinet sections</small></div>
               </div>
-              <details className="snapshot-automation-card" open>
+              <details className="snapshot-automation-card">
                 <summary>
                   <div>
                     <p className="eyebrow">Automatic Backup Rules</p>
@@ -7034,7 +7034,7 @@ export default function Home() {
                   <div className="record-link"><strong>Close-out safeguard</strong><span>Creates a full ZIP backup before prior-year running lists are cleared.</span></div>
                 </div>
               </details>
-              <details className="snapshot-automation-card" open>
+              <details className="snapshot-automation-card">
                 <summary>
                   <div>
                     <p className="eyebrow">Snapshot Archive</p>
