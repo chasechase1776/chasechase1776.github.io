@@ -115,7 +115,8 @@ async function readEvidenceFiles(artifacts: { originalName: string; mimeType: st
 async function buildDailySummaryPdf(
   input: z.infer<typeof dailySummaryPdfSchema>,
   activities: DailySummaryActivity[],
-  evidenceFiles: EvidenceFile[]
+  evidenceFiles: EvidenceFile[],
+  completedActivityTypes: Set<string>
 ) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
@@ -254,15 +255,19 @@ async function buildDailySummaryPdf(
   const subjectApproved = new Map<string, boolean>();
 
   activities.forEach((activity) => {
+    const activityIsCompleted = activity.parentApproved || completedActivityTypes.has(activity.activityType);
     activityTime.set(activity.activityType, (activityTime.get(activity.activityType) ?? 0) + activity.actualMinutes);
-    activityApproved.set(activity.activityType, (activityApproved.get(activity.activityType) ?? false) || activity.parentApproved);
+    activityApproved.set(activity.activityType, (activityApproved.get(activity.activityType) ?? false) || activityIsCompleted);
     activity.allocations.forEach((allocation) => {
       subjectTime.set(allocation.subject, (subjectTime.get(allocation.subject) ?? 0) + allocation.minutes);
-      subjectApproved.set(allocation.subject, (subjectApproved.get(allocation.subject) ?? false) || activity.parentApproved);
+      subjectApproved.set(
+        allocation.subject,
+        (subjectApproved.get(allocation.subject) ?? false) || activityIsCompleted || completedActivityTypes.has(allocation.subject)
+      );
     });
     if (!activity.allocations.length) {
       subjectTime.set(activity.activityType, (subjectTime.get(activity.activityType) ?? 0) + activity.actualMinutes);
-      subjectApproved.set(activity.activityType, (subjectApproved.get(activity.activityType) ?? false) || activity.parentApproved);
+      subjectApproved.set(activity.activityType, (subjectApproved.get(activity.activityType) ?? false) || activityIsCompleted);
     }
   });
 
@@ -439,9 +444,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No saved activities were found for the selected date." }, { status: 404 });
     }
 
+    const completedButtonStatuses = await prisma.$queryRaw<{ activityType: string }[]>`
+      SELECT das."activityType"
+      FROM "DailyActivityStatus" das
+      INNER JOIN "SchoolYear" sy ON sy."id" = das."schoolYearId"
+      INNER JOIN "Student" student ON student."id" = sy."studentId"
+      WHERE das."date" = ${activityDate}
+        AND das."status" = 'completed'
+        AND sy."label" = ${input.schoolYearLabel}
+        AND student."name" IN (${input.studentName}, 'Bennett')
+    `.catch(() => []);
+
     const artifacts = activities.flatMap((activity) => activity.artifacts);
     const evidenceFiles = await readEvidenceFiles(artifacts);
-    const pdfBytes = await buildDailySummaryPdf(input, activities, evidenceFiles);
+    const pdfBytes = await buildDailySummaryPdf(
+      input,
+      activities,
+      evidenceFiles,
+      new Set(completedButtonStatuses.map((status) => status.activityType))
+    );
     const fileName = `daily-summary-${input.date.slice(0, 10)}.pdf`;
     const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
     const artifact = await prisma.evidenceArtifact.create({
