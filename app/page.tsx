@@ -858,11 +858,21 @@ function makeUnitPlanner(row: UnitPlanRow): UnitStudyPlanner {
   };
 }
 
+function preservedPlannerWeekCount(row: UnitPlanRow, planner?: UnitStudyPlanner) {
+  return Math.max(
+    1,
+    Number.parseInt(row.weeks, 10) || 0,
+    planner?.weeksExpected ?? 0,
+    planner?.weeks?.length ?? 0,
+    row.id === "construction" || plannerKey(row.title) === "construction" ? 4 : 0
+  );
+}
+
 const initialUnitPlanRows: UnitPlanRow[] = [
   {
     id: "construction",
     title: "Construction",
-    weeks: "3",
+    weeks: "4",
     guidingQuestion: "How do people build safe structures?",
     primaryCompetency: "Design and problem solving",
     formatType: "Minimal Structure / Parent-Designed",
@@ -3700,30 +3710,42 @@ export default function Home() {
   }, [applyAnnualPlanData, schoolYear, student]);
 
   useEffect(() => {
+    setUnitPlanRows((current) => {
+      let changed = false;
+      const nextRows = current.map((row) => {
+        const planner = unitStudyPlanners[plannerKey(row.title)];
+        const preservedWeeks = preservedPlannerWeekCount(row, planner);
+        if (String(preservedWeeks) === row.weeks) return row;
+        changed = true;
+        return { ...row, weeks: String(preservedWeeks) };
+      });
+      return changed ? nextRows : current;
+    });
+  }, [unitStudyPlanners]);
+
+  useEffect(() => {
     setUnitStudyPlanners((current) => {
       let changed = false;
       const next = { ...current };
       unitPlanRows.forEach((row) => {
         const key = plannerKey(row.title);
         const currentPlanner = next[key] ?? makeUnitPlanner(row);
-        const weeksExpected = Math.max(1, Number.parseInt(row.weeks, 10) || currentPlanner.weeksExpected || 4);
+        const weeksExpected = preservedPlannerWeekCount(row, currentPlanner);
         const weeks = [...currentPlanner.weeks];
         while (weeks.length < weeksExpected) weeks.push(makePlannerWeek(weeks.length, row.title));
-        const normalizedWeeks = weeks.slice(0, weeksExpected);
         const syncedPlanner: UnitStudyPlanner = {
           ...currentPlanner,
           unitTitle: row.title,
           weeksExpected,
           unitQuestion: row.guidingQuestion || currentPlanner.unitQuestion,
-          weeks: normalizedWeeks
+          weeks
         };
         const didChange =
           !next[key] ||
           currentPlanner.unitTitle !== syncedPlanner.unitTitle ||
           currentPlanner.weeksExpected !== syncedPlanner.weeksExpected ||
           currentPlanner.unitQuestion !== syncedPlanner.unitQuestion ||
-          currentPlanner.weeks.length !== syncedPlanner.weeks.length ||
-          normalizedWeeks.length !== currentPlanner.weeks.length;
+          currentPlanner.weeks.length !== syncedPlanner.weeks.length;
         if (didChange) {
           changed = true;
           next[key] = syncedPlanner;
