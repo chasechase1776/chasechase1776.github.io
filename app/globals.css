@@ -1545,10 +1545,10 @@ details.skill-group[open] summary {
   display: grid;
   gap: 5px;
   min-height: 82px;
-  border: 1px solid var(--blue);
+  border: 1px solid var(--jute);
   border-radius: 8px;
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
   padding: 14px 16px;
   text-align: center;
   place-items: center;
@@ -1559,7 +1559,7 @@ details.skill-group[open] summary {
 }
 
 .unit-week-button span {
-  color: var(--blue);
+  color: var(--jute);
   font-size: 0.84rem;
   font-weight: 700;
 }
@@ -1637,10 +1637,10 @@ details.skill-group[open] summary {
   display: block;
   width: 100%;
   max-width: 100%;
-  border: 1px solid var(--blue);
+  border: 1px solid var(--jute);
   border-radius: 999px;
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
   padding: 6px 9px;
   font-size: 0.78rem;
   font-weight: 800;
@@ -1655,7 +1655,7 @@ details.skill-group[open] summary {
 
 .unit-activity-pill.is-selected {
   border-width: 2px;
-  box-shadow: 0 0 0 2px rgb(159 106 74 / 0.18);
+  box-shadow: 0 0 0 2px rgb(90 71 64 / 0.18);
 }
 
 .unit-activity-pill.is-complete {
@@ -1671,9 +1671,9 @@ details.skill-group[open] summary {
 }
 
 .unit-activity-pill.is-moved {
-  border-color: var(--blue);
+  border-color: var(--jute);
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--jute);
 }
 
 .unit-day-detail-panel {
@@ -1701,7 +1701,7 @@ details.skill-group[open] summary {
 }
 
 .unit-day-activity-card {
-  border: 3px solid #9f6a4a;
+  border: 3px solid var(--jute);
   border-radius: 8px;
   background: #fffaf7;
   padding: 14px;
