@@ -68,12 +68,16 @@ export async function GET(request: Request) {
   const date = searchParams.get("date");
   const activityType = searchParams.get("activityType");
   const recordStatus = searchParams.get("recordStatus");
+  const studentName = searchParams.get("studentName");
+  const schoolYearLabel = searchParams.get("schoolYearLabel");
 
   const activities = await prisma.activity.findMany({
     where: {
       ...(date ? { date: new Date(`${date}T00:00:00.000Z`) } : {}),
       ...(activityType ? { activityType } : {}),
-      ...(recordStatus ? { recordStatus } : {})
+      ...(recordStatus ? { recordStatus } : {}),
+      ...(studentName ? { student: { name: studentName } } : {}),
+      ...(schoolYearLabel ? { schoolYear: { label: schoolYearLabel } } : {})
     },
     include: {
       student: true,

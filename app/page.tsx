@@ -1866,30 +1866,32 @@ export default function Home() {
     });
   }, [unitPlanRows]);
 
-  const loadSavedActivities = useCallback(async (date: string) => {
-    setIsLoadingRecords(true);
+  const loadSavedActivities = useCallback(async (date: string, options?: { silent?: boolean }) => {
+    if (!options?.silent) setIsLoadingRecords(true);
     try {
-      const response = await fetch(`/api/activities?date=${date}`, { cache: "no-store" });
+      const params = new URLSearchParams({ date, studentName: student, schoolYearLabel: schoolYear });
+      const response = await fetch(`/api/activities?${params.toString()}`, { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not load saved activities.");
       setSavedActivities(data.activities ?? []);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Could not load saved activities.");
     } finally {
-      setIsLoadingRecords(false);
+      if (!options?.silent) setIsLoadingRecords(false);
     }
-  }, []);
+  }, [schoolYear, student]);
 
   const loadAllSavedActivities = useCallback(async () => {
     try {
-      const response = await fetch("/api/activities", { cache: "no-store" });
+      const params = new URLSearchParams({ studentName: student, schoolYearLabel: schoolYear });
+      const response = await fetch(`/api/activities?${params.toString()}`, { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not load education-day records.");
       setAllSavedActivities(data.activities ?? []);
     } catch (error) {
       setLegalArchiveMessage(error instanceof Error ? error.message : "Could not load education-day records.");
     }
-  }, []);
+  }, [schoolYear, student]);
 
   const loadPortfolio = useCallback(async () => {
     setIsLoadingPortfolio(true);
@@ -2060,6 +2062,41 @@ export default function Home() {
   useEffect(() => {
     void loadSavedActivities(selectedDate);
   }, [loadSavedActivities, selectedDate]);
+
+  useEffect(() => {
+    if (activeTab !== "daily") return;
+
+    const refreshDailyStatus = () => {
+      void loadSavedActivities(selectedDate, { silent: true });
+    };
+
+    window.addEventListener("focus", refreshDailyStatus);
+    const refreshInterval = window.setInterval(refreshDailyStatus, 30000);
+
+    return () => {
+      window.removeEventListener("focus", refreshDailyStatus);
+      window.clearInterval(refreshInterval);
+    };
+  }, [activeTab, loadSavedActivities, selectedDate]);
+
+  useEffect(() => {
+    let currentToday = todayIso();
+
+    const resetAtLocalDateChange = () => {
+      const nextToday = todayIso();
+      if (nextToday === currentToday) return;
+
+      const previousToday = currentToday;
+      currentToday = nextToday;
+      setLiveActivityButtonStates((current) =>
+        Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${previousToday}::`)))
+      );
+      setSelectedDate((current) => (current === previousToday ? nextToday : current));
+    };
+
+    const midnightInterval = window.setInterval(resetAtLocalDateChange, 30000);
+    return () => window.clearInterval(midnightInterval);
+  }, []);
 
   useEffect(() => {
     void loadAllSavedActivities();
