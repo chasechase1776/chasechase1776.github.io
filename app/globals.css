@@ -581,7 +581,7 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  align-items: end;
+  align-items: flex-end;
   gap: 8px;
 }
 
