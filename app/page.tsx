@@ -2142,12 +2142,25 @@ export default function Home() {
     if (isNarrationListening) {
       stopNarrationDictation();
       setNarrationDictationMessage("Dictation stopped.");
+      setStatus("Dictation stopped.");
+      return;
+    }
+
+    setNarrationDictationMessage("Dictation button selected. Checking microphone support...");
+    setStatus("Dictation button selected. Checking microphone support...");
+
+    if (!window.isSecureContext) {
+      const message = "Dictation needs the secure live website. Open the Vercel https link and try again.";
+      setNarrationDictationMessage(message);
+      setStatus(message);
       return;
     }
 
     const SpeechRecognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setNarrationDictationMessage("Dictation is not supported in this browser. Try Chrome or Edge.");
+      const message = "Dictation is not supported in this browser. Try Chrome or Edge, or use the keyboard microphone on your phone.";
+      setNarrationDictationMessage(message);
+      setStatus(message);
       return;
     }
 
@@ -2163,7 +2176,9 @@ export default function Home() {
         }
       };
       recognition.onerror = () => {
-        setNarrationDictationMessage("Dictation stopped. Check microphone permission and try again.");
+        const message = "Dictation stopped. Check microphone permission and try again.";
+        setNarrationDictationMessage(message);
+        setStatus(message);
         setIsNarrationListening(false);
         narrationRecognitionRef.current = null;
       };
@@ -2172,11 +2187,16 @@ export default function Home() {
         narrationRecognitionRef.current = null;
       };
       narrationRecognitionRef.current = recognition;
+      setNarrationDictationMessage("Starting dictation. If asked, allow microphone access.");
+      setStatus("Starting dictation. If asked, allow microphone access.");
       recognition.start();
       setIsNarrationListening(true);
       setNarrationDictationMessage("Listening... speak normally, then select Stop Dictation.");
+      setStatus("Listening for narration. Speak normally, then select Stop Dictation.");
     } catch {
-      setNarrationDictationMessage("Dictation could not start. Check microphone permission and try again.");
+      const message = "Dictation could not start. Check microphone permission and try again.";
+      setNarrationDictationMessage(message);
+      setStatus(message);
       setIsNarrationListening(false);
       narrationRecognitionRef.current = null;
     }
