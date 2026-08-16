@@ -783,6 +783,25 @@ function plannerKey(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unit";
 }
 
+function normalizeDictationTranscript(transcript: string) {
+  return ` ${transcript.trim()} `
+    .replace(/\s+\b(new paragraph|new paragraph please)\b[.,!?;:]?\s*/gi, "\n\n")
+    .replace(/\s+\b(insert line|line break|new line|next line)\b[.,!?;:]?\s*/gi, "\n")
+    .replace(/\s+\b(period|full stop)\b[.,!?;:]?\s*/gi, ". ")
+    .replace(/\s+\b(comma)\b[.,!?;:]?\s*/gi, ", ")
+    .replace(/\s+\b(question mark|question)\b[.,!?;:]?\s*/gi, "? ")
+    .replace(/\s+\b(exclamation point|exclamation mark)\b[.,!?;:]?\s*/gi, "! ")
+    .replace(/\s+\b(colon)\b[.,!?;:]?\s*/gi, ": ")
+    .replace(/\s+\b(semicolon)\b[.,!?;:]?\s*/gi, "; ")
+    .replace(/\s+\b(dash|hyphen)\b[.,!?;:]?\s*/gi, " - ")
+    .replace(/[ \t]+([.,!?;:])/g, "$1")
+    .replace(/([.,!?;:])(?=\S)/g, "$1 ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function newPlannerActivity(weekIndex: number, dayIndex: number, activityIndex: number, title?: string): UnitPlannerActivity {
   return {
     id: `planner-activity-${Date.now()}-${weekIndex}-${dayIndex}-${activityIndex}`,
@@ -2133,10 +2152,11 @@ export default function Home() {
   }
 
   function appendNarrationDictation(transcript: string) {
-    const cleanTranscript = transcript.trim();
+    const cleanTranscript = normalizeDictationTranscript(transcript);
     if (!cleanTranscript) return;
     setNarration((current) => {
-      const separator = current.trim() ? (/\s$/.test(current) ? "" : " ") : "";
+      const startsWithPunctuationOrLineBreak = /^[\n.,!?;:]/.test(cleanTranscript);
+      const separator = current.trim() && !startsWithPunctuationOrLineBreak ? (/\s$/.test(current) ? "" : " ") : "";
       return `${current}${separator}${cleanTranscript}`;
     });
   }
