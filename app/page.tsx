@@ -4102,12 +4102,20 @@ export default function Home() {
     setIsDailyPdfBusy(true);
     setLastDailyPdfArtifact(null);
     setStatus(`Creating ${reportTitle}...`);
-    const pdfWindow = window.open("about:blank", "_blank");
-    if (pdfWindow) {
-      pdfWindow.opener = null;
-      pdfWindow.document.write("<p style=\"font-family: sans-serif; padding: 24px;\">Creating daily summary PDF...</p>");
-    }
+    let pdfWindow: Window | null = null;
     try {
+      const latestActivities = await loadSavedActivities(selectedDate, { silent: true });
+      const activitiesForPdf = latestActivities.length ? latestActivities : savedActivities;
+      if (!activitiesForPdf.length) {
+        setStatus(`No saved activities found for ${formatUsDate(selectedDate)}. Save or approve activities before compiling the daily PDF.`);
+        return;
+      }
+
+      pdfWindow = window.open("about:blank", "_blank");
+      if (pdfWindow) {
+        pdfWindow.opener = null;
+        pdfWindow.document.write("<p style=\"font-family: sans-serif; padding: 24px;\">Creating daily summary PDF...</p>");
+      }
       const response = await fetch("/api/daily-summary/pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -5228,7 +5236,7 @@ export default function Home() {
                   <button className="success-button" type="button" onClick={() => void completeDay()} disabled={isCompletingDay || isLoadingRecords}>
                     {isCompletingDay ? "Completing..." : "Complete Day"}
                   </button>
-                  <button className="success-button" type="button" onClick={() => void exportDailySummaryPdf()} disabled={isDailyPdfBusy || savedActivities.length === 0}>
+                  <button className="success-button" type="button" onClick={() => void exportDailySummaryPdf()} disabled={isDailyPdfBusy}>
                     {isDailyPdfBusy ? "Creating PDF..." : "Compile PDF"}
                   </button>
                 </div>
@@ -5770,7 +5778,7 @@ export default function Home() {
                   <button className="secondary-button" type="button" onClick={() => void loadSavedActivities(selectedDate)} disabled={isLoadingRecords}>
                     {isLoadingRecords ? "Loading..." : "Refresh"}
                   </button>
-                  <button className="primary-button" type="button" onClick={() => void exportDailySummaryPdf()} disabled={isDailyPdfBusy || savedActivities.length === 0}>
+                  <button className="primary-button" type="button" onClick={() => void exportDailySummaryPdf()} disabled={isDailyPdfBusy}>
                     {isDailyPdfBusy ? "Creating..." : "Create Daily Summary PDF"}
                   </button>
                 </div>
