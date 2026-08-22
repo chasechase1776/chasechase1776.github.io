@@ -24,7 +24,6 @@ type PlannerMoveTarget = {
 type UnitPlannerActivityModalProps = {
   activity: UnitPlannerActivity;
   weekIndex: number;
-  dayIndex: number;
   weekdayLabel: string;
   plannerWeekCount: number;
   plannerMoveTarget: PlannerMoveTarget;
@@ -43,7 +42,6 @@ type UnitPlannerActivityModalProps = {
 export function UnitPlannerActivityModal({
   activity,
   weekIndex,
-  dayIndex,
   weekdayLabel,
   plannerWeekCount,
   plannerMoveTarget,

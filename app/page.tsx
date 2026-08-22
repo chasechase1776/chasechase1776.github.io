@@ -5008,10 +5008,9 @@ export default function Home() {
               )}
 
               {selectedPlannerActivityCard && selectedPlannerActivityDay && selectedPlannerActivity ? (
-                <UnitPlannerActivityModal
+                  <UnitPlannerActivityModal
                   activity={selectedPlannerActivityCard}
                   weekIndex={selectedPlannerActivity.weekIndex}
-                  dayIndex={selectedPlannerActivity.dayIndex}
                   weekdayLabel={plannerWeekdayLabels[selectedPlannerActivity.dayIndex]}
                   plannerWeekCount={activePlanner.weeks.length}
                   plannerMoveTarget={plannerMoveTarget}

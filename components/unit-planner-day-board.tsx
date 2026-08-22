@@ -29,7 +29,7 @@ type UnitPlannerDayBoardProps = {
   onSelectActivity: (dayIndex: number, activityId: string) => void;
   onDayDragStart: (event: DragEvent<HTMLElement>, weekIndex: number, dayIndex: number) => void;
   onActivityDragStart: (event: DragEvent<HTMLButtonElement>, weekIndex: number, dayIndex: number, activityId: string) => void;
-  onActivityDrop: (event: DragEvent<HTMLElement>, weekIndex: number, dayIndex: number, activityIndexOrDayIndex: number) => void;
+  onActivityDrop: (event: DragEvent<HTMLElement>, weekIndex: number, dayIndex: number, activityIndexOrDayIndex?: number) => void;
   onAddActivity: (weekIndex: number, dayIndex: number) => void;
   onAddFridayTemplate: (weekIndex: number, dayIndex: number) => void;
 };
