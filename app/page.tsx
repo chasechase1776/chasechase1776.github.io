@@ -2274,7 +2274,7 @@ export default function Home() {
         delete next[key];
         return next;
       }
-      const nextState = nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+      const nextState = "needs-review";
       if (next[key] === nextState) return current;
       next[key] = nextState;
       return next;
@@ -2283,7 +2283,7 @@ export default function Home() {
 
   function statusFromDraftCards(nextDraftCards: DraftCard[]): LiveActivityButtonState | "neutral" {
     if (!nextDraftCards.length) return "neutral";
-    return nextDraftCards.some((draft) => draft.status !== "approved") ? "needs-review" : "completed";
+    return "needs-review";
   }
 
   function persistDraftButtonStatus(nextDraftCards: DraftCard[]) {
@@ -2438,11 +2438,12 @@ export default function Home() {
 
   function buttonState(type: string) {
     const liveState = liveActivityButtonStates[liveActivityButtonKey(type)];
-    if (liveState) {
-      return liveState === "completed" && type === selectedType && isDailyEntryModalOpen ? "selected-completed" : liveState;
-    }
     const matching = savedActivities.filter((activity) => savedActivityMatchesButton(activity, type));
     const hasApproved = matching.some((activity) => activity.parentApproved);
+    if (liveState) {
+      if (liveState === "completed" && !hasApproved) return "needs-review";
+      return liveState === "completed" && type === selectedType && isDailyEntryModalOpen ? "selected-completed" : liveState;
+    }
     if (type === selectedType && isDailyEntryModalOpen && hasApproved) return "selected-completed";
     if (type === selectedType && isDailyEntryModalOpen) return "selected";
     if (hasApproved) return "completed";
@@ -4117,10 +4118,11 @@ export default function Home() {
       const latestActivities = await loadSavedActivities(selectedDate, { silent: true });
       const activitiesForPdf = latestActivities.length ? latestActivities : savedActivities;
       if (!activitiesForPdf.length) {
+        const missingMessage = `No saved activity records found for ${formatUsDate(selectedDate)}. Parsed cards and green-looking buttons are not permanent records until Save Approved is selected for each activity.`;
         if (pdfWindow) {
-          pdfWindow.document.body.innerHTML = `<p style="font-family: sans-serif; padding: 24px;">No saved activities found for ${formatUsDate(selectedDate)}. Save or approve activities before compiling the daily PDF.</p>`;
+          pdfWindow.document.body.innerHTML = `<p style="font-family: sans-serif; padding: 24px;">${missingMessage}</p>`;
         }
-        setStatus(`No saved activities found for ${formatUsDate(selectedDate)}. Save or approve activities before compiling the daily PDF.`);
+        setStatus(missingMessage);
         return;
       }
 
