@@ -1331,7 +1331,7 @@ function formatUsDate(value: string) {
   return `${month}/${day}/${year}`;
 }
 
-function defaultNarrationForType(_activityType?: string) {
+function defaultNarrationForType() {
   return "";
 }
 
@@ -1641,7 +1641,7 @@ export default function Home() {
   const [selectedType, setSelectedType] = useState("Language Arts");
   const [title, setTitle] = useState("");
   const [actualMinutes, setActualMinutes] = useState(25);
-  const [narration, setNarration] = useState(defaultNarrationForType("Language Arts"));
+  const [narration, setNarration] = useState(defaultNarrationForType());
   const [isNarrationListening, setIsNarrationListening] = useState(false);
   const [narrationDictationMessage, setNarrationDictationMessage] = useState("");
   const narrationRecognitionRef = useRef<BrowserSpeechRecognition | null>(null);
@@ -1653,7 +1653,7 @@ export default function Home() {
   const [entryDraftsByType, setEntryDraftsByType] = useState<Record<string, { title: string; narration: string; minutes: number }>>({
     "Language Arts": {
       title: "",
-      narration: defaultNarrationForType("Language Arts"),
+      narration: defaultNarrationForType(),
       minutes: 25
     }
   });
@@ -2305,7 +2305,7 @@ export default function Home() {
     const nextMinutes = saved?.minutes ?? 25;
     setEntryDraftsByType(nextDrafts);
     setTitle(saved?.title ?? "");
-    setNarration(saved?.narration ?? defaultNarrationForType(type));
+    setNarration(saved?.narration ?? defaultNarrationForType());
     setActualMinutes(nextMinutes);
     setUnitStudyAllocations([{ id: `subject-allocation-${Date.now()}`, subject: defaultAllocationSubjectForType(type), minutes: nextMinutes }]);
     setSelectedType(type);
