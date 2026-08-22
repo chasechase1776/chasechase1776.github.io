@@ -4102,19 +4102,24 @@ export default function Home() {
     setIsDailyPdfBusy(true);
     setLastDailyPdfArtifact(null);
     setStatus(`Creating ${reportTitle}...`);
-    let pdfWindow: Window | null = null;
+    const pdfWindow = window.open("about:blank", "_blank");
+    if (pdfWindow) {
+      pdfWindow.opener = null;
+      pdfWindow.document.write("<p style=\"font-family: sans-serif; padding: 24px;\">Preparing daily summary PDF...</p>");
+    }
     try {
       const latestActivities = await loadSavedActivities(selectedDate, { silent: true });
       const activitiesForPdf = latestActivities.length ? latestActivities : savedActivities;
       if (!activitiesForPdf.length) {
+        if (pdfWindow) {
+          pdfWindow.document.body.innerHTML = `<p style="font-family: sans-serif; padding: 24px;">No saved activities found for ${formatUsDate(selectedDate)}. Save or approve activities before compiling the daily PDF.</p>`;
+        }
         setStatus(`No saved activities found for ${formatUsDate(selectedDate)}. Save or approve activities before compiling the daily PDF.`);
         return;
       }
 
-      pdfWindow = window.open("about:blank", "_blank");
       if (pdfWindow) {
-        pdfWindow.opener = null;
-        pdfWindow.document.write("<p style=\"font-family: sans-serif; padding: 24px;\">Creating daily summary PDF...</p>");
+        pdfWindow.document.body.innerHTML = "<p style=\"font-family: sans-serif; padding: 24px;\">Creating daily summary PDF...</p>";
       }
       const response = await fetch("/api/daily-summary/pdf", {
         method: "POST",
@@ -4139,8 +4144,11 @@ export default function Home() {
       setStatus(`${data.artifact.originalName} was saved to Reports and is ready to open.`);
       await loadPortfolio();
     } catch (error) {
-      if (pdfWindow) pdfWindow.close();
-      setStatus(friendlyError(error, "Daily summary PDF generation failed. Confirm approved activities exist for this date."));
+      const message = friendlyError(error, "Daily summary PDF generation failed. Confirm approved activities exist for this date.");
+      if (pdfWindow) {
+        pdfWindow.document.body.innerHTML = `<p style="font-family: sans-serif; padding: 24px;">${message}</p>`;
+      }
+      setStatus(message);
     } finally {
       setIsDailyPdfBusy(false);
     }
