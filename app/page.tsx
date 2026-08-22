@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, DragEvent } from "react";
+import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { skillTaxonomy } from "@/lib/domain";
 
@@ -1331,24 +1331,14 @@ function formatUsDate(value: string) {
   return `${month}/${day}/${year}`;
 }
 
-function defaultNarrationForType(activityType: string) {
-  if (["Language Arts", "Math", "Finance", "Science Journal"].includes(activityType)) return "";
-  if (activityType === "Foreign Language") {
-    return "Today we practiced Spanish vocabulary, listened for familiar words, and used short spoken phrases.";
-  }
-  if (activityType === "Independent Reading") {
-    return "Today he read independently, talked about what happened in the book, and shared a favorite detail.";
-  }
-  if (activityType === "Extracurricular") {
-    return "Today he participated in an extracurricular activity and practiced cooperation, persistence, and communication.";
-  }
-  if (activityType === "Field Trip") {
-    return "Today we connected real-world observations to the current unit study and discussed what we noticed.";
-  }
-  if (activityType === "Special Event") {
-    return "Today we attended a special event and connected the experience to the current unit, skills, and legal learning areas.";
-  }
+function defaultNarrationForType() {
   return "";
+}
+
+function selectExistingZero(event: FocusEvent<HTMLInputElement>) {
+  if (event.currentTarget.value === "0") {
+    event.currentTarget.select();
+  }
 }
 
 function parsedSubjectForType(activityType: string) {
@@ -4158,6 +4148,7 @@ export default function Home() {
         setStatus(`No saved activities found for ${formatUsDate(selectedDate)}. Save activities before completing the day.`);
         return;
       }
+      setSavedActivities(activitiesForStatus);
 
       const statusByType = new Map<string, LiveActivityButtonState>();
       activitiesForStatus.forEach((activity) => {
@@ -4177,7 +4168,7 @@ export default function Home() {
       await loadDailyActivityButtonStatuses(selectedDate);
       const completedCount = Array.from(statusByType.values()).filter((statusValue) => statusValue === "completed").length;
       setStatus(
-        `Day completed for ${formatUsDate(selectedDate)}. ${completedCount} activity button${completedCount === 1 ? "" : "s"} marked complete from saved approved records.`
+        `Day completed for ${formatUsDate(selectedDate)}. ${completedCount} activity button${completedCount === 1 ? "" : "s"} marked complete from saved approved records. Compile PDF is ready for the completed records.`
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Complete day failed.");
@@ -5057,7 +5048,7 @@ export default function Home() {
                         </div>
                         <div className="unit-activity-body">
                           <div className="activity-card-header">
-                            <label><span>Expected time</span><input type="number" min="0" value={selectedPlannerActivityCard.expectedMinutes} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { expectedMinutes: Number(event.target.value) })} /></label>
+                            <label><span>Expected time</span><input type="number" min="0" value={selectedPlannerActivityCard.expectedMinutes} onFocus={selectExistingZero} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { expectedMinutes: Number(event.target.value) })} /></label>
                             <label><span>Start time</span><input type="time" value={selectedPlannerActivityCard.startTime} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { startTime: event.target.value })} /></label>
                             <label><span>Finish time</span><input type="time" value={selectedPlannerActivityCard.finishTime} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { finishTime: event.target.value })} /></label>
                           </div>
@@ -5305,7 +5296,7 @@ export default function Home() {
                 </label>
                 <label>
                   <span>Actual minutes</span>
-                  <input type="number" min="1" value={actualMinutes} onChange={(event) => setActualMinutesForEntry(Number(event.target.value))} />
+                  <input type="number" min="1" value={actualMinutes} onFocus={selectExistingZero} onChange={(event) => setActualMinutesForEntry(Number(event.target.value))} />
                 </label>
               </div>
               {selectedType === "Foreign Language" ? (
@@ -5365,6 +5356,7 @@ export default function Home() {
                             type="number"
                             min="0"
                             value={allocation.minutes}
+                            onFocus={selectExistingZero}
                             onChange={(event) => updateUnitStudyAllocation(allocation.id, { minutes: Number(event.target.value) })}
                           />
                         </label>
@@ -5697,6 +5689,7 @@ export default function Home() {
                                       type="number"
                                       min="0"
                                       value={allocation.minutes}
+                                      onFocus={selectExistingZero}
                                       onChange={(event) => updateDraftSubjectAllocation(draft.id, allocationIndex, { minutes: Number(event.target.value) })}
                                     />
                                   </label>
@@ -6574,6 +6567,7 @@ export default function Home() {
                               max={unitPlanRows.length}
                               type="number"
                               value={index + 1}
+                              onFocus={selectExistingZero}
                               onChange={(event) => moveUnitPlanRowTo(row.id, Number(event.target.value))}
                             />
                           </td>
