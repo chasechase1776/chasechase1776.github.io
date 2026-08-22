@@ -3,6 +3,8 @@
 import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
+import { UnitPlannerActivityModal } from "@/components/unit-planner-activity-modal";
+import { UnitPlannerDayBoard } from "@/components/unit-planner-day-board";
 import { UnitPlannerWeekTabs } from "@/components/unit-planner-week-tabs";
 import { skillTaxonomy } from "@/lib/domain";
 
@@ -4981,60 +4983,22 @@ export default function Home() {
                     </details>
                   </div>
 
-                  <div className="unit-day-columns">
-                    {activePlannerWeek.days.map((day, dayIndex) => (
-                      <article
-                        className={day.complete ? "unit-day-column is-complete" : "unit-day-column"}
-                        draggable
-                        key={day.id}
-                        onDragStart={(event) => handlePlannerDayDragStart(event, activePlannerWeekIndex ?? 0, dayIndex)}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={(event) => handlePlannerActivityDrop(event, activePlannerWeekIndex ?? 0, dayIndex)}
-                      >
-                        <div className="unit-day-head">
-                          <strong>{plannerWeekdayLabels[dayIndex]}</strong>
-                          <span className={day.complete ? "tag good" : "tag planned"}>{day.complete ? "complete" : "planned"}</span>
-                        </div>
-                        <p className="unit-day-date">{plannerDateForDay(activePlannerWeekIndex ?? 0, dayIndex) || `Day ${dayIndex + 1}`}</p>
-                        <div className="unit-activity-pill-stack">
-                          {day.activities.map((activity, activityIndex) => (
-                            <button
-                              className={[
-                                "unit-activity-pill",
-                                `is-${activity.status}`,
-                                selectedPlannerActivity?.weekIndex === (activePlannerWeekIndex ?? 0) && selectedPlannerActivity.dayIndex === dayIndex && selectedPlannerActivity.activityId === activity.id ? "is-selected" : ""
-                              ].filter(Boolean).join(" ")}
-                              draggable
-                              key={activity.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedPlannerActivity({ weekIndex: activePlannerWeekIndex ?? 0, dayIndex, activityId: activity.id });
-                                setPlannerMoveTarget({ week: "", day: "" });
-                              }}
-                              onDragStart={(event) => handlePlannerActivityDragStart(event, activePlannerWeekIndex ?? 0, dayIndex, activity.id)}
-                              onDragOver={(event) => event.preventDefault()}
-                              onDrop={(event) => {
-                                event.stopPropagation();
-                                handlePlannerActivityDrop(event, activePlannerWeekIndex ?? 0, dayIndex, activityIndex);
-                              }}
-                            >
-                              {activity.title || "Untitled"}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="unit-day-action-row">
-                          <button className="secondary-button unit-create-activity-button" type="button" onClick={() => addPlannerActivity(activePlannerWeekIndex ?? 0, dayIndex)}>
-                            Create Activity
-                          </button>
-                          {dayIndex === 4 ? (
-                            <button className="secondary-button" type="button" onClick={() => addFridayTemplate(activePlannerWeekIndex ?? 0, dayIndex)}>
-                              Friday Template
-                            </button>
-                          ) : null}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                  <UnitPlannerDayBoard
+                    days={activePlannerWeek.days}
+                    weekIndex={activePlannerWeekIndex ?? 0}
+                    weekdayLabels={plannerWeekdayLabels}
+                    selectedActivity={selectedPlannerActivity}
+                    plannerDateForDay={plannerDateForDay}
+                    onSelectActivity={(dayIndex, activityId) => {
+                      setSelectedPlannerActivity({ weekIndex: activePlannerWeekIndex ?? 0, dayIndex, activityId });
+                      setPlannerMoveTarget({ week: "", day: "" });
+                    }}
+                    onDayDragStart={handlePlannerDayDragStart}
+                    onActivityDragStart={handlePlannerActivityDragStart}
+                    onActivityDrop={handlePlannerActivityDrop}
+                    onAddActivity={addPlannerActivity}
+                    onAddFridayTemplate={addFridayTemplate}
+                  />
                 </section>
               ) : (
                 <div className="planner-empty-state">
@@ -5044,65 +5008,24 @@ export default function Home() {
               )}
 
               {selectedPlannerActivityCard && selectedPlannerActivityDay && selectedPlannerActivity ? (
-                <div
-                  className="unit-planner-modal-backdrop"
-                  onClick={(event) => {
-                    if (event.target === event.currentTarget) setSelectedPlannerActivity(null);
-                  }}
-                >
-                <section className="unit-day-detail-panel unit-planner-modal" role="dialog" aria-modal="true" aria-labelledby="selected-planner-activity-title">
-                  <div className="section-head">
-                    <div>
-                      <p className="eyebrow">Week {selectedPlannerActivity.weekIndex + 1} {plannerWeekdayLabels[selectedPlannerActivity.dayIndex]}</p>
-                      <h2 id="selected-planner-activity-title">Selected activity</h2>
-                    </div>
-                    <div className="primary-action-row">
-                      <button className="secondary-button" type="button" onClick={() => completePlannerDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)} disabled={!selectedPlannerActivityDay.activities.every(activityIsDone)}>Complete Day</button>
-                      <button className="primary-button" type="button" onClick={() => sendPlannerDayToDailyRecords(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)}>Send Day to Daily Records</button>
-                    </div>
-                  </div>
-
-                  <div className="unit-day-activity-list">
-                      <article className="unit-day-activity-card" key={selectedPlannerActivityCard.id}>
-                        <div className="unit-activity-title-row">
-                          <label><span>Activity title</span><input value={selectedPlannerActivityCard.title} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { title: event.target.value })} /></label>
-                          <span className={`tag ${selectedPlannerActivityCard.status === "complete" ? "good" : selectedPlannerActivityCard.status === "planned" ? "planned" : ""}`}>{selectedPlannerActivityCard.status}</span>
-                        </div>
-                        <div className="unit-activity-body">
-                          <div className="activity-card-header">
-                            <label><span>Expected time</span><input type="number" min="0" value={selectedPlannerActivityCard.expectedMinutes} onFocus={selectExistingZero} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { expectedMinutes: Number(event.target.value) })} /></label>
-                            <label><span>Start time</span><input type="time" value={selectedPlannerActivityCard.startTime} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { startTime: event.target.value })} /></label>
-                            <label><span>Finish time</span><input type="time" value={selectedPlannerActivityCard.finishTime} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { finishTime: event.target.value })} /></label>
-                          </div>
-                          <div className="unit-day-activity-fields">
-                            <label><span>Activity description</span><textarea rows={2} value={selectedPlannerActivityCard.description} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { description: event.target.value })} /></label>
-                            <label><span>Prep notes</span><textarea rows={2} value={selectedPlannerActivityCard.prepNotes} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { prepNotes: event.target.value })} /></label>
-                          </div>
-                          <details className="shopping-disclosure activity-shopping-disclosure">
-                            <summary>Shopping List</summary>
-                            <label><span>Activity shopping list</span><textarea rows={2} value={selectedPlannerActivityCard.shoppingList} onChange={(event) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { shoppingList: event.target.value })} /></label>
-                          </details>
-                        </div>
-                        <div className="unit-planner-move-date-row">
-                          <label><span>Move to week #</span><input type="number" min="1" max={activePlanner.weeks.length} value={plannerMoveTarget.week} onChange={(event) => setPlannerMoveTarget((current) => ({ ...current, week: event.target.value }))} /></label>
-                          <label><span>Move to day #</span><input type="number" min="1" max="5" value={plannerMoveTarget.day} onChange={(event) => setPlannerMoveTarget((current) => ({ ...current, day: event.target.value }))} /></label>
-                          <button className="secondary-button" type="button" onClick={() => movePlannerActivityToWeekDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, plannerMoveTarget.week, plannerMoveTarget.day)} disabled={!plannerMoveTarget.week || !plannerMoveTarget.day}>Move Activity</button>
-                        </div>
-                        <div className="primary-action-row">
-                          {selectedPlannerActivityCard.status === "complete" ? (
-                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "planned" })}>Undo Complete</button>
-                          ) : (
-                            <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "complete" })}>Complete Activity</button>
-                          )}
-                          <button className="secondary-button" type="button" onClick={() => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, { status: "skipped" })}>Skip</button>
-                          <button className="secondary-button" type="button" onClick={() => movePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}>Move Week/Day</button>
-                          <button className="success-button" type="button" onClick={() => setSelectedPlannerActivity(null)}>Close / Save</button>
-                          <button className="text-button" type="button" onClick={() => deletePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}>Delete</button>
-                        </div>
-                      </article>
-                  </div>
-                </section>
-                </div>
+                <UnitPlannerActivityModal
+                  activity={selectedPlannerActivityCard}
+                  weekIndex={selectedPlannerActivity.weekIndex}
+                  dayIndex={selectedPlannerActivity.dayIndex}
+                  weekdayLabel={plannerWeekdayLabels[selectedPlannerActivity.dayIndex]}
+                  plannerWeekCount={activePlanner.weeks.length}
+                  plannerMoveTarget={plannerMoveTarget}
+                  canCompleteDay={selectedPlannerActivityDay.activities.every(activityIsDone)}
+                  onClose={() => setSelectedPlannerActivity(null)}
+                  onCompleteDay={() => completePlannerDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)}
+                  onSendDayToDailyRecords={() => sendPlannerDayToDailyRecords(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex)}
+                  onUpdateActivity={(patch) => updatePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, patch)}
+                  onPlannerMoveTargetChange={(patch) => setPlannerMoveTarget((current) => ({ ...current, ...patch }))}
+                  onMoveActivityToWeekDay={() => movePlannerActivityToWeekDay(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id, plannerMoveTarget.week, plannerMoveTarget.day)}
+                  onMoveActivityPrompt={() => movePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}
+                  onDeleteActivity={() => deletePlannerActivity(selectedPlannerActivity.weekIndex, selectedPlannerActivity.dayIndex, selectedPlannerActivityCard.id)}
+                  onSelectExistingZero={selectExistingZero}
+                />
               ) : null}
             </section>
             ) : null}
