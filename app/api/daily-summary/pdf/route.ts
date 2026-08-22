@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
-import { createAuditLogSafely } from "@/lib/audit";
 import { readableError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { activityTypes } from "@/lib/domain";
-import { createArtifactSnapshot } from "@/lib/snapshots";
-import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
+import { saveReportArtifact } from "@/lib/report-artifacts";
+import { readStoredFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -485,38 +484,33 @@ export async function POST(request: Request) {
     );
     const reportTitle = input.reportTitle || defaultReportTitle(input.date);
     const fileName = fileNameFromTitle(reportTitle, `daily-summary-${input.date.slice(0, 10)}`);
-    const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
-    const artifact = await prisma.evidenceArtifact.create({
-      data: {
-        ...savedFile,
-        recordStatus: input.recordStatus,
-        classification: "daily_summary",
-        tagsJson: JSON.stringify({
-          schoolYear: input.schoolYearLabel,
-          student: input.studentName,
-          date: input.date.slice(0, 10),
-          title: reportTitle,
-          reportType: "daily_summary",
-          activityCount: activities.length,
-          attachedProofCount: artifacts.length
-        })
-      }
-    });
-    await createArtifactSnapshot({
-      schoolYearId: activities[0].schoolYearId,
-      type: "daily_summary_pdf",
-      label: reportTitle,
-      artifactId: artifact.id
-    }).catch(() => null);
-    await createAuditLogSafely({
-      schoolYearId: activities[0].schoolYearId,
-      action: "daily_summary_pdf_generated",
-      label: reportTitle,
-      details: {
-        artifactId: artifact.id,
+    const artifact = await saveReportArtifact({
+      bytes: pdfBytes,
+      fileName,
+      recordStatus: input.recordStatus,
+      classification: "daily_summary",
+      tags: {
+        schoolYear: input.schoolYearLabel,
+        student: input.studentName,
         date: input.date.slice(0, 10),
+        title: reportTitle,
+        reportType: "daily_summary",
         activityCount: activities.length,
         attachedProofCount: artifacts.length
+      },
+      snapshot: {
+        schoolYearId: activities[0].schoolYearId,
+        type: "daily_summary_pdf",
+        label: reportTitle
+      },
+      audit: {
+        action: "daily_summary_pdf_generated",
+        label: reportTitle,
+        details: {
+          date: input.date.slice(0, 10),
+          activityCount: activities.length,
+          attachedProofCount: artifacts.length
+        }
       }
     });
 

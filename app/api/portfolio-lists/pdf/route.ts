@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createArtifactSnapshot } from "@/lib/snapshots";
-import { saveGeneratedFile } from "@/lib/storage";
+import { saveReportArtifact } from "@/lib/report-artifacts";
 
 const categoryLabels = {
   books: "Book List",
@@ -204,25 +203,18 @@ export async function POST(request: Request) {
     const artifactsById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
     const pdfBytes = await buildPdf(input, artifactsById);
     const fileName = `${slug(categoryLabels[input.category])}-${slug(input.schoolYearLabel)}-${Date.now()}.pdf`;
-    const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
-    const artifact = await prisma.evidenceArtifact.create({
-      data: {
-        originalName: fileName,
-        fileName: savedFile.fileName,
-        mimeType: savedFile.mimeType,
-        sizeBytes: savedFile.sizeBytes,
-        storagePath: savedFile.storagePath,
-        recordStatus: schoolYear.status,
-        classification: classificationByCategory[input.category],
-        tagsJson: JSON.stringify({ schoolYear: schoolYear.label, portfolioSection: input.category })
+    const artifact = await saveReportArtifact({
+      bytes: pdfBytes,
+      fileName,
+      recordStatus: schoolYear.status,
+      classification: classificationByCategory[input.category],
+      tags: { schoolYear: schoolYear.label, portfolioSection: input.category },
+      snapshot: {
+        schoolYearId: schoolYear.id,
+        type: "portfolio_list_pdf",
+        label: `${categoryLabels[input.category]} PDF`
       }
     });
-    await createArtifactSnapshot({
-      schoolYearId: schoolYear.id,
-      type: "portfolio_list_pdf",
-      label: `${categoryLabels[input.category]} PDF`,
-      artifactId: artifact.id
-    }).catch(() => null);
 
     return NextResponse.json({ artifact });
   } catch (error) {

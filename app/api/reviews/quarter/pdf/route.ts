@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createArtifactSnapshot } from "@/lib/snapshots";
-import { saveGeneratedFile } from "@/lib/storage";
+import { saveReportArtifact } from "@/lib/report-artifacts";
 
 export const runtime = "nodejs";
 
@@ -287,28 +286,25 @@ export async function POST(request: Request) {
 
     const pdfBytes = await pdfBufferForQuarterReview(review);
     const fileName = `quarter-review-${slug(review.label)}.pdf`;
-    const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
-    const artifact = await prisma.evidenceArtifact.create({
-      data: {
-        ...savedFile,
-        recordStatus: review.recordStatus,
-        classification: "quarter_report",
-        tagsJson: JSON.stringify({
-          quarterReviewId: review.id,
-          schoolYear: review.schoolYear.label,
-          quarterLabel: review.label,
-          quarterStartDate: dateKey(review.quarterStartDate),
-          quarterEndDate: dateKey(review.quarterEndDate),
-          reportType: "quarter_review"
-        })
+    const artifact = await saveReportArtifact({
+      bytes: pdfBytes,
+      fileName,
+      recordStatus: review.recordStatus,
+      classification: "quarter_report",
+      tags: {
+        quarterReviewId: review.id,
+        schoolYear: review.schoolYear.label,
+        quarterLabel: review.label,
+        quarterStartDate: dateKey(review.quarterStartDate),
+        quarterEndDate: dateKey(review.quarterEndDate),
+        reportType: "quarter_review"
+      },
+      snapshot: {
+        schoolYearId: review.schoolYearId,
+        type: "quarter_review_pdf",
+        label: `${review.label} PDF`
       }
     });
-    await createArtifactSnapshot({
-      schoolYearId: review.schoolYearId,
-      type: "quarter_review_pdf",
-      label: `${review.label} PDF`,
-      artifactId: artifact.id
-    }).catch(() => null);
 
     return NextResponse.json({ artifact });
   } catch (error) {

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { createArtifactSnapshot } from "@/lib/snapshots";
-import { readStoredFile, saveGeneratedFile } from "@/lib/storage";
+import { saveReportArtifact } from "@/lib/report-artifacts";
+import { readStoredFile } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -324,20 +324,6 @@ export async function POST(request: Request) {
     const evidenceFiles = await readEvidenceFiles(attachmentIds);
     const pdfBytes = await buildAnnualPlanPdf(parsed.data, evidenceFiles);
     const fileName = `annual-plan-${parsed.data.schoolYear}.pdf`;
-    const savedFile = await saveGeneratedFile(pdfBytes, fileName, "application/pdf");
-    const artifact = await prisma.evidenceArtifact.create({
-      data: {
-        ...savedFile,
-        recordStatus: parsed.data.status,
-        classification: "annual_plan",
-        tagsJson: JSON.stringify({
-          schoolYear: parsed.data.schoolYear,
-          student: parsed.data.student,
-          reportType: "annual_plan",
-          attachedAnnualRecordCount: attachmentIds.length
-        })
-      }
-    });
     const student = await prisma.student.upsert({
       where: { name: parsed.data.student },
       update: {},
@@ -352,12 +338,23 @@ export async function POST(request: Request) {
         studentId: student.id
       }
     });
-    await createArtifactSnapshot({
-      schoolYearId: schoolYear.id,
-      type: "annual_plan_pdf",
-      label: `Annual Plan PDF ${parsed.data.schoolYear}`,
-      artifactId: artifact.id
-    }).catch(() => null);
+    const artifact = await saveReportArtifact({
+      bytes: pdfBytes,
+      fileName,
+      recordStatus: parsed.data.status,
+      classification: "annual_plan",
+      tags: {
+        schoolYear: parsed.data.schoolYear,
+        student: parsed.data.student,
+        reportType: "annual_plan",
+        attachedAnnualRecordCount: attachmentIds.length
+      },
+      snapshot: {
+        schoolYearId: schoolYear.id,
+        type: "annual_plan_pdf",
+        label: `Annual Plan PDF ${parsed.data.schoolYear}`
+      }
+    });
 
     return NextResponse.json({ artifact });
   } catch (error) {

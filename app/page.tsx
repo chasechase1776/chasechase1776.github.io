@@ -2,6 +2,8 @@
 
 import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
+import { UnitPlannerWeekTabs } from "@/components/unit-planner-week-tabs";
 import { skillTaxonomy } from "@/lib/domain";
 
 type BrowserSpeechRecognition = {
@@ -4926,23 +4928,15 @@ export default function Home() {
                 </div>
               </details>
 
-              <div className="unit-week-tabs" aria-label="Unit study weeks">
-                {activePlanner.weeks.map((week, weekIndex) => (
-                  <button
-                    className={["unit-week-button", activePlannerWeekIndex === weekIndex ? "is-active" : "", week.complete ? "is-complete" : ""].filter(Boolean).join(" ")}
-                    type="button"
-                    key={week.id}
-                    onClick={() => {
-                      setActivePlannerWeekIndex(weekIndex);
-                      setSelectedPlannerActivity(null);
-                      setPlannerMoveTarget({ week: "", day: "" });
-                    }}
-                  >
-                    <strong>Week {weekIndex + 1}</strong>
-                    <span>{week.complete ? "complete" : "planned"}</span>
-                  </button>
-                ))}
-              </div>
+              <UnitPlannerWeekTabs
+                weeks={activePlanner.weeks}
+                activeWeekIndex={activePlannerWeekIndex}
+                onSelectWeek={(weekIndex) => {
+                  setActivePlannerWeekIndex(weekIndex);
+                  setSelectedPlannerActivity(null);
+                  setPlannerMoveTarget({ week: "", day: "" });
+                }}
+              />
 
               {activePlannerWeek ? (
                 <section className="unit-week-panel">
@@ -6436,23 +6430,12 @@ export default function Home() {
                 status={isAnnualPlanLoading || isAnnualPlanSaving ? "saving" : saveStateFromMessage(annualPlanMessage)}
               />
 
-              <div className="annual-section-hub" aria-label="Annual Plan sections">
-                {annualPlanSections.map((section) => {
-                  const isFinalized = finalizedAnnualPlanSections.includes(section.id);
-                  const isActive = activeAnnualPlanSection === section.id;
-                  return (
-                    <button
-                      className={`annual-section-button${isActive ? " is-active" : ""}${isFinalized ? " is-finalized" : ""}`}
-                      key={section.id}
-                      type="button"
-                      onClick={() => setActiveAnnualPlanSection(section.id)}
-                    >
-                      <span>{section.label}</span>
-                      <strong>{section.summary}</strong>
-                    </button>
-                  );
-                })}
-              </div>
+              <AnnualPlanSectionHub
+                sections={annualPlanSections}
+                activeSectionId={activeAnnualPlanSection}
+                finalizedSectionIds={finalizedAnnualPlanSections}
+                onSelectSection={(sectionId) => setActiveAnnualPlanSection(sectionId as AnnualPlanSectionId)}
+              />
 
               {activeAnnualPlanSection === "section-1" ? (
               <section className="plan-section">
