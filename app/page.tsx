@@ -1331,7 +1331,7 @@ function formatUsDate(value: string) {
   return `${month}/${day}/${year}`;
 }
 
-function defaultNarrationForType() {
+function defaultNarrationForType(_activityType?: string) {
   return "";
 }
 
