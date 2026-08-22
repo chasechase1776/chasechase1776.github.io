@@ -2223,6 +2223,12 @@ export default function Home() {
   }, [loadPortfolio]);
 
   useEffect(() => {
+    if (activeTab === "reports") {
+      void loadPortfolio();
+    }
+  }, [activeTab, loadPortfolio]);
+
+  useEffect(() => {
     void loadLegalArchive();
   }, [loadLegalArchive]);
 
@@ -4135,7 +4141,11 @@ export default function Home() {
       const data = await response.json().catch(() => ({ error: "Daily summary PDF generation failed before the app received details." }));
       if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : "Daily summary PDF generation failed.");
       setLastDailyPdfArtifact(data.artifact);
-      const pdfUrl = `/api/artifacts/${data.artifact.id}/download`;
+      setPortfolioArtifacts((current) => {
+        if (current.some((artifact) => artifact.id === data.artifact.id)) return current;
+        return [{ ...data.artifact, activity: null } as PortfolioArtifact, ...current];
+      });
+      const pdfUrl = `${window.location.origin}/api/artifacts/${data.artifact.id}/download`;
       if (pdfWindow) {
         pdfWindow.location.href = pdfUrl;
       } else {
@@ -5249,6 +5259,14 @@ export default function Home() {
                   </button>
                 </div>
               </div>
+              {lastDailyPdfArtifact ? (
+                <div className="status-line">
+                  <span>Last daily PDF: {lastDailyPdfArtifact.originalName}</span>
+                  <a className="download-link" href={`/api/artifacts/${lastDailyPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
+                    Open PDF
+                  </a>
+                </div>
+              ) : null}
               <div className="activity-legend">
                 <span><i className="legend-dot" />Neutral</span>
                 <span><i className="legend-dot done" />Completed</span>
