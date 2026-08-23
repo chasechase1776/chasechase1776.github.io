@@ -3,6 +3,7 @@
 import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnualPlanEditableCardList } from "@/components/annual-plan-editable-card-list";
+import { AnnualPlanBigPictureSection } from "@/components/annual-plan-big-picture-section";
 import { AnnualPlanRecordCardList } from "@/components/annual-plan-record-card-list";
 import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
 import { AnnualPlanUnitTable } from "@/components/annual-plan-unit-table";
@@ -6363,22 +6364,11 @@ export default function Home() {
               />
 
               {activeAnnualPlanSection === "section-1" ? (
-              <section className="plan-section">
-                <div className="section-head">
-                  <div><p className="eyebrow">Section 1</p><h2>Big Picture Framework</h2></div>
-                  <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-1")}>Finalize</button>
-                </div>
-                <div className="review-form-grid">
-                  <label><span>Primary Theme</span><input value={annualPlanBigPicture.primaryTheme} onChange={(event) => updateAnnualPlanBigPicture("primaryTheme", event.target.value)} /></label>
-                  <label><span>Central Question</span><input value={annualPlanBigPicture.centralQuestion} onChange={(event) => updateAnnualPlanBigPicture("centralQuestion", event.target.value)} /></label>
-                  <label><span>Thinking Progression</span><input value={annualPlanBigPicture.thinkingProgression} onChange={(event) => updateAnnualPlanBigPicture("thinkingProgression", event.target.value)} /></label>
-                  <label><span>Writing Progression</span><input value={annualPlanBigPicture.writingProgression} onChange={(event) => updateAnnualPlanBigPicture("writingProgression", event.target.value)} /></label>
-                  <label><span>Presentation Progression</span><input value={annualPlanBigPicture.presentationProgression} onChange={(event) => updateAnnualPlanBigPicture("presentationProgression", event.target.value)} /></label>
-                  <label><span>Annual Project Cycle</span><textarea value={annualPlanBigPicture.annualProjectCycle} onChange={(event) => updateAnnualPlanBigPicture("annualProjectCycle", event.target.value)} /></label>
-                  <label><span>Year-Long Journals</span><textarea value={annualPlanBigPicture.yearLongJournals} onChange={(event) => updateAnnualPlanBigPicture("yearLongJournals", event.target.value)} /></label>
-                  <label><span>Spiral Curriculum Summary</span><textarea value={annualPlanBigPicture.spiralCurriculumSummary} onChange={(event) => updateAnnualPlanBigPicture("spiralCurriculumSummary", event.target.value)} /></label>
-                </div>
-              </section>
+                <AnnualPlanBigPictureSection
+                  bigPicture={annualPlanBigPicture}
+                  onUpdateBigPicture={updateAnnualPlanBigPicture}
+                  onFinalize={() => finalizeAnnualPlanSection("section-1")}
+                />
               ) : null}
 
               {activeAnnualPlanSection === "section-2" ? (
