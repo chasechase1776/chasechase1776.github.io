@@ -3,6 +3,7 @@
 import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnualPlanEditableCardList } from "@/components/annual-plan-editable-card-list";
+import { AnnualPlanRecordCardList } from "@/components/annual-plan-record-card-list";
 import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
 import { UnitPlannerActivityModal } from "@/components/unit-planner-activity-modal";
 import { UnitPlannerDayBoard } from "@/components/unit-planner-day-board";
@@ -6561,63 +6562,17 @@ export default function Home() {
                     <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-7")}>Finalize</button>
                   </div>
                 </div>
-                <div className="records-grid editable-card-grid">
-                  {annualRecordCards.map((card, index) => (
-                    <article className="record-link editable-spine-card" key={card.id}>
-                      <div className="finished-card-row">
-                        <div className="editable-card-preview">
-                          <strong>{card.title || "Untitled annual record"}</strong>
-                          <span>{card.narrative || "Add the purpose and expected documents for this annual record."}</span>
-                          <span>{card.attachments.length ? `${card.attachments.length} attached document${card.attachments.length === 1 ? "" : "s"}` : "No attached documents yet."}</span>
-                        </div>
-                        <div className="card-control-row">
-                          <button className="secondary-button" type="button" onClick={() => moveAnnualRecordCard(card.id, -1)} disabled={index === 0}>Move up</button>
-                          <button className="secondary-button" type="button" onClick={() => moveAnnualRecordCard(card.id, 1)} disabled={index === annualRecordCards.length - 1}>Move down</button>
-                          <button className="secondary-button" type="button" onClick={() => setEditingAnnualRecordId((current) => (current === card.id ? null : card.id))}>
-                            {editingAnnualRecordId === card.id ? "Collapse" : "Edit"}
-                          </button>
-                          <button className="text-button" type="button" onClick={() => deleteAnnualRecordCard(card.id)} disabled={annualRecordCards.length === 1}>Delete</button>
-                        </div>
-                      </div>
-                      {editingAnnualRecordId === card.id ? (
-                        <div className="spine-edit-fields">
-                          <label>
-                            <span>Bold title</span>
-                            <input value={card.title} onChange={(event) => updateAnnualRecordCard(card.id, "title", event.target.value)} />
-                          </label>
-                          <label>
-                            <span>Description</span>
-                            <textarea value={card.narrative} onChange={(event) => updateAnnualRecordCard(card.id, "narrative", event.target.value)} />
-                          </label>
-                          <label className="annual-record-upload">
-                            <span>Attach document</span>
-                            <input
-                              type="file"
-                              onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) void uploadAnnualRecordAttachment(card.id, file);
-                                event.target.value = "";
-                              }}
-                            />
-                          </label>
-                          <div className="uploaded-proof-list" aria-live="polite">
-                            {card.attachments.length ? card.attachments.map((artifact) => (
-                              <div className="uploaded-proof-item" key={artifact.id}>
-                                <span>{artifact.originalName}</span>
-                                <span>{formatBytes(artifact.sizeBytes)}</span>
-                                <button className="text-button" type="button" onClick={() => removeAnnualRecordAttachment(card.id, artifact.id)}>Remove</button>
-                              </div>
-                            )) : <p className="muted">No documents attached to this annual record yet.</p>}
-                          </div>
-                          <div className="card-control-row">
-                            <button className="primary-button" type="button" onClick={() => setEditingAnnualRecordId(null)}>Save</button>
-                            <button className="secondary-button" type="button" onClick={() => setEditingAnnualRecordId(null)}>Collapse</button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
+                <AnnualPlanRecordCardList
+                  cards={annualRecordCards}
+                  editingCardId={editingAnnualRecordId}
+                  formatBytes={formatBytes}
+                  onMoveCard={moveAnnualRecordCard}
+                  onEditCard={setEditingAnnualRecordId}
+                  onDeleteCard={deleteAnnualRecordCard}
+                  onUpdateCard={updateAnnualRecordCard}
+                  onUploadAttachment={(cardId, file) => void uploadAnnualRecordAttachment(cardId, file)}
+                  onRemoveAttachment={removeAnnualRecordAttachment}
+                />
               </section>
               ) : null}
 
