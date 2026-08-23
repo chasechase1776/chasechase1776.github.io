@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnualPlanEditableCardList } from "@/components/annual-plan-editable-card-list";
 import { AnnualPlanRecordCardList } from "@/components/annual-plan-record-card-list";
 import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
+import { AnnualPlanUnitTable } from "@/components/annual-plan-unit-table";
 import { UnitPlannerActivityModal } from "@/components/unit-planner-activity-modal";
 import { UnitPlannerDayBoard } from "@/components/unit-planner-day-board";
 import { UnitPlannerWeekTabs } from "@/components/unit-planner-week-tabs";
@@ -6446,69 +6447,16 @@ export default function Home() {
                   <div className="record-link"><strong>Minimal Structure / Parent-Designed</strong><span>Use the weekly rhythm as the default scaffold for parent-created activities, projects, writing prompts, presentation goals, and artifacts.</span></div>
                   <div className="record-link"><strong>Planning note</strong><span>These fields are the intended framework. The parent can deviate based on interest, pacing, field trips, family schedule, or unit depth.</span></div>
                 </div>
-                <div className="plan-table-wrap">
-                  <table className="plan-table">
-                    <thead><tr><th>#</th><th>Unit title</th><th>Weeks</th><th>Guiding question</th><th>Primary competency</th><th>Unit format type</th><th>Weekly rhythm override</th><th>Published sequence?</th><th>Parent designed?</th><th>Field trip / application</th><th>Final Friday capstone</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>
-                      {unitPlanRows.map((row, index) => (
-                        <tr className={`unit-status-row unit-status-${row.status}`} key={row.id}>
-                          <td>
-                            <input
-                              aria-label={`Order for ${row.title}`}
-                              className="table-order-input"
-                              min="1"
-                              max={unitPlanRows.length}
-                              type="number"
-                              value={index + 1}
-                              onFocus={selectExistingZero}
-                              onChange={(event) => moveUnitPlanRowTo(row.id, Number(event.target.value))}
-                            />
-                          </td>
-                          <td><input value={row.title} onChange={(event) => updateUnitPlanRow(row.id, "title", event.target.value)} /></td>
-                          <td><input className="table-weeks-input" value={row.weeks} onChange={(event) => updateUnitPlanRow(row.id, "weeks", event.target.value)} /></td>
-                          <td><textarea value={row.guidingQuestion} onChange={(event) => updateUnitPlanRow(row.id, "guidingQuestion", event.target.value)} /></td>
-                          <td><textarea value={row.primaryCompetency} onChange={(event) => updateUnitPlanRow(row.id, "primaryCompetency", event.target.value)} /></td>
-                          <td>
-                            <input list="unit-format-options" value={row.formatType} onChange={(event) => updateUnitPlanRow(row.id, "formatType", event.target.value)} />
-                          </td>
-                          <td>
-                            <input list="weekly-rhythm-override-options" value={row.weeklyRhythmOverride} onChange={(event) => updateUnitPlanRow(row.id, "weeklyRhythmOverride", event.target.value)} />
-                          </td>
-                          <td>
-                            <select value={row.publishedSequence} onChange={(event) => updateUnitPlanRow(row.id, "publishedSequence", event.target.value)}>
-                              <option>No</option>
-                              <option>Yes</option>
-                              <option>Partial</option>
-                            </select>
-                          </td>
-                          <td>
-                            <select value={row.parentDesigned} onChange={(event) => updateUnitPlanRow(row.id, "parentDesigned", event.target.value)}>
-                              <option>Yes</option>
-                              <option>No</option>
-                              <option>Partial</option>
-                            </select>
-                          </td>
-                          <td><textarea value={row.fieldTrip} onChange={(event) => updateUnitPlanRow(row.id, "fieldTrip", event.target.value)} /></td>
-                          <td><textarea value={row.finalFridayCapstone} onChange={(event) => updateUnitPlanRow(row.id, "finalFridayCapstone", event.target.value)} /></td>
-                          <td>
-                            <select value={row.status} onChange={(event) => updateUnitPlanRow(row.id, "status", event.target.value as UnitPlanStatus)}>
-                              {unitStatusOptions.map((statusOption) => <option key={statusOption}>{statusOption}</option>)}
-                            </select>
-                          </td>
-                          <td>
-                            <button className="text-button" type="button" onClick={() => deleteUnitPlanRow(row.id)} disabled={unitPlanRows.length === 1}>Delete</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <datalist id="unit-format-options">
-                    {unitFormatOptions.map((option) => <option key={option} value={option} />)}
-                  </datalist>
-                  <datalist id="weekly-rhythm-override-options">
-                    {weeklyRhythmOverrideOptions.map((option) => <option key={option} value={option} />)}
-                  </datalist>
-                </div>
+                <AnnualPlanUnitTable
+                  rows={unitPlanRows}
+                  unitFormatOptions={unitFormatOptions}
+                  weeklyRhythmOverrideOptions={weeklyRhythmOverrideOptions}
+                  unitStatusOptions={unitStatusOptions}
+                  onSelectExistingZero={selectExistingZero}
+                  onMoveRowTo={moveUnitPlanRowTo}
+                  onUpdateRow={updateUnitPlanRow}
+                  onDeleteRow={deleteUnitPlanRow}
+                />
               </section>
               ) : null}
 
