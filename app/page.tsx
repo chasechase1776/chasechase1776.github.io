@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnnualPlanEditableCardList } from "@/components/annual-plan-editable-card-list";
 import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
 import { UnitPlannerActivityModal } from "@/components/unit-planner-activity-modal";
 import { UnitPlannerDayBoard } from "@/components/unit-planner-day-board";
@@ -6390,42 +6391,17 @@ export default function Home() {
                     <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-2")}>Finalize</button>
                   </div>
                 </div>
-                <div className="records-grid editable-card-grid">
-                  {curriculumSpines.map((spine, index) => (
-                    <article className="record-link editable-spine-card" key={spine.id}>
-                      <div className="finished-card-row">
-                        <div className="editable-card-preview">
-                          <strong>{spine.title || "Untitled spine"}</strong>
-                          <span>{spine.narrative || "Add the narrative for this recurring curriculum spine."}</span>
-                        </div>
-                        <div className="card-control-row">
-                          <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, -1)} disabled={index === 0}>Move up</button>
-                          <button className="secondary-button" type="button" onClick={() => moveCurriculumSpine(spine.id, 1)} disabled={index === curriculumSpines.length - 1}>Move down</button>
-                          <button className="secondary-button" type="button" onClick={() => setEditingSpineId((current) => (current === spine.id ? null : spine.id))}>
-                            {editingSpineId === spine.id ? "Collapse" : "Edit"}
-                          </button>
-                          <button className="text-button" type="button" onClick={() => deleteCurriculumSpine(spine.id)} disabled={curriculumSpines.length === 1}>Delete</button>
-                        </div>
-                      </div>
-                      {editingSpineId === spine.id ? (
-                        <div className="spine-edit-fields">
-                          <label>
-                            <span>Bold title</span>
-                            <input value={spine.title} onChange={(event) => updateCurriculumSpine(spine.id, "title", event.target.value)} />
-                          </label>
-                          <label>
-                            <span>Narrative text</span>
-                            <textarea value={spine.narrative} onChange={(event) => updateCurriculumSpine(spine.id, "narrative", event.target.value)} />
-                          </label>
-                          <div className="card-control-row">
-                            <button className="primary-button" type="button" onClick={() => setEditingSpineId(null)}>Save</button>
-                            <button className="secondary-button" type="button" onClick={() => setEditingSpineId(null)}>Collapse</button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
+                <AnnualPlanEditableCardList
+                  cards={curriculumSpines}
+                  editingCardId={editingSpineId}
+                  emptyTitle="Untitled spine"
+                  emptyNarrative="Add the narrative for this recurring curriculum spine."
+                  narrativeLabel="Narrative text"
+                  onMoveCard={moveCurriculumSpine}
+                  onEditCard={setEditingSpineId}
+                  onDeleteCard={deleteCurriculumSpine}
+                  onUpdateCard={updateCurriculumSpine}
+                />
               </section>
               ) : null}
 
@@ -6440,42 +6416,17 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="panel-note">Each week includes a writing prompt developed throughout the week and finalized on Friday. Friday is the weekly culmination point; at the end of a unit, Final Friday becomes a larger unit capstone.</p>
-                <div className="records-grid editable-card-grid">
-                  {weeklyRhythmDays.map((day, index) => (
-                    <article className="record-link editable-spine-card" key={day.id}>
-                      <div className="finished-card-row">
-                        <div className="editable-card-preview">
-                          <strong>{day.title || "Untitled rhythm day"}</strong>
-                          <span>{day.narrative || "Add the rhythm, expected learning pattern, and evidence for this day."}</span>
-                        </div>
-                        <div className="card-control-row">
-                          <button className="secondary-button" type="button" onClick={() => moveWeeklyRhythmDay(day.id, -1)} disabled={index === 0}>Move up</button>
-                          <button className="secondary-button" type="button" onClick={() => moveWeeklyRhythmDay(day.id, 1)} disabled={index === weeklyRhythmDays.length - 1}>Move down</button>
-                          <button className="secondary-button" type="button" onClick={() => setEditingRhythmDayId((current) => (current === day.id ? null : day.id))}>
-                            {editingRhythmDayId === day.id ? "Collapse" : "Edit"}
-                          </button>
-                          <button className="text-button" type="button" onClick={() => deleteWeeklyRhythmDay(day.id)} disabled={weeklyRhythmDays.length === 1}>Delete</button>
-                        </div>
-                      </div>
-                      {editingRhythmDayId === day.id ? (
-                        <div className="spine-edit-fields">
-                          <label>
-                            <span>Bold title</span>
-                            <input value={day.title} onChange={(event) => updateWeeklyRhythmDay(day.id, "title", event.target.value)} />
-                          </label>
-                          <label>
-                            <span>Description</span>
-                            <textarea value={day.narrative} onChange={(event) => updateWeeklyRhythmDay(day.id, "narrative", event.target.value)} />
-                          </label>
-                          <div className="card-control-row">
-                            <button className="primary-button" type="button" onClick={() => setEditingRhythmDayId(null)}>Save</button>
-                            <button className="secondary-button" type="button" onClick={() => setEditingRhythmDayId(null)}>Collapse</button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
+                <AnnualPlanEditableCardList
+                  cards={weeklyRhythmDays}
+                  editingCardId={editingRhythmDayId}
+                  emptyTitle="Untitled rhythm day"
+                  emptyNarrative="Add the rhythm, expected learning pattern, and evidence for this day."
+                  narrativeLabel="Description"
+                  onMoveCard={moveWeeklyRhythmDay}
+                  onEditCard={setEditingRhythmDayId}
+                  onDeleteCard={deleteWeeklyRhythmDay}
+                  onUpdateCard={updateWeeklyRhythmDay}
+                />
               </section>
               ) : null}
 
@@ -6587,42 +6538,17 @@ export default function Home() {
                     <button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-6")}>Finalize</button>
                   </div>
                 </div>
-                <div className="records-grid editable-card-grid">
-                  {journalPortfolioCards.map((card, index) => (
-                    <article className="record-link editable-spine-card" key={card.id}>
-                      <div className="finished-card-row">
-                        <div className="editable-card-preview">
-                          <strong>{card.title || "Untitled journal or portfolio"}</strong>
-                          <span>{card.narrative || "Add the purpose, update rhythm, and expected contents for this card."}</span>
-                        </div>
-                        <div className="card-control-row">
-                          <button className="secondary-button" type="button" onClick={() => moveJournalPortfolioCard(card.id, -1)} disabled={index === 0}>Move up</button>
-                          <button className="secondary-button" type="button" onClick={() => moveJournalPortfolioCard(card.id, 1)} disabled={index === journalPortfolioCards.length - 1}>Move down</button>
-                          <button className="secondary-button" type="button" onClick={() => setEditingJournalPortfolioId((current) => (current === card.id ? null : card.id))}>
-                            {editingJournalPortfolioId === card.id ? "Collapse" : "Edit"}
-                          </button>
-                          <button className="text-button" type="button" onClick={() => deleteJournalPortfolioCard(card.id)} disabled={journalPortfolioCards.length === 1}>Delete</button>
-                        </div>
-                      </div>
-                      {editingJournalPortfolioId === card.id ? (
-                        <div className="spine-edit-fields">
-                          <label>
-                            <span>Bold title</span>
-                            <input value={card.title} onChange={(event) => updateJournalPortfolioCard(card.id, "title", event.target.value)} />
-                          </label>
-                          <label>
-                            <span>Description</span>
-                            <textarea value={card.narrative} onChange={(event) => updateJournalPortfolioCard(card.id, "narrative", event.target.value)} />
-                          </label>
-                          <div className="card-control-row">
-                            <button className="primary-button" type="button" onClick={() => setEditingJournalPortfolioId(null)}>Save</button>
-                            <button className="secondary-button" type="button" onClick={() => setEditingJournalPortfolioId(null)}>Collapse</button>
-                          </div>
-                        </div>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
+                <AnnualPlanEditableCardList
+                  cards={journalPortfolioCards}
+                  editingCardId={editingJournalPortfolioId}
+                  emptyTitle="Untitled journal or portfolio"
+                  emptyNarrative="Add the purpose, update rhythm, and expected contents for this card."
+                  narrativeLabel="Description"
+                  onMoveCard={moveJournalPortfolioCard}
+                  onEditCard={setEditingJournalPortfolioId}
+                  onDeleteCard={deleteJournalPortfolioCard}
+                  onUpdateCard={updateJournalPortfolioCard}
+                />
               </section>
               ) : null}
 
