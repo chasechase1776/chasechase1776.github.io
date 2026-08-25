@@ -1299,7 +1299,7 @@ function inferSubject(activityType: string) {
   if (activityType === "Finance") return "Finance";
   if (activityType === "Foreign Language") return "Foreign Language";
   if (activityType === "Independent Reading") return "Independent Reading";
-  if (activityType === "Extracurricular") return "Extracurricular";
+  if (activityType === "Extracurricular" || activityType === "Physical Activity") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
   if (activityType === "Field Trip" || activityType === "Group Event" || activityType === "Special Event") return "Social Studies";
   return "Unit Study";
@@ -1356,7 +1356,7 @@ function parsedSubjectForType(activityType: string) {
   if (activityType === "Finance") return "Finance";
   if (activityType === "Foreign Language") return "Foreign Language";
   if (activityType === "Independent Reading") return "Independent Reading";
-  if (activityType === "Extracurricular") return "Extracurricular";
+  if (activityType === "Extracurricular" || activityType === "Physical Activity") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
   if (activityType === "Field Trip" || activityType === "Group Event" || activityType === "Special Event") return "Social Studies";
   if (activityType === "Unit Study") return "Unit Study";
@@ -1443,7 +1443,12 @@ function parsedSkillsForType(activityType: string, text = "", selectedSubjects: 
   if (primarySubject === "Science") ["Asks Questions and Seeks Answers", "Uses Tools and Models to Investigate the World"].forEach(add);
   if (primarySubject === "Foreign Language") ["Listening Comprehension", "Speaking Practice", "Vocabulary"].forEach(add);
   if (primarySubject === "Independent Reading") ["Reading Stamina", "Comprehension", "Reader Response"].forEach(add);
-  if (primarySubject === "Extracurricular") ["Teamwork", "Discipline and Practice", "Communication"].forEach(add);
+  if (primarySubject === "Extracurricular") [
+    ...(activityType === "Physical Activity" ? ["Sports"] : []),
+    "Teamwork",
+    "Discipline and Practice",
+    "Communication"
+  ].forEach(add);
   if (primarySubject === "Social Studies") ["Citizenship", "Communication"].forEach(add);
 
   if (/(read|book|story|chapter|literature)/.test(combined)) ["Reading", "Literature", "Reading Stamina", "Comprehension"].forEach(add);

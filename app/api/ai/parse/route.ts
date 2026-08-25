@@ -106,7 +106,8 @@ type OpenAIResponseBody = {
 function mockDraft(input: z.infer<typeof parseSchema>): Draft {
   const subject = inferSubject(input.selectedActivityType);
   const skillSource = skillTaxonomy[subject] ?? [];
-  const matchedSkills = skillSource.slice(0, Math.min(3, skillSource.length)).map((name) => ({ subject, name }));
+  const defaultSkillNames = input.selectedActivityType === "Physical Activity" ? ["Sports", ...skillSource] : skillSource;
+  const matchedSkills = Array.from(new Set(defaultSkillNames)).slice(0, Math.min(3, defaultSkillNames.length)).map((name) => ({ subject, name }));
   const estimatedMinutes = input.narrationText.length > 280 ? 45 : 20;
 
   return {
@@ -140,6 +141,11 @@ function normalizeDrafts(drafts: Draft[], input: z.infer<typeof parseSchema>) {
   return drafts.map((draft) => {
     const totalAllocated = draft.subjectAllocations.reduce((sum, allocation) => sum + allocation.minutes, 0);
     const subject = draft.subjectAllocations[0]?.subject ?? inferSubject(input.selectedActivityType);
+    const hasSportsSkill = draft.skills.some((skill) => skill.subject === "Extracurricular" && skill.name === "Sports");
+    const skills =
+      input.selectedActivityType === "Physical Activity" && !hasSportsSkill
+        ? [{ subject: "Extracurricular", name: "Sports" }, ...draft.skills]
+        : draft.skills;
 
     return {
       ...draft,
@@ -149,6 +155,7 @@ function normalizeDrafts(drafts: Draft[], input: z.infer<typeof parseSchema>) {
       artifactIds: input.attachedArtifactIds,
       parentApproved: false,
       reviewStatus: "needs_review",
+      skills,
       subjectAllocations:
         totalAllocated === draft.actualMinutes && draft.subjectAllocations.length
           ? draft.subjectAllocations

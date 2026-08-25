@@ -126,13 +126,20 @@ export const skillTaxonomy: Record<string, string[]> = {
     "Reader Response"
   ],
   Extracurricular: [
+    "Sports",
+    "Clubs",
+    "Service",
+    "Performing Arts",
+    "Visual Arts",
+    "Tech & STEM",
+    "Communication",
+    "Mind Games",
+    "Other",
     "Teamwork",
     "Discipline and Practice",
     "Leadership",
-    "Service",
     "Creative Expression",
     "Technical Skills",
-    "Communication",
     "Strategic Thinking"
   ]
 };
@@ -176,7 +183,7 @@ export function inferSubject(activityType: string) {
   if (activityType === "Finance") return "Finance";
   if (activityType === "Foreign Language") return "Foreign Language";
   if (activityType === "Independent Reading") return "Independent Reading";
-  if (activityType === "Extracurricular") return "Extracurricular";
+  if (activityType === "Extracurricular" || activityType === "Physical Activity") return "Extracurricular";
   if (activityType === "Science Journal") return "Science";
   if (activityType === "Field Trip" || activityType === "Group Event" || activityType === "Special Event") return "Social Studies";
   return "Unit Study";
