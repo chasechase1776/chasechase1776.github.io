@@ -4,6 +4,7 @@ import type { ChangeEvent, DragEvent, FocusEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnnualPlanCapstoneSection } from "@/components/annual-plan-capstone-section";
 import { AnnualPlanEditableCardList } from "@/components/annual-plan-editable-card-list";
+import { AnnualPlanExportsSection } from "@/components/annual-plan-exports-section";
 import { AnnualPlanBigPictureSection } from "@/components/annual-plan-big-picture-section";
 import { AnnualPlanRecordCardList } from "@/components/annual-plan-record-card-list";
 import { AnnualPlanSectionHub } from "@/components/annual-plan-section-hub";
@@ -6502,22 +6503,18 @@ export default function Home() {
               ) : null}
 
               {activeAnnualPlanSection === "section-8" ? (
-              <section className="plan-section">
-                <div className="section-head"><div><p className="eyebrow">Section 8</p><h2>Annual Plan Exports</h2></div><div className="primary-action-row"><button className="secondary-button" type="button" onClick={() => { updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records."); setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields."); }}>Generate Annual Plan Markdown</button><button className="secondary-button" type="button" onClick={() => void exportAnnualPlanPdf()} disabled={isAnnualPlanBusy}>Generate Annual Plan PDF</button><button className="secondary-button" type="button" onClick={() => updateAnnualPlan("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatus)}>Add to Legal Archive</button><button className="primary-button" type="button" onClick={() => finalizeAnnualPlanSection("section-8")}>Finalize</button></div></div>
-                {lastAnnualPlanPdfArtifact ? (
-                  <div className="status-line">
-                    <span>{lastAnnualPlanPdfArtifact.originalName}</span>
-                    <a className="download-link" href={`/api/artifacts/${lastAnnualPlanPdfArtifact.id}/download`} target="_blank" rel="noreferrer">
-                      Open PDF
-                    </a>
-                  </div>
-                ) : null}
-                <div className="coverage-summary-grid">
-                  <div className="record-link"><strong>Markdown path</strong><span>records/{schoolYear}/annual-plan.md</span></div>
-                  <div className="record-link"><strong>PDF export</strong><span>Includes all Annual Plan sections above.</span></div>
-                  <div className="record-link"><strong>Archive note</strong><span>Annual Plan explains intent; daily logs document reality.</span></div>
-                </div>
-              </section>
+                <AnnualPlanExportsSection
+                  schoolYear={schoolYear}
+                  lastPdfArtifact={lastAnnualPlanPdfArtifact}
+                  isPdfBusy={isAnnualPlanBusy}
+                  onGenerateMarkdown={() => {
+                    updateAnnualPlan("Generated records/2026-2027/annual-plan.md with big picture, spines, daily expectations, weekly rhythm, unit sequence, journals, capstone, and records.");
+                    setRecordsSnapshotMessage("Annual Plan export: regenerated records/2026-2027/annual-plan.md from saved annual plan fields.");
+                  }}
+                  onGeneratePdf={() => void exportAnnualPlanPdf()}
+                  onAddToLegalArchive={() => updateAnnualPlan("Annual Plan added to the Legal Archive as the school-year planning framework.", annualPlanStatus)}
+                  onFinalize={() => finalizeAnnualPlanSection("section-8")}
+                />
               ) : null}
             </section>
             ) : null}
